@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -10,6 +9,8 @@ import ContractTracker from '@/components/ContractTracker';
 import ContractsList from '@/components/ContractsList';
 import TemplateBuilder from '@/components/TemplateBuilder';
 import DocumentManager from '@/components/DocumentManager';
+import PDFTemplateBuilder, { PDFTemplate } from '@/components/PDFTemplateBuilder';
+import PDFDocumentGenerator from '@/components/PDFDocumentGenerator';
 
 export interface Contract {
   id: string;
@@ -51,6 +52,7 @@ export interface TemplateField {
 const Index = () => {
   const [contracts, setContracts] = useState<Contract[]>([]);
   const [templates, setTemplates] = useState<Template[]>([]);
+  const [pdfTemplates, setPdfTemplates] = useState<PDFTemplate[]>([]);
   const [activeTab, setActiveTab] = useState('dashboard');
 
   const handleNewContract = (contractData: Omit<Contract, 'id' | 'status' | 'createdAt'>) => {
@@ -73,6 +75,48 @@ const Index = () => {
     setTemplates(prev => [...prev, newTemplate]);
   };
 
+  const handleNewPDFTemplate = (template: Omit<PDFTemplate, 'id' | 'createdAt' | 'updatedAt'>) => {
+    const newTemplate: PDFTemplate = {
+      ...template,
+      id: `PDF-${Date.now()}`,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    };
+    setPdfTemplates(prev => [...prev, newTemplate]);
+  };
+
+  const handleUpdatePDFTemplate = (templateId: string, updates: Partial<PDFTemplate>) => {
+    setPdfTemplates(prev => prev.map(template => 
+      template.id === templateId 
+        ? { ...template, ...updates, updatedAt: new Date() }
+        : template
+    ));
+  };
+
+  const handleDeletePDFTemplate = (templateId: string) => {
+    setPdfTemplates(prev => prev.filter(template => template.id !== templateId));
+  };
+
+  const handleGeneratePDFDocument = (templateId: string, fieldValues: Record<string, string>, clientInfo: any) => {
+    const template = pdfTemplates.find(t => t.id === templateId);
+    if (!template) return;
+
+    const newContract: Contract = {
+      id: `PDF-DOC-${Date.now()}`,
+      clientName: clientInfo.name,
+      clientEmail: clientInfo.email,
+      clientPhone: clientInfo.phone || '',
+      policyType: template.name,
+      templateId: templateId,
+      templateType: 'contrato',
+      status: 'draft',
+      createdAt: new Date(),
+    };
+    
+    setContracts(prev => [...prev, newContract]);
+    setActiveTab('documents');
+  };
+
   const updateContractStatus = (contractId: string, status: Contract['status'], additionalData?: Partial<Contract>) => {
     setContracts(prev => prev.map(contract => 
       contract.id === contractId 
@@ -93,6 +137,7 @@ const Index = () => {
     const stats = {
       total: contracts.length,
       templates: templates.length,
+      pdfTemplates: pdfTemplates.length,
       sent: contracts.filter(c => ['sent', 'received', 'opened', 'signed', 'completed'].includes(c.status)).length,
       pending: contracts.filter(c => ['sent', 'received', 'opened'].includes(c.status)).length,
       signed: contracts.filter(c => ['signed', 'completed'].includes(c.status)).length,
@@ -110,12 +155,12 @@ const Index = () => {
             Sistema de Gestión Documental Digital
           </h1>
           <p className="text-lg text-gray-600">
-            Crea plantillas, genera documentos y gestiona firmas digitales
+            Crea plantillas, genera documentos PDF interactivos y gestiona firmas digitales
           </p>
         </div>
 
         <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-          <TabsList className="grid w-full grid-cols-4 lg:w-auto lg:grid-cols-4">
+          <TabsList className="grid w-full grid-cols-6 lg:w-auto lg:grid-cols-6">
             <TabsTrigger value="dashboard" className="flex items-center gap-2">
               <FileText className="w-4 h-4" />
               Dashboard
@@ -123,6 +168,14 @@ const Index = () => {
             <TabsTrigger value="templates" className="flex items-center gap-2">
               <Layers className="w-4 h-4" />
               Templates
+            </TabsTrigger>
+            <TabsTrigger value="pdf-templates" className="flex items-center gap-2">
+              <FileText className="w-4 h-4" />
+              PDF Templates
+            </TabsTrigger>
+            <TabsTrigger value="pdf-generator" className="flex items-center gap-2">
+              <Plus className="w-4 h-4" />
+              PDF Docs
             </TabsTrigger>
             <TabsTrigger value="contracts" className="flex items-center gap-2">
               <Plus className="w-4 h-4" />
@@ -135,7 +188,7 @@ const Index = () => {
           </TabsList>
 
           <TabsContent value="dashboard" className="space-y-6">
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6">
               <Card className="bg-white shadow-lg border-0">
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                   <CardTitle className="text-sm font-medium">Total Documentos</CardTitle>
@@ -154,7 +207,18 @@ const Index = () => {
                 </CardHeader>
                 <CardContent>
                   <div className="text-2xl font-bold text-purple-600">{stats.templates}</div>
-                  <p className="text-xs text-muted-foreground">Plantillas disponibles</p>
+                  <p className="text-xs text-muted-foreground">Plantillas básicas</p>
+                </CardContent>
+              </Card>
+
+              <Card className="bg-white shadow-lg border-0">
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                  <CardTitle className="text-sm font-medium">PDF Templates</CardTitle>
+                  <FileText className="h-4 w-4 text-red-500" />
+                </CardHeader>
+                <CardContent>
+                  <div className="text-2xl font-bold text-red-600">{stats.pdfTemplates}</div>
+                  <p className="text-xs text-muted-foreground">Plantillas PDF</p>
                 </CardContent>
               </Card>
 
@@ -241,6 +305,22 @@ const Index = () => {
             <TemplateBuilder 
               templates={templates}
               onCreateTemplate={handleNewTemplate}
+            />
+          </TabsContent>
+
+          <TabsContent value="pdf-templates">
+            <PDFTemplateBuilder 
+              templates={pdfTemplates}
+              onCreateTemplate={handleNewPDFTemplate}
+              onUpdateTemplate={handleUpdatePDFTemplate}
+              onDeleteTemplate={handleDeletePDFTemplate}
+            />
+          </TabsContent>
+
+          <TabsContent value="pdf-generator">
+            <PDFDocumentGenerator 
+              templates={pdfTemplates}
+              onGenerateDocument={handleGeneratePDFDocument}
             />
           </TabsContent>
 
