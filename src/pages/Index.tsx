@@ -4,10 +4,12 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
-import { FileText, Users, Send, CheckCircle } from 'lucide-react';
+import { FileText, Users, Send, CheckCircle, Layers, Plus } from 'lucide-react';
 import ContractForm from '@/components/ContractForm';
 import ContractTracker from '@/components/ContractTracker';
 import ContractsList from '@/components/ContractsList';
+import TemplateBuilder from '@/components/TemplateBuilder';
+import DocumentManager from '@/components/DocumentManager';
 
 export interface Contract {
   id: string;
@@ -15,28 +17,60 @@ export interface Contract {
   clientEmail: string;
   clientPhone: string;
   policyType: string;
+  templateId?: string;
+  templateType?: 'contrato' | 'anexo' | 'declaracion';
   status: 'draft' | 'sent' | 'received' | 'opened' | 'signed' | 'completed';
   createdAt: Date;
   sentAt?: Date;
   openedAt?: Date;
   signedAt?: Date;
+  completedAt?: Date;
   documentUrl?: string;
   signatureUrl?: string;
+  shareableLink?: string;
+}
+
+export interface Template {
+  id: string;
+  name: string;
+  type: 'contrato' | 'anexo' | 'declaracion';
+  fields: TemplateField[];
+  content: string;
+  createdAt: Date;
+}
+
+export interface TemplateField {
+  id: string;
+  name: string;
+  type: 'text' | 'email' | 'phone' | 'date' | 'select' | 'textarea';
+  label: string;
+  required: boolean;
+  options?: string[];
 }
 
 const Index = () => {
   const [contracts, setContracts] = useState<Contract[]>([]);
+  const [templates, setTemplates] = useState<Template[]>([]);
   const [activeTab, setActiveTab] = useState('dashboard');
 
   const handleNewContract = (contractData: Omit<Contract, 'id' | 'status' | 'createdAt'>) => {
     const newContract: Contract = {
       ...contractData,
-      id: `CON-${Date.now()}`,
+      id: `DOC-${Date.now()}`,
       status: 'draft',
       createdAt: new Date(),
     };
     setContracts(prev => [...prev, newContract]);
-    setActiveTab('contracts');
+    setActiveTab('documents');
+  };
+
+  const handleNewTemplate = (template: Omit<Template, 'id' | 'createdAt'>) => {
+    const newTemplate: Template = {
+      ...template,
+      id: `TPL-${Date.now()}`,
+      createdAt: new Date(),
+    };
+    setTemplates(prev => [...prev, newTemplate]);
   };
 
   const updateContractStatus = (contractId: string, status: Contract['status'], additionalData?: Partial<Contract>) => {
@@ -48,7 +82,8 @@ const Index = () => {
             ...additionalData,
             ...(status === 'sent' && { sentAt: new Date() }),
             ...(status === 'opened' && { openedAt: new Date() }),
-            ...(status === 'signed' && { signedAt: new Date() })
+            ...(status === 'signed' && { signedAt: new Date() }),
+            ...(status === 'completed' && { completedAt: new Date() })
           }
         : contract
     ));
@@ -57,6 +92,7 @@ const Index = () => {
   const getStatusStats = () => {
     const stats = {
       total: contracts.length,
+      templates: templates.length,
       sent: contracts.filter(c => ['sent', 'received', 'opened', 'signed', 'completed'].includes(c.status)).length,
       pending: contracts.filter(c => ['sent', 'received', 'opened'].includes(c.status)).length,
       signed: contracts.filter(c => ['signed', 'completed'].includes(c.status)).length,
@@ -71,10 +107,10 @@ const Index = () => {
       <div className="container mx-auto px-4 py-8">
         <div className="mb-8">
           <h1 className="text-4xl font-bold text-gray-900 mb-2">
-            Sistema de Contratos de Seguros Médicos
+            Sistema de Gestión Documental Digital
           </h1>
           <p className="text-lg text-gray-600">
-            Gestiona contratos, firma digital y seguimiento en tiempo real
+            Crea plantillas, genera documentos y gestiona firmas digitales
           </p>
         </div>
 
@@ -84,17 +120,17 @@ const Index = () => {
               <FileText className="w-4 h-4" />
               Dashboard
             </TabsTrigger>
-            <TabsTrigger value="new-contract" className="flex items-center gap-2">
-              <Users className="w-4 h-4" />
-              Nuevo Contrato
+            <TabsTrigger value="templates" className="flex items-center gap-2">
+              <Layers className="w-4 h-4" />
+              Templates
             </TabsTrigger>
             <TabsTrigger value="contracts" className="flex items-center gap-2">
-              <Send className="w-4 h-4" />
-              Contratos
+              <Plus className="w-4 h-4" />
+              Generar Nuevo
             </TabsTrigger>
-            <TabsTrigger value="tracking" className="flex items-center gap-2">
+            <TabsTrigger value="documents" className="flex items-center gap-2">
               <CheckCircle className="w-4 h-4" />
-              Seguimiento
+              Documentos
             </TabsTrigger>
           </TabsList>
 
@@ -102,23 +138,23 @@ const Index = () => {
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
               <Card className="bg-white shadow-lg border-0">
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                  <CardTitle className="text-sm font-medium">Total Contratos</CardTitle>
+                  <CardTitle className="text-sm font-medium">Total Documentos</CardTitle>
                   <FileText className="h-4 w-4 text-primary" />
                 </CardHeader>
                 <CardContent>
                   <div className="text-2xl font-bold text-primary">{stats.total}</div>
-                  <p className="text-xs text-muted-foreground">Contratos creados</p>
+                  <p className="text-xs text-muted-foreground">Documentos creados</p>
                 </CardContent>
               </Card>
 
               <Card className="bg-white shadow-lg border-0">
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                  <CardTitle className="text-sm font-medium">Enviados</CardTitle>
-                  <Send className="h-4 w-4 text-blue-500" />
+                  <CardTitle className="text-sm font-medium">Templates</CardTitle>
+                  <Layers className="h-4 w-4 text-purple-500" />
                 </CardHeader>
                 <CardContent>
-                  <div className="text-2xl font-bold text-blue-600">{stats.sent}</div>
-                  <p className="text-xs text-muted-foreground">Contratos enviados</p>
+                  <div className="text-2xl font-bold text-purple-600">{stats.templates}</div>
+                  <p className="text-xs text-muted-foreground">Plantillas disponibles</p>
                 </CardContent>
               </Card>
 
@@ -135,12 +171,12 @@ const Index = () => {
 
               <Card className="bg-white shadow-lg border-0">
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                  <CardTitle className="text-sm font-medium">Firmados</CardTitle>
+                  <CardTitle className="text-sm font-medium">Completados</CardTitle>
                   <CheckCircle className="h-4 w-4 text-green-500" />
                 </CardHeader>
                 <CardContent>
                   <div className="text-2xl font-bold text-green-600">{stats.signed}</div>
-                  <p className="text-xs text-muted-foreground">Contratos completados</p>
+                  <p className="text-xs text-muted-foreground">Documentos firmados</p>
                 </CardContent>
               </Card>
             </div>
@@ -148,16 +184,16 @@ const Index = () => {
             <Card className="bg-white shadow-lg border-0">
               <CardHeader>
                 <CardTitle>Actividad Reciente</CardTitle>
-                <CardDescription>Últimos contratos y sus estados</CardDescription>
+                <CardDescription>Últimos documentos y sus estados</CardDescription>
               </CardHeader>
               <CardContent>
                 {contracts.length === 0 ? (
                   <div className="text-center py-8">
                     <FileText className="mx-auto h-12 w-12 text-gray-400 mb-4" />
-                    <h3 className="text-lg font-medium text-gray-900 mb-2">No hay contratos aún</h3>
-                    <p className="text-gray-500 mb-4">Comienza creando tu primer contrato de seguro médico</p>
-                    <Button onClick={() => setActiveTab('new-contract')} className="bg-primary hover:bg-primary/90">
-                      Crear Primer Contrato
+                    <h3 className="text-lg font-medium text-gray-900 mb-2">No hay documentos aún</h3>
+                    <p className="text-gray-500 mb-4">Comienza creando plantillas y generando documentos</p>
+                    <Button onClick={() => setActiveTab('templates')} className="bg-primary hover:bg-primary/90">
+                      Crear Primera Plantilla
                     </Button>
                   </div>
                 ) : (
@@ -166,7 +202,13 @@ const Index = () => {
                       <div key={contract.id} className="flex items-center justify-between p-4 border rounded-lg">
                         <div>
                           <h4 className="font-medium">{contract.clientName}</h4>
-                          <p className="text-sm text-gray-500">{contract.policyType}</p>
+                          <p className="text-sm text-gray-500">
+                            {contract.templateType && (
+                              <span className="capitalize">{contract.templateType}</span>
+                            )}
+                            {contract.templateType && contract.policyType && ' - '}
+                            {contract.policyType}
+                          </p>
                         </div>
                         <Badge 
                           variant={
@@ -195,19 +237,25 @@ const Index = () => {
             </Card>
           </TabsContent>
 
-          <TabsContent value="new-contract">
-            <ContractForm onSubmit={handleNewContract} />
-          </TabsContent>
-
-          <TabsContent value="contracts">
-            <ContractsList 
-              contracts={contracts} 
-              onUpdateStatus={updateContractStatus}
+          <TabsContent value="templates">
+            <TemplateBuilder 
+              templates={templates}
+              onCreateTemplate={handleNewTemplate}
             />
           </TabsContent>
 
-          <TabsContent value="tracking">
-            <ContractTracker contracts={contracts} />
+          <TabsContent value="contracts">
+            <ContractForm 
+              onSubmit={handleNewContract}
+              templates={templates}
+            />
+          </TabsContent>
+
+          <TabsContent value="documents">
+            <DocumentManager 
+              contracts={contracts} 
+              onUpdateStatus={updateContractStatus}
+            />
           </TabsContent>
         </Tabs>
       </div>
