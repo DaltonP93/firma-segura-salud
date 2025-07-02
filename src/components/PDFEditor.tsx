@@ -10,7 +10,7 @@ import { Upload, FileText, Type, Calendar, Edit, Trash2, Save, Download } from '
 
 export interface PDFField {
   id: string;
-  type: 'text' | 'date' | 'signature' | 'email' | 'phone';
+  type: 'text' | 'textarea' | 'date' | 'signature' | 'email' | 'phone';
   label: string;
   x: number;
   y: number;
@@ -69,7 +69,7 @@ const PDFEditor = ({ onSave, onCancel, initialFields = [], mode = 'create' }: PD
       x,
       y,
       width: 120,
-      height: 30,
+      height: selectedTool === 'textarea' ? 60 : 30,
       required: false,
       placeholder: `Enter ${selectedTool}...`
     };
@@ -93,7 +93,7 @@ const PDFEditor = ({ onSave, onCancel, initialFields = [], mode = 'create' }: PD
     }
   };
 
-  const handleMouseMove = useCallback((event: MouseEvent) => {
+  const handleMouseMove = useCallback((event: React.MouseEvent<HTMLDivElement>) => {
     if (!isDragging || !selectedField || !canvasRef.current) return;
 
     const rect = canvasRef.current.getBoundingClientRect();
@@ -154,6 +154,7 @@ const PDFEditor = ({ onSave, onCancel, initialFields = [], mode = 'create' }: PD
   const getFieldIcon = (type: PDFField['type']) => {
     switch (type) {
       case 'text': return <Type className="w-4 h-4" />;
+      case 'textarea': return <Type className="w-4 h-4" />;
       case 'date': return <Calendar className="w-4 h-4" />;
       case 'signature': return <Edit className="w-4 h-4" />;
       case 'email': return <Type className="w-4 h-4" />;
@@ -163,7 +164,7 @@ const PDFEditor = ({ onSave, onCancel, initialFields = [], mode = 'create' }: PD
   };
 
   return (
-    <div className="space-y-6" onMouseMove={handleMouseMove} onMouseUp={handleMouseUp}>
+    <div className="space-y-6">
       <Card className="bg-white shadow-lg border-0">
         <CardHeader>
           <CardTitle className="text-2xl text-primary">
@@ -195,7 +196,7 @@ const PDFEditor = ({ onSave, onCancel, initialFields = [], mode = 'create' }: PD
             <div className="space-y-4">
               <h3 className="font-semibold">Herramientas de Campo</h3>
               <div className="space-y-2">
-                {(['text', 'email', 'phone', 'date', 'signature'] as const).map((tool) => (
+                {(['text', 'textarea', 'email', 'phone', 'date', 'signature'] as const).map((tool) => (
                   <Button
                     key={tool}
                     variant={selectedTool === tool ? "default" : "outline"}
@@ -254,6 +255,8 @@ const PDFEditor = ({ onSave, onCancel, initialFields = [], mode = 'create' }: PD
                     ref={canvasRef}
                     className="relative bg-white shadow-lg rounded min-h-[500px] cursor-crosshair"
                     onClick={handleCanvasClick}
+                    onMouseMove={handleMouseMove}
+                    onMouseUp={handleMouseUp}
                   >
                     <div className="p-4 text-center text-gray-500 border-b">
                       <FileText className="w-8 h-8 mx-auto mb-2" />

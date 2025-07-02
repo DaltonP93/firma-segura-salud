@@ -93,6 +93,7 @@ const PDFDocumentGenerator = ({ templates, onGenerateDocument }: PDFDocumentGene
   const getFieldIcon = (type: PDFField['type']) => {
     switch (type) {
       case 'text': return <Type className="w-4 h-4" />;
+      case 'textarea': return <Type className="w-4 h-4" />;
       case 'date': return <Calendar className="w-4 h-4" />;
       case 'signature': return <Edit className="w-4 h-4" />;
       case 'email': return <Type className="w-4 h-4" />;
