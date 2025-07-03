@@ -34,9 +34,11 @@ const iconMap = {
 };
 
 const AppSidebar = () => {
-  const { collapsed } = useSidebar();
+  const { state } = useSidebar();
   const { navigationItems, activeItem, setActiveItem } = useNavigation();
   const location = useLocation();
+
+  const isCollapsed = state === 'collapsed';
 
   const getNavClass = (isActive: boolean) =>
     isActive ? "bg-muted text-primary font-medium" : "hover:bg-muted/50";
@@ -54,10 +56,10 @@ const AppSidebar = () => {
     .sort((a, b) => a.sortOrder - b.sortOrder);
 
   return (
-    <Sidebar className={collapsed ? "w-14" : "w-60"} collapsible>
+    <Sidebar className={isCollapsed ? "w-14" : "w-60"} collapsible="icon">
       <SidebarContent>
         <SidebarGroup>
-          <SidebarGroupLabel className={collapsed ? "sr-only" : ""}>
+          <SidebarGroupLabel className={isCollapsed ? "sr-only" : ""}>
             Navegación Principal
           </SidebarGroupLabel>
           <SidebarGroupContent>
@@ -75,7 +77,7 @@ const AppSidebar = () => {
                         onClick={() => setActiveItem(item.id)}
                       >
                         <IconComponent className="h-4 w-4" />
-                        {!collapsed && (
+                        {!isCollapsed && (
                           <span className="flex items-center justify-between w-full">
                             {item.label}
                             {item.badge && (
