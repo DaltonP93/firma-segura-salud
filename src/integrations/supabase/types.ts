@@ -9,13 +9,279 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
-      [_ in never]: never
+      digital_signatures: {
+        Row: {
+          document_id: string | null
+          id: string
+          ip_address: string | null
+          signature_data: string | null
+          signature_type: string | null
+          signed_at: string | null
+          signer_email: string
+          signer_name: string
+          user_agent: string | null
+        }
+        Insert: {
+          document_id?: string | null
+          id?: string
+          ip_address?: string | null
+          signature_data?: string | null
+          signature_type?: string | null
+          signed_at?: string | null
+          signer_email: string
+          signer_name: string
+          user_agent?: string | null
+        }
+        Update: {
+          document_id?: string | null
+          id?: string
+          ip_address?: string | null
+          signature_data?: string | null
+          signature_type?: string | null
+          signed_at?: string | null
+          signer_email?: string
+          signer_name?: string
+          user_agent?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "digital_signatures_document_id_fkey"
+            columns: ["document_id"]
+            isOneToOne: false
+            referencedRelation: "documents"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      document_activity: {
+        Row: {
+          activity_type: string
+          created_at: string | null
+          created_by: string | null
+          description: string | null
+          document_id: string | null
+          id: string
+          metadata: Json | null
+        }
+        Insert: {
+          activity_type: string
+          created_at?: string | null
+          created_by?: string | null
+          description?: string | null
+          document_id?: string | null
+          id?: string
+          metadata?: Json | null
+        }
+        Update: {
+          activity_type?: string
+          created_at?: string | null
+          created_by?: string | null
+          description?: string | null
+          document_id?: string | null
+          id?: string
+          metadata?: Json | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "document_activity_document_id_fkey"
+            columns: ["document_id"]
+            isOneToOne: false
+            referencedRelation: "documents"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      document_templates: {
+        Row: {
+          content: string
+          created_at: string | null
+          created_by: string | null
+          fields: Json | null
+          id: string
+          is_active: boolean | null
+          name: string
+          type: string
+          updated_at: string | null
+        }
+        Insert: {
+          content: string
+          created_at?: string | null
+          created_by?: string | null
+          fields?: Json | null
+          id?: string
+          is_active?: boolean | null
+          name: string
+          type: string
+          updated_at?: string | null
+        }
+        Update: {
+          content?: string
+          created_at?: string | null
+          created_by?: string | null
+          fields?: Json | null
+          id?: string
+          is_active?: boolean | null
+          name?: string
+          type?: string
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
+      documents: {
+        Row: {
+          client_email: string
+          client_name: string
+          client_phone: string | null
+          completed_at: string | null
+          created_at: string | null
+          created_by: string | null
+          document_number: string
+          document_url: string | null
+          field_values: Json | null
+          id: string
+          opened_at: string | null
+          policy_type: string | null
+          sent_at: string | null
+          shareable_link: string | null
+          signature_url: string | null
+          signed_at: string | null
+          status: string | null
+          template_id: string | null
+          template_type: string | null
+        }
+        Insert: {
+          client_email: string
+          client_name: string
+          client_phone?: string | null
+          completed_at?: string | null
+          created_at?: string | null
+          created_by?: string | null
+          document_number: string
+          document_url?: string | null
+          field_values?: Json | null
+          id?: string
+          opened_at?: string | null
+          policy_type?: string | null
+          sent_at?: string | null
+          shareable_link?: string | null
+          signature_url?: string | null
+          signed_at?: string | null
+          status?: string | null
+          template_id?: string | null
+          template_type?: string | null
+        }
+        Update: {
+          client_email?: string
+          client_name?: string
+          client_phone?: string | null
+          completed_at?: string | null
+          created_at?: string | null
+          created_by?: string | null
+          document_number?: string
+          document_url?: string | null
+          field_values?: Json | null
+          id?: string
+          opened_at?: string | null
+          policy_type?: string | null
+          sent_at?: string | null
+          shareable_link?: string | null
+          signature_url?: string | null
+          signed_at?: string | null
+          status?: string | null
+          template_id?: string | null
+          template_type?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "documents_template_id_fkey"
+            columns: ["template_id"]
+            isOneToOne: false
+            referencedRelation: "document_templates"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      pdf_templates: {
+        Row: {
+          created_at: string | null
+          created_by: string | null
+          fields: Json | null
+          file_name: string
+          file_size: number | null
+          file_url: string | null
+          id: string
+          is_active: boolean | null
+          name: string
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          created_by?: string | null
+          fields?: Json | null
+          file_name: string
+          file_size?: number | null
+          file_url?: string | null
+          id?: string
+          is_active?: boolean | null
+          name: string
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          created_by?: string | null
+          fields?: Json | null
+          file_name?: string
+          file_size?: number | null
+          file_url?: string | null
+          id?: string
+          is_active?: boolean | null
+          name?: string
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
+      profiles: {
+        Row: {
+          company: string | null
+          created_at: string | null
+          email: string | null
+          full_name: string | null
+          id: string
+          phone: string | null
+          role: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          company?: string | null
+          created_at?: string | null
+          email?: string | null
+          full_name?: string | null
+          id: string
+          phone?: string | null
+          role?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          company?: string | null
+          created_at?: string | null
+          email?: string | null
+          full_name?: string | null
+          id?: string
+          phone?: string | null
+          role?: string | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      generate_document_number: {
+        Args: Record<PropertyKey, never>
+        Returns: string
+      }
     }
     Enums: {
       [_ in never]: never
