@@ -55,28 +55,12 @@ const defaultNavigationItems: NavigationItem[] = [
     sortOrder: 2,
   },
   {
-    id: 'templates',
-    label: 'Plantillas',
-    path: '/?tab=templates',
-    icon: 'layers',
-    isVisible: true,
-    sortOrder: 3,
-  },
-  {
-    id: 'pdf-templates',
-    label: 'PDF Templates',
-    path: '/?tab=pdf-templates',
-    icon: 'file-text',
-    isVisible: true,
-    sortOrder: 4,
-  },
-  {
     id: 'profile',
     label: 'Mi Perfil',
     path: '/profile',
     icon: 'user',
     isVisible: true,
-    sortOrder: 5,
+    sortOrder: 3,
   },
   {
     id: 'admin',
@@ -85,7 +69,7 @@ const defaultNavigationItems: NavigationItem[] = [
     icon: 'settings',
     roles: ['admin', 'super_admin'],
     isVisible: true,
-    sortOrder: 6,
+    sortOrder: 4,
   },
 ];
 

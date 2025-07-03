@@ -7,11 +7,12 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { Users, Plus, Edit, Trash2, Mail, Phone, Building, Calendar, Search, AlertCircle } from 'lucide-react';
+import { Users, Plus, Edit, Trash2, Mail, Phone, Building, Calendar, Search, AlertCircle, Check, X } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Alert, AlertDescription } from '@/components/ui/alert';
+import { Progress } from '@/components/ui/progress';
 
 interface Profile {
   id: string;
@@ -24,6 +25,19 @@ interface Profile {
   profile_image_url: string | null;
   created_at: string;
   updated_at: string;
+}
+
+interface PasswordStrength {
+  score: number;
+  label: string;
+  color: string;
+  requirements: {
+    length: boolean;
+    lowercase: boolean;
+    uppercase: boolean;
+    numbers: boolean;
+    special: boolean;
+  };
 }
 
 const UserManagement = () => {
@@ -47,25 +61,44 @@ const UserManagement = () => {
     password: '',
   });
 
-  // Función para validar contraseña
-  const validatePassword = (password: string) => {
-    const minLength = 8;
-    const hasLowercase = /[a-z]/.test(password);
-    const hasUppercase = /[A-Z]/.test(password);
-    const hasNumbers = /\d/.test(password);
-    const hasSpecialChar = /[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/.test(password);
-
-    const errors = [];
-    if (password.length < minLength) errors.push(`Mínimo ${minLength} caracteres`);
-    if (!hasLowercase) errors.push('Una letra minúscula');
-    if (!hasUppercase) errors.push('Una letra mayúscula');
-    if (!hasNumbers) errors.push('Un número');
-    if (!hasSpecialChar) errors.push('Un carácter especial');
-
-    return {
-      isValid: password.length >= minLength && hasLowercase && hasUppercase && hasNumbers && hasSpecialChar,
-      errors
+  // Enhanced password strength calculation
+  const calculatePasswordStrength = (password: string): PasswordStrength => {
+    const requirements = {
+      length: password.length >= 8,
+      lowercase: /[a-z]/.test(password),
+      uppercase: /[A-Z]/.test(password),
+      numbers: /\d/.test(password),
+      special: /[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/.test(password),
     };
+
+    const metRequirements = Object.values(requirements).filter(Boolean).length;
+    let score = 0;
+    let label = '';
+    let color = '';
+
+    if (password.length === 0) {
+      score = 0;
+      label = 'Sin contraseña';
+      color = 'text-gray-500';
+    } else if (metRequirements <= 2) {
+      score = 25;
+      label = 'Muy débil';
+      color = 'text-red-600';
+    } else if (metRequirements === 3) {
+      score = 50;
+      label = 'Débil';
+      color = 'text-orange-600';
+    } else if (metRequirements === 4) {
+      score = 75;
+      label = 'Buena';
+      color = 'text-yellow-600';
+    } else if (metRequirements === 5) {
+      score = 100;
+      label = 'Excelente';
+      color = 'text-green-600';
+    }
+
+    return { score, label, color, requirements };
   };
 
   useEffect(() => {
@@ -105,11 +138,11 @@ const UserManagement = () => {
     }
 
     // Validar contraseña
-    const passwordValidation = validatePassword(formData.password);
-    if (!passwordValidation.isValid) {
+    const passwordStrength = calculatePasswordStrength(formData.password);
+    if (passwordStrength.score < 75) {
       toast({
-        title: "Contraseña inválida",
-        description: `La contraseña debe contener: ${passwordValidation.errors.join(', ')}`,
+        title: "Contraseña insegura",
+        description: "La contraseña debe ser fuerte o excelente para continuar",
         variant: "destructive",
       });
       return;
@@ -304,7 +337,7 @@ const UserManagement = () => {
     return <div className="flex justify-center py-8">Cargando usuarios...</div>;
   }
 
-  const passwordValidation = validatePassword(formData.password);
+  const passwordStrength = calculatePasswordStrength(formData.password);
 
   return (
     <div className="space-y-6">
@@ -365,21 +398,66 @@ const UserManagement = () => {
                   placeholder="Contraseña segura"
                   required
                 />
-                {formData.password && !passwordValidation.isValid && (
-                  <Alert>
-                    <AlertCircle className="h-4 w-4" />
-                    <AlertDescription>
-                      La contraseña debe contener:
-                      <ul className="list-disc list-inside mt-1 text-sm">
-                        {passwordValidation.errors.map((error, index) => (
-                          <li key={index}>{error}</li>
-                        ))}
-                      </ul>
-                    </AlertDescription>
-                  </Alert>
-                )}
-                {formData.password && passwordValidation.isValid && (
-                  <p className="text-sm text-green-600">✓ Contraseña válida</p>
+                
+                {formData.password && (
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between">
+                      <span className="text-sm font-medium">Fortaleza de la contraseña:</span>
+                      <span className={`text-sm font-medium ${passwordStrength.color}`}>
+                        {passwordStrength.label}
+                      </span>
+                    </div>
+                    <Progress 
+                      value={passwordStrength.score} 
+                      className="h-2"
+                    />
+                    
+                    <div className="space-y-1">
+                      <div className="text-xs text-gray-600">Requisitos:</div>
+                      <div className="grid grid-cols-1 gap-1 text-xs">
+                        <div className="flex items-center gap-2">
+                          {passwordStrength.requirements.length ? (
+                            <Check className="w-3 h-3 text-green-600" />
+                          ) : (
+                            <X className="w-3 h-3 text-red-600" />
+                          )}
+                          <span>Mínimo 8 caracteres</span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          {passwordStrength.requirements.lowercase ? (
+                            <Check className="w-3 h-3 text-green-600" />
+                          ) : (
+                            <X className="w-3 h-3 text-red-600" />
+                          )}
+                          <span>Una letra minúscula</span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          {passwordStrength.requirements.uppercase ? (
+                            <Check className="w-3 h-3 text-green-600" />
+                          ) : (
+                            <X className="w-3 h-3 text-red-600" />
+                          )}
+                          <span>Una letra mayúscula</span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          {passwordStrength.requirements.numbers ? (
+                            <Check className="w-3 h-3 text-green-600" />
+                          ) : (
+                            <X className="w-3 h-3 text-red-600" />
+                          )}
+                          <span>Un número</span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          {passwordStrength.requirements.special ? (
+                            <Check className="w-3 h-3 text-green-600" />
+                          ) : (
+                            <X className="w-3 h-3 text-red-600" />
+                          )}
+                          <span>Un carácter especial</span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
                 )}
               </div>
               
@@ -415,7 +493,7 @@ const UserManagement = () => {
                 <Button 
                   onClick={handleCreateUser} 
                   className="flex-1"
-                  disabled={createLoading || !passwordValidation.isValid || !formData.email || !formData.full_name}
+                  disabled={createLoading || passwordStrength.score < 75 || !formData.email || !formData.full_name}
                 >
                   {createLoading ? "Creando..." : "Crear Usuario"}
                 </Button>

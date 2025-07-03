@@ -9,6 +9,8 @@ import {
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
+  SidebarTrigger,
+  SidebarHeader,
   useSidebar,
 } from '@/components/ui/sidebar';
 import { useNavigation } from './NavigationProvider';
@@ -54,10 +56,20 @@ const AppSidebar = () => {
 
   const visibleItems = navigationItems
     .filter(item => item.isVisible)
+    .filter(item => !['templates', 'pdf-templates'].includes(item.id)) // Remove templates and pdf-templates
     .sort((a, b) => a.sortOrder - b.sortOrder);
 
   return (
     <Sidebar className={isCollapsed ? "w-14" : "w-60"} collapsible="icon">
+      <SidebarHeader>
+        <div className="flex items-center justify-between p-2">
+          {!isCollapsed && (
+            <span className="text-lg font-semibold">Menu</span>
+          )}
+          <SidebarTrigger />
+        </div>
+      </SidebarHeader>
+      
       <SidebarContent>
         <SidebarGroup>
           <SidebarGroupContent>
