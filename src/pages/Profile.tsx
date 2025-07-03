@@ -4,19 +4,17 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { User, Mail, Phone, Building, Calendar, Camera, Save, Shield } from 'lucide-react';
+import { User, Mail, Phone, Building, Save, Shield } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { useUserRole } from '@/hooks/useUserRole';
 import { supabase } from '@/integrations/supabase/client';
+import ProfileImageUpload from '@/components/ProfileImageUpload';
 
 const Profile = () => {
   const { toast } = useToast();
   const { profile, isLoading } = useUserRole();
-  const [uploading, setUploading] = useState(false);
   const [saving, setSaving] = useState(false);
 
   const [formData, setFormData] = useState({
@@ -39,40 +37,6 @@ const Profile = () => {
     }
   }, [profile]);
 
-  const handleImageUpload = async (file: File) => {
-    try {
-      setUploading(true);
-      
-      const fileName = `${profile?.id}/${Date.now()}-${file.name}`;
-      
-      const { error: uploadError } = await supabase.storage
-        .from('profile-images')
-        .upload(fileName, file);
-
-      if (uploadError) throw uploadError;
-
-      const { data: { publicUrl } } = supabase.storage
-        .from('profile-images')
-        .getPublicUrl(fileName);
-
-      setFormData(prev => ({ ...prev, profile_image_url: publicUrl }));
-
-      toast({
-        title: "Éxito",
-        description: "Imagen de perfil subida correctamente",
-      });
-    } catch (error) {
-      console.error('Error uploading image:', error);
-      toast({
-        title: "Error",
-        description: "Error al subir la imagen de perfil",
-        variant: "destructive",
-      });
-    } finally {
-      setUploading(false);
-    }
-  };
-
   const handleSave = async () => {
     try {
       setSaving(true);
@@ -84,7 +48,6 @@ const Profile = () => {
           username: formData.username,
           phone: formData.phone,
           company: formData.company,
-          profile_image_url: formData.profile_image_url,
           updated_at: new Date().toISOString(),
         })
         .eq('id', profile?.id);
@@ -105,6 +68,10 @@ const Profile = () => {
     } finally {
       setSaving(false);
     }
+  };
+
+  const handleImageUpdate = (imageUrl: string) => {
+    setFormData(prev => ({ ...prev, profile_image_url: imageUrl }));
   };
 
   const getRoleBadgeColor = (role: string) => {
@@ -148,37 +115,15 @@ const Profile = () => {
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-6">
-            {/* Avatar Section */}
-            <div className="text-center space-y-4">
-              <Avatar className="w-24 h-24 mx-auto">
-                <AvatarImage src={formData.profile_image_url || undefined} />
-                <AvatarFallback className="text-lg">
-                  {formData.full_name?.split(' ').map(n => n[0]).join('') || 'U'}
-                </AvatarFallback>
-              </Avatar>
-              
-              <div className="space-y-2">
-                <Label htmlFor="profile-image" className="cursor-pointer">
-                  <div className="flex items-center justify-center gap-2 px-4 py-2 border border-dashed border-gray-300 rounded-lg hover:bg-gray-50">
-                    <Camera className="w-4 h-4" />
-                    <span className="text-sm">
-                      {uploading ? 'Subiendo...' : 'Cambiar Foto'}
-                    </span>
-                  </div>
-                  <Input
-                    id="profile-image"
-                    type="file"
-                    accept="image/*"
-                    className="hidden"
-                    onChange={(e) => {
-                      const file = e.target.files?.[0];
-                      if (file) handleImageUpload(file);
-                    }}
-                    disabled={uploading}
-                  />
-                </Label>
-              </div>
-            </div>
+            {/* Profile Image Upload */}
+            {profile && (
+              <ProfileImageUpload
+                userId={profile.id}
+                currentImageUrl={formData.profile_image_url}
+                fullName={formData.full_name}
+                onImageUpdate={handleImageUpdate}
+              />
+            )}
 
             <Separator />
 
