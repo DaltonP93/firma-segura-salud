@@ -7,6 +7,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
 import { Upload, FileText, Type, Calendar, Edit, Trash2, Save, Download } from 'lucide-react';
+import PDFViewer from './PDFViewer';
 
 export interface PDFField {
   id: string;
@@ -36,6 +37,7 @@ const PDFEditor = ({ onSave, onCancel, initialFields = [], mode = 'create' }: PD
   const [isDragging, setIsDragging] = useState(false);
   const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 });
   const [selectedTool, setSelectedTool] = useState<PDFField['type'] | null>(null);
+  const [pdfDimensions, setPdfDimensions] = useState({ width: 0, height: 0 });
   const canvasRef = useRef<HTMLDivElement>(null);
 
   const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -53,6 +55,10 @@ const PDFEditor = ({ onSave, onCancel, initialFields = [], mode = 'create' }: PD
         variant: "destructive",
       });
     }
+  };
+
+  const handlePDFLoadSuccess = (pdf: any) => {
+    console.log('PDF loaded successfully:', pdf);
   };
 
   const handleCanvasClick = (event: React.MouseEvent) => {
@@ -253,21 +259,24 @@ const PDFEditor = ({ onSave, onCancel, initialFields = [], mode = 'create' }: PD
                 {pdfFile ? (
                   <div
                     ref={canvasRef}
-                    className="relative bg-white shadow-lg rounded min-h-[500px] cursor-crosshair"
+                    className="relative bg-white shadow-lg rounded overflow-hidden cursor-crosshair"
                     onClick={handleCanvasClick}
                     onMouseMove={handleMouseMove}
                     onMouseUp={handleMouseUp}
                   >
-                    <div className="p-4 text-center text-gray-500 border-b">
-                      <FileText className="w-8 h-8 mx-auto mb-2" />
-                      <p>Vista previa del PDF: {pdfFile.name}</p>
-                      <p className="text-sm">Haz clic para agregar campos</p>
-                    </div>
+                    {/* PDF Viewer */}
+                    <PDFViewer
+                      file={pdfFile}
+                      onLoadSuccess={handlePDFLoadSuccess}
+                      className="min-h-[500px]"
+                      width={800}
+                    />
 
+                    {/* Field Overlays */}
                     {fields.map((field) => (
                       <div
                         key={field.id}
-                        className={`absolute border-2 bg-blue-100 bg-opacity-50 cursor-move select-none ${
+                        className={`absolute border-2 bg-blue-100 bg-opacity-50 cursor-move select-none z-10 ${
                           selectedField?.id === field.id ? 'border-blue-500' : 'border-blue-300'
                         }`}
                         style={{

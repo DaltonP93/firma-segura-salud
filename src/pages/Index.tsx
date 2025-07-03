@@ -59,7 +59,8 @@ export interface TemplateField {
 const Index = () => {
   const { user, signOut } = useAuth();
   const { toast } = useToast();
-  const [activeTab, setActiveTab] = useState('dashboard');
+  // Default to 'contracts' tab instead of 'dashboard' for document creation focus
+  const [activeTab, setActiveTab] = useState('contracts');
   const [showAuthModal, setShowAuthModal] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   
@@ -190,12 +191,12 @@ const Index = () => {
   const stats = getStatusStats();
 
   const tabItems = [
-    { value: 'dashboard', label: 'Dashboard', icon: FileText },
+    { value: 'contracts', label: 'Crear Documento', icon: Plus },
+    { value: 'documents', label: 'Documentos', icon: FileText },
     { value: 'templates', label: 'Templates', icon: Layers },
     { value: 'pdf-templates', label: 'PDF Templates', icon: FileText },
     { value: 'pdf-generator', label: 'PDF Docs', icon: Plus },
-    { value: 'contracts', label: 'Generar Nuevo', icon: Plus },
-    { value: 'documents', label: 'Documentos', icon: CheckCircle },
+    { value: 'dashboard', label: 'Dashboard', icon: CheckCircle },
     { value: 'admin', label: 'Admin', icon: Settings },
   ];
 
@@ -288,6 +289,43 @@ const Index = () => {
                 ))}
               </TabsList>
 
+              <TabsContent value="contracts">
+                <ContractForm 
+                  onSubmit={handleNewContract}
+                  templates={templates}
+                />
+              </TabsContent>
+
+              <TabsContent value="documents">
+                <DocumentManager 
+                  contracts={contracts} 
+                  onUpdateStatus={updateDocumentStatus}
+                />
+              </TabsContent>
+
+              <TabsContent value="templates">
+                <TemplateBuilder 
+                  templates={templates}
+                  onCreateTemplate={handleNewTemplate}
+                />
+              </TabsContent>
+
+              <TabsContent value="pdf-templates">
+                <PDFTemplateBuilder 
+                  templates={pdfTemplates}
+                  onCreateTemplate={handleNewPDFTemplate}
+                  onUpdateTemplate={handleUpdatePDFTemplate}
+                  onDeleteTemplate={handleDeletePDFTemplate}
+                />
+              </TabsContent>
+
+              <TabsContent value="pdf-generator">
+                <PDFDocumentGenerator 
+                  templates={pdfTemplates}
+                  onGenerateDocument={handleGeneratePDFDocument}
+                />
+              </TabsContent>
+
               <TabsContent value="dashboard" className="space-y-4 sm:space-y-6">
                 {/* Stats Cards */}
                 <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3 sm:gap-4 lg:gap-6">
@@ -359,8 +397,8 @@ const Index = () => {
                         <FileText className="mx-auto h-12 w-12 text-gray-400 mb-4" />
                         <h3 className="text-base sm:text-lg font-medium text-gray-900 mb-2">No hay documentos aún</h3>
                         <p className="text-sm sm:text-base text-gray-500 mb-4">Comienza creando plantillas y generando documentos</p>
-                        <Button onClick={() => setActiveTab('templates')} className="bg-primary hover:bg-primary/90">
-                          Crear Primera Plantilla
+                        <Button onClick={() => setActiveTab('contracts')} className="bg-primary hover:bg-primary/90">
+                          Crear Primer Documento
                         </Button>
                       </div>
                     ) : (
@@ -403,43 +441,6 @@ const Index = () => {
                     )}
                   </CardContent>
                 </Card>
-              </TabsContent>
-
-              <TabsContent value="templates">
-                <TemplateBuilder 
-                  templates={templates}
-                  onCreateTemplate={handleNewTemplate}
-                />
-              </TabsContent>
-
-              <TabsContent value="pdf-templates">
-                <PDFTemplateBuilder 
-                  templates={pdfTemplates}
-                  onCreateTemplate={handleNewPDFTemplate}
-                  onUpdateTemplate={handleUpdatePDFTemplate}
-                  onDeleteTemplate={handleDeletePDFTemplate}
-                />
-              </TabsContent>
-
-              <TabsContent value="pdf-generator">
-                <PDFDocumentGenerator 
-                  templates={pdfTemplates}
-                  onGenerateDocument={handleGeneratePDFDocument}
-                />
-              </TabsContent>
-
-              <TabsContent value="contracts">
-                <ContractForm 
-                  onSubmit={handleNewContract}
-                  templates={templates}
-                />
-              </TabsContent>
-
-              <TabsContent value="documents">
-                <DocumentManager 
-                  contracts={contracts} 
-                  onUpdateStatus={updateDocumentStatus}
-                />
               </TabsContent>
 
               <TabsContent value="admin">
