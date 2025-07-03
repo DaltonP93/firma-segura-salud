@@ -1,3 +1,4 @@
+
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { useUserRole } from '@/hooks/useUserRole';
 import { supabase } from '@/integrations/supabase/client';
@@ -100,35 +101,14 @@ export const NavigationProvider = ({ children }: NavigationProviderProps) => {
 
   const loadNavigationCustomization = async () => {
     try {
-      // Load customized navigation from database if user is admin
-      if (isAdmin) {
-        const { data: customization } = await supabase
-          .from('app_customization')
-          .select('*')
-          .eq('is_active', true)
-          .single();
-
-        if (customization) {
-          // Apply navigation customizations from database
-          // For now, we'll use the default items but this can be extended
-          const filteredItems = defaultNavigationItems.filter(item => {
-            if (item.roles) {
-              return item.roles.includes(profile?.role || 'user');
-            }
-            return true;
-          });
-          setNavigationItems(filteredItems);
+      // Filter items based on user role
+      const filteredItems = defaultNavigationItems.filter(item => {
+        if (item.roles) {
+          return item.roles.includes(profile?.role || 'user');
         }
-      } else {
-        // Filter items based on user role
-        const filteredItems = defaultNavigationItems.filter(item => {
-          if (item.roles) {
-            return item.roles.includes(profile?.role || 'user');
-          }
-          return true;
-        });
-        setNavigationItems(filteredItems);
-      }
+        return true;
+      });
+      setNavigationItems(filteredItems);
     } catch (error) {
       console.error('Error loading navigation customization:', error);
       // Fallback to default items

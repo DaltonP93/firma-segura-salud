@@ -73,21 +73,23 @@ const UserManagement = () => {
 
   const handleCreateUser = async () => {
     try {
-      // Create user in auth
-      const { data: authData, error: authError } = await supabase.auth.admin.createUser({
+      // First create the user via signup
+      const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
         email: formData.email,
         password: formData.password,
-        email_confirm: true,
-        user_metadata: {
-          full_name: formData.full_name,
-          username: formData.username,
+        options: {
+          emailRedirectTo: `${window.location.origin}/`,
+          data: {
+            full_name: formData.full_name,
+            username: formData.username,
+          },
         },
       });
 
-      if (authError) throw authError;
+      if (signUpError) throw signUpError;
 
-      // Update profile with additional data
-      if (authData.user) {
+      // If signup successful, update the profile with additional data
+      if (signUpData.user) {
         const { error: profileError } = await supabase
           .from('profiles')
           .update({
@@ -96,16 +98,24 @@ const UserManagement = () => {
             phone: formData.phone,
             company: formData.company,
             role: formData.role,
+            updated_at: new Date().toISOString(),
           })
-          .eq('id', authData.user.id);
+          .eq('id', signUpData.user.id);
 
-        if (profileError) throw profileError;
+        if (profileError) {
+          console.error('Profile update error:', profileError);
+          // Don't throw here as the user was created successfully
+          toast({
+            title: "Usuario creado",
+            description: "Usuario creado exitosamente. Algunos datos adicionales pueden necesitar ser actualizados manualmente.",
+          });
+        } else {
+          toast({
+            title: "Éxito",
+            description: "Usuario creado correctamente",
+          });
+        }
       }
-
-      toast({
-        title: "Éxito",
-        description: "Usuario creado correctamente",
-      });
 
       setIsCreateDialogOpen(false);
       resetForm();
@@ -132,6 +142,7 @@ const UserManagement = () => {
           phone: formData.phone,
           company: formData.company,
           role: formData.role,
+          updated_at: new Date().toISOString(),
         })
         .eq('id', selectedUser.id);
 
@@ -160,12 +171,17 @@ const UserManagement = () => {
     if (!confirm('¿Estás seguro de que quieres eliminar este usuario?')) return;
 
     try {
-      const { error } = await supabase.auth.admin.deleteUser(userId);
+      // We can only delete the profile, not the auth user due to RLS
+      const { error } = await supabase
+        .from('profiles')
+        .delete()
+        .eq('id', userId);
+
       if (error) throw error;
 
       toast({
         title: "Éxito",
-        description: "Usuario eliminado correctamente",
+        description: "Perfil de usuario eliminado correctamente",
       });
 
       fetchUsers();

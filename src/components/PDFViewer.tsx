@@ -31,16 +31,20 @@ const PDFViewer: React.FC<PDFViewerProps> = ({
   const [scale, setScale] = useState<number>(1.0);
   const [rotation, setRotation] = useState<number>(0);
   const [isLoading, setIsLoading] = useState<boolean>(true);
+  const [error, setError] = useState<string | null>(null);
 
   const onDocumentLoadSuccess = ({ numPages }: { numPages: number }) => {
+    console.log('PDF loaded successfully:', { numPages });
     setNumPages(numPages);
     setIsLoading(false);
+    setError(null);
     onLoadSuccess?.({ numPages });
   };
 
   const onDocumentLoadError = (error: Error) => {
     console.error('Error loading PDF:', error);
     setIsLoading(false);
+    setError(error.message);
     toast({
       title: "Error cargando PDF",
       description: "No se pudo cargar el archivo PDF. Verifica que sea un archivo válido.",
@@ -68,6 +72,27 @@ const PDFViewer: React.FC<PDFViewerProps> = ({
   const goToNextPage = () => {
     setPageNumber(prev => Math.min(prev + 1, numPages));
   };
+
+  if (error) {
+    return (
+      <div className={`flex flex-col items-center justify-center p-8 ${className}`}>
+        <div className="text-red-500 text-center">
+          <p className="font-semibold mb-2">Error al cargar el PDF</p>
+          <p className="text-sm text-gray-600">{error}</p>
+          <Button 
+            onClick={() => {
+              setError(null);
+              setIsLoading(true);
+            }}
+            className="mt-4"
+            variant="outline"
+          >
+            Reintentar
+          </Button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className={`flex flex-col ${className}`}>
@@ -130,16 +155,34 @@ const PDFViewer: React.FC<PDFViewerProps> = ({
               <span>Cargando PDF...</span>
             </div>
           }
+          error={
+            <div className="flex items-center justify-center p-8 text-red-500">
+              <span>Error al cargar el PDF</span>
+            </div>
+          }
         >
-          <Page
-            pageNumber={pageNumber}
-            scale={scale}
-            rotate={rotation}
-            width={width}
-            height={height}
-            renderTextLayer={false}
-            renderAnnotationLayer={false}
-          />
+          {!isLoading && !error && (
+            <Page
+              pageNumber={pageNumber}
+              scale={scale}
+              rotate={rotation}
+              width={width}
+              height={height}
+              renderTextLayer={false}
+              renderAnnotationLayer={false}
+              loading={
+                <div className="flex items-center justify-center p-4">
+                  <Loader2 className="w-6 h-6 animate-spin mr-2" />
+                  <span>Cargando página...</span>
+                </div>
+              }
+              error={
+                <div className="flex items-center justify-center p-4 text-red-500">
+                  <span>Error al cargar la página</span>
+                </div>
+              }
+            />
+          )}
         </Document>
       </div>
     </div>

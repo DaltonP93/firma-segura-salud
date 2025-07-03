@@ -3,22 +3,19 @@ import React, { useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
-import { Palette, Building, FileText, ArrowLeft, Users, Settings } from 'lucide-react';
+import { Palette, Building, FileText, Users, Settings } from 'lucide-react';
 import { useUserRole } from '@/hooks/useUserRole';
-import { useNavigate } from 'react-router-dom';
 import { useSupabaseData } from '@/hooks/useSupabaseData';
 import CustomizationManager from './CustomizationManager';
 import CompanyTypesManager from './CompanyTypesManager';
 import SectionCustomizer from './SectionCustomizer';
 import UserManagement from './UserManagement';
-import AdminHeader from './AdminHeader';
 import AdminOverviewStats from './AdminOverviewStats';
 import AdminQuickActions from './AdminQuickActions';
 import AdminRecentDocuments from './AdminRecentDocuments';
 
 const AdminPanel = () => {
   const { isAdmin, isLoading } = useUserRole();
-  const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState('overview');
   const { contracts, templates, pdfTemplates } = useSupabaseData();
 
@@ -40,12 +37,6 @@ const AdminPanel = () => {
               No tienes permisos para acceder al panel de administración
             </CardDescription>
           </CardHeader>
-          <CardContent className="text-center">
-            <Button onClick={() => navigate('/dashboard')} variant="outline">
-              <ArrowLeft className="w-4 h-4 mr-2" />
-              Volver al Dashboard
-            </Button>
-          </CardContent>
         </Card>
       </div>
     );
@@ -53,7 +44,17 @@ const AdminPanel = () => {
 
   return (
     <div className="space-y-6">
-      <AdminHeader />
+      {/* Header without Volver button */}
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-3xl font-bold text-gray-900">Panel de Administración</h1>
+          <p className="text-gray-600">Gestiona la personalización y configuración del sistema</p>
+        </div>
+        <div className="flex items-center gap-2">
+          <Settings className="w-5 h-5 text-gray-500" />
+          <span className="text-sm text-gray-500">Admin</span>
+        </div>
+      </div>
 
       <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
         <TabsList className="grid w-full grid-cols-5">
