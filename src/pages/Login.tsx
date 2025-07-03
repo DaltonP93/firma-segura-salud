@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
@@ -48,6 +47,7 @@ const Login = () => {
     }
 
     setLoading(true);
+    console.log('Attempting to sign in:', { email });
     
     try {
       const { error } = await signInWithEmail(email, password);
@@ -59,9 +59,11 @@ const Login = () => {
         if (error.message.includes('Invalid login credentials')) {
           errorMessage = "Credenciales incorrectas. Verifica tu email y contraseña";
         } else if (error.message.includes('Email not confirmed')) {
-          errorMessage = "Por favor confirma tu email antes de iniciar sesión";
+          errorMessage = "Por favor confirma tu email antes de iniciar sesión. Revisa tu bandeja de entrada.";
         } else if (error.message.includes('Too many requests')) {
           errorMessage = "Demasiados intentos. Espera un momento e intenta de nuevo";
+        } else if (error.message.includes('Invalid email')) {
+          errorMessage = "El formato del email no es válido";
         }
         
         toast({
@@ -70,6 +72,7 @@ const Login = () => {
           variant: "destructive",
         });
       } else {
+        console.log('Sign in successful');
         toast({
           title: "¡Bienvenido!",
           description: "Has iniciado sesión exitosamente",
@@ -110,6 +113,7 @@ const Login = () => {
     }
 
     setLoading(true);
+    console.log('Attempting to sign up:', { email, fullName });
     
     try {
       const { error } = await signUpWithEmail(email, password, fullName);
@@ -118,12 +122,16 @@ const Login = () => {
         console.error('Sign up error:', error);
         let errorMessage = "Error al crear la cuenta";
         
-        if (error.message.includes('already registered')) {
-          errorMessage = "Este email ya está registrado. Intenta iniciar sesión";
+        if (error.message.includes('User already registered')) {
+          errorMessage = "Este email ya está registrado. Intenta iniciar sesión o usar otro email";
         } else if (error.message.includes('Password should be')) {
           errorMessage = "La contraseña debe tener al menos 6 caracteres";
         } else if (error.message.includes('Invalid email')) {
           errorMessage = "El formato del email no es válido";
+        } else if (error.message.includes('Unable to validate email address')) {
+          errorMessage = "No se pudo validar la dirección de email";
+        } else if (error.message.includes('Email rate limit exceeded')) {
+          errorMessage = "Se ha excedido el límite de emails. Intenta de nuevo más tarde";
         }
         
         toast({
@@ -132,9 +140,11 @@ const Login = () => {
           variant: "destructive",
         });
       } else {
+        console.log('Sign up successful');
         toast({
           title: "¡Cuenta creada!",
-          description: "Revisa tu email para confirmar tu cuenta",
+          description: "Revisa tu email para confirmar tu cuenta antes de iniciar sesión",
+          duration: 6000,
         });
         resetForm();
       }
@@ -162,6 +172,7 @@ const Login = () => {
     }
 
     setResetLoading(true);
+    console.log('Attempting password reset for:', resetEmail);
     
     try {
       const { error } = await supabase.auth.resetPasswordForEmail(resetEmail, {
@@ -169,12 +180,20 @@ const Login = () => {
       });
       
       if (error) {
+        console.error('Password reset error:', error);
+        let errorMessage = "Error al enviar email de recuperación";
+        
+        if (error.message.includes('Email rate limit exceeded')) {
+          errorMessage = "Se ha excedido el límite de emails. Intenta de nuevo más tarde";
+        }
+        
         toast({
           title: "Error",
-          description: "Error al enviar email de recuperación",
+          description: errorMessage,
           variant: "destructive",
         });
       } else {
+        console.log('Password reset email sent successfully');
         toast({
           title: "Email enviado",
           description: "Revisa tu email para restablecer tu contraseña",
@@ -182,6 +201,7 @@ const Login = () => {
         setResetEmail('');
       }
     } catch (err) {
+      console.error('Unexpected error:', err);
       toast({
         title: "Error inesperado",
         description: "Ocurrió un error inesperado",
@@ -193,6 +213,7 @@ const Login = () => {
   };
 
   const handleSocialLogin = async (provider: 'google' | 'github' | 'facebook' | 'twitter') => {
+    console.log('Attempting social login with:', provider);
     try {
       const { error } = await supabase.auth.signInWithOAuth({
         provider,
@@ -202,6 +223,7 @@ const Login = () => {
       });
       
       if (error) {
+        console.error('Social login error:', error);
         toast({
           title: "Error",
           description: `Error al iniciar sesión con ${provider}`,
@@ -209,6 +231,7 @@ const Login = () => {
         });
       }
     } catch (err) {
+      console.error('Unexpected social login error:', err);
       toast({
         title: "Error inesperado",
         description: "Ocurrió un error inesperado",

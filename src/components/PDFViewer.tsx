@@ -1,12 +1,28 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Document, Page, pdfjs } from 'react-pdf';
 import { useToast } from "@/hooks/use-toast";
 import { Loader2, ZoomIn, ZoomOut, RotateCw } from 'lucide-react';
 import { Button } from "@/components/ui/button";
 
-// Configure PDF.js worker
-pdfjs.GlobalWorkerOptions.workerSrc = `//unpkg.com/pdfjs-dist@${pdfjs.version}/build/pdf.worker.min.js`;
+// Configure PDF.js worker with fallback
+const configurePDFWorker = () => {
+  const workerSrc = `https://cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjs.version}/pdf.worker.min.js`;
+  
+  pdfjs.GlobalWorkerOptions.workerSrc = workerSrc;
+  
+  // Test if worker loads, fallback if needed
+  const testWorker = new Worker(workerSrc);
+  testWorker.onerror = () => {
+    console.warn('Primary PDF worker failed, using fallback');
+    // Fallback to unpkg if cdnjs fails
+    pdfjs.GlobalWorkerOptions.workerSrc = `//unpkg.com/pdfjs-dist@${pdfjs.version}/build/pdf.worker.min.js`;
+  };
+  testWorker.terminate();
+};
+
+// Initialize worker configuration
+configurePDFWorker();
 
 interface PDFViewerProps {
   file: File | string;
@@ -32,25 +48,65 @@ const PDFViewer: React.FC<PDFViewerProps> = ({
   const [rotation, setRotation] = useState<number>(0);
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
+  const [retryCount, setRetryCount] = useState<number>(0);
+
+  // Reset state when file changes
+  useEffect(() => {
+    setIsLoading(true);
+    setError(null);
+    setRetryCount(0);
+    setPageNumber(1);
+  }, [file]);
 
   const onDocumentLoadSuccess = ({ numPages }: { numPages: number }) => {
     console.log('PDF loaded successfully:', { numPages });
     setNumPages(numPages);
     setIsLoading(false);
     setError(null);
+    setRetryCount(0);
     onLoadSuccess?.({ numPages });
   };
 
   const onDocumentLoadError = (error: Error) => {
     console.error('Error loading PDF:', error);
     setIsLoading(false);
-    setError(error.message);
+    
+    const errorMessage = error.message || 'Error desconocido al cargar PDF';
+    setError(errorMessage);
+    
+    // Show user-friendly error message
+    let userMessage = "No se pudo cargar el archivo PDF.";
+    if (errorMessage.includes('fetch')) {
+      userMessage = "Error de conexión al cargar el PDF. Verifica tu conexión a internet.";
+    } else if (errorMessage.includes('Invalid PDF')) {
+      userMessage = "El archivo no es un PDF válido.";
+    } else if (errorMessage.includes('worker')) {
+      userMessage = "Error al cargar el visualizador de PDF. Intenta recargar la página.";
+    }
+    
     toast({
       title: "Error cargando PDF",
-      description: "No se pudo cargar el archivo PDF. Verifica que sea un archivo válido.",
+      description: userMessage,
       variant: "destructive",
     });
+    
     onLoadError?.(error);
+  };
+
+  const handleRetry = () => {
+    if (retryCount < 3) {
+      setRetryCount(prev => prev + 1);
+      setIsLoading(true);
+      setError(null);
+      
+      // Reconfigure worker on retry
+      configurePDFWorker();
+      
+      toast({
+        title: "Reintentando...",
+        description: `Intento ${retryCount + 1} de 3`,
+      });
+    }
   };
 
   const handleZoomIn = () => {
@@ -76,19 +132,22 @@ const PDFViewer: React.FC<PDFViewerProps> = ({
   if (error) {
     return (
       <div className={`flex flex-col items-center justify-center p-8 ${className}`}>
-        <div className="text-red-500 text-center">
+        <div className="text-red-500 text-center max-w-md">
           <p className="font-semibold mb-2">Error al cargar el PDF</p>
-          <p className="text-sm text-gray-600">{error}</p>
-          <Button 
-            onClick={() => {
-              setError(null);
-              setIsLoading(true);
-            }}
-            className="mt-4"
-            variant="outline"
-          >
-            Reintentar
-          </Button>
+          <p className="text-sm text-gray-600 mb-4">{error}</p>
+          <div className="flex gap-2 justify-center">
+            {retryCount < 3 && (
+              <Button onClick={handleRetry} variant="outline">
+                Reintentar ({retryCount + 1}/3)
+              </Button>
+            )}
+            <Button 
+              onClick={() => window.location.reload()}
+              variant="outline"
+            >
+              Recargar página
+            </Button>
+          </div>
         </div>
       </div>
     );

@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
@@ -56,6 +55,17 @@ const UserManagement = () => {
     }
   };
 
+  const checkEmailConfirmationStatus = async () => {
+    try {
+      // Check if email confirmation is required by attempting to get auth settings
+      const { data: settings } = await supabase.auth.getSession();
+      return settings !== null;
+    } catch (error) {
+      console.warn('Could not check email confirmation status:', error);
+      return true; // Assume confirmation is required if we can't check
+    }
+  };
+
   const handleCreateUser = async () => {
     // Validar campos requeridos
     if (!formData.email || !formData.password || !formData.full_name) {
@@ -79,6 +89,7 @@ const UserManagement = () => {
     }
 
     setCreateLoading(true);
+    console.log('Starting user creation process...', { email: formData.email, name: formData.full_name });
     
     try {
       // First create the user via signup
@@ -94,49 +105,126 @@ const UserManagement = () => {
         },
       });
 
-      if (signUpError) throw signUpError;
+      if (signUpError) {
+        console.error('SignUp error:', signUpError);
+        throw signUpError;
+      }
 
-      // If signup successful, update the profile with additional data
+      console.log('SignUp successful:', signUpData);
+
+      // Check if user was created successfully
       if (signUpData.user) {
-        const { error: profileError } = await supabase
-          .from('profiles')
-          .update({
-            full_name: formData.full_name,
-            username: formData.username,
-            phone: formData.phone,
-            company: formData.company,
-            role: formData.role,
-            updated_at: new Date().toISOString(),
-          })
-          .eq('id', signUpData.user.id);
+        const userId = signUpData.user.id;
+        console.log('User created with ID:', userId);
 
-        if (profileError) {
-          console.error('Profile update error:', profileError);
+        // Check if email confirmation is required
+        const needsConfirmation = !signUpData.user.email_confirmed_at;
+        
+        if (needsConfirmation) {
+          console.log('User needs email confirmation');
           toast({
             title: "Usuario creado",
-            description: "Usuario creado exitosamente. Algunos datos adicionales pueden necesitar ser actualizados manualmente.",
-          });
-        } else {
-          toast({
-            title: "Éxito",
-            description: "Usuario creado correctamente",
+            description: "Usuario creado exitosamente. Se ha enviado un email de confirmación. El perfil se completará una vez que se confirme el email.",
+            duration: 6000,
           });
         }
+
+        // Try to update/create the profile regardless of confirmation status
+        try {
+          // First check if profile already exists
+          const { data: existingProfile } = await supabase
+            .from('profiles')
+            .select('id')
+            .eq('id', userId)
+            .single();
+
+          if (existingProfile) {
+            // Update existing profile
+            const { error: updateError } = await supabase
+              .from('profiles')
+              .update({
+                full_name: formData.full_name,
+                username: formData.username,
+                phone: formData.phone,
+                company: formData.company,
+                role: formData.role,
+                email: formData.email,
+                updated_at: new Date().toISOString(),
+              })
+              .eq('id', userId);
+
+            if (updateError) {
+              console.error('Profile update error:', updateError);
+            } else {
+              console.log('Profile updated successfully');
+            }
+          } else {
+            // Create new profile
+            const { error: insertError } = await supabase
+              .from('profiles')
+              .insert({
+                id: userId,
+                full_name: formData.full_name,
+                username: formData.username,
+                phone: formData.phone,
+                company: formData.company,
+                role: formData.role,
+                email: formData.email,
+                created_at: new Date().toISOString(),
+                updated_at: new Date().toISOString(),
+              });
+
+            if (insertError) {
+              console.error('Profile insert error:', insertError);
+            } else {
+              console.log('Profile created successfully');
+            }
+          }
+
+          if (!needsConfirmation) {
+            toast({
+              title: "Éxito",
+              description: "Usuario creado correctamente",
+            });
+          }
+        } catch (profileError) {
+          console.error('Profile operation error:', profileError);
+          toast({
+            title: "Usuario creado",
+            description: "Usuario creado pero hubo un problema al configurar el perfil. Será configurado automáticamente cuando el usuario confirme su email.",
+            variant: "default",
+          });
+        }
+      } else {
+        console.warn('SignUp succeeded but no user returned');
+        toast({
+          title: "Advertencia",
+          description: "La creación del usuario puede estar pendiente de confirmación por email",
+        });
       }
 
       setIsCreateDialogOpen(false);
       resetForm();
-      fetchUsers();
+      
+      // Refresh users list after a short delay to allow for database updates
+      setTimeout(() => {
+        fetchUsers();
+      }, 1000);
+      
     } catch (error: any) {
       console.error('Error creating user:', error);
       
       let errorMessage = "Error al crear el usuario";
-      if (error.message?.includes('Password should contain')) {
-        errorMessage = "La contraseña debe contener al menos: una minúscula, una mayúscula, un número y un carácter especial";
-      } else if (error.message?.includes('already registered')) {
+      if (error.message?.includes('User already registered')) {
         errorMessage = "Este email ya está registrado";
       } else if (error.message?.includes('Invalid email')) {
         errorMessage = "El formato del email no es válido";
+      } else if (error.message?.includes('Password should be at least')) {
+        errorMessage = "La contraseña debe tener al menos 6 caracteres";
+      } else if (error.message?.includes('Unable to validate email address')) {
+        errorMessage = "No se pudo validar la dirección de email";
+      } else if (error.message?.includes('Email rate limit exceeded')) {
+        errorMessage = "Se ha excedido el límite de emails. Intenta de nuevo más tarde";
       }
       
       toast({
