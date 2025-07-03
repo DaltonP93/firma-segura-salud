@@ -15,17 +15,21 @@ export type Database = {
           app_subtitle: string | null
           app_title: string | null
           background_image_url: string | null
+          button_style: string | null
+          card_shadow_style: string | null
           company_type_id: string | null
           created_at: string | null
           created_by: string | null
           custom_css: string | null
           font_family: string | null
           footer_text: string | null
+          header_background_color: string | null
           id: string
           is_active: boolean | null
           logo_url: string | null
           primary_color: string | null
           secondary_color: string | null
+          sidebar_background_color: string | null
           theme_name: string
           updated_at: string | null
           welcome_message: string | null
@@ -35,17 +39,21 @@ export type Database = {
           app_subtitle?: string | null
           app_title?: string | null
           background_image_url?: string | null
+          button_style?: string | null
+          card_shadow_style?: string | null
           company_type_id?: string | null
           created_at?: string | null
           created_by?: string | null
           custom_css?: string | null
           font_family?: string | null
           footer_text?: string | null
+          header_background_color?: string | null
           id?: string
           is_active?: boolean | null
           logo_url?: string | null
           primary_color?: string | null
           secondary_color?: string | null
+          sidebar_background_color?: string | null
           theme_name?: string
           updated_at?: string | null
           welcome_message?: string | null
@@ -55,17 +63,21 @@ export type Database = {
           app_subtitle?: string | null
           app_title?: string | null
           background_image_url?: string | null
+          button_style?: string | null
+          card_shadow_style?: string | null
           company_type_id?: string | null
           created_at?: string | null
           created_by?: string | null
           custom_css?: string | null
           font_family?: string | null
           footer_text?: string | null
+          header_background_color?: string | null
           id?: string
           is_active?: boolean | null
           logo_url?: string | null
           primary_color?: string | null
           secondary_color?: string | null
+          sidebar_background_color?: string | null
           theme_name?: string
           updated_at?: string | null
           welcome_message?: string | null
@@ -346,8 +358,10 @@ export type Database = {
           full_name: string | null
           id: string
           phone: string | null
+          profile_image_url: string | null
           role: string | null
           updated_at: string | null
+          username: string | null
         }
         Insert: {
           company?: string | null
@@ -356,8 +370,10 @@ export type Database = {
           full_name?: string | null
           id: string
           phone?: string | null
+          profile_image_url?: string | null
           role?: string | null
           updated_at?: string | null
+          username?: string | null
         }
         Update: {
           company?: string | null
@@ -366,8 +382,10 @@ export type Database = {
           full_name?: string | null
           id?: string
           phone?: string | null
+          profile_image_url?: string | null
           role?: string | null
           updated_at?: string | null
+          username?: string | null
         }
         Relationships: []
       }
@@ -435,6 +453,16 @@ export type Database = {
       generate_document_number: {
         Args: Record<PropertyKey, never>
         Returns: string
+      }
+      get_user_by_username_or_email: {
+        Args: { identifier: string }
+        Returns: {
+          user_id: string
+          email: string
+          username: string
+          full_name: string
+          role: string
+        }[]
       }
     }
     Enums: {

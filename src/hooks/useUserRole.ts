@@ -13,7 +13,7 @@ export const useUserRole = () => {
       
       const { data, error } = await supabase
         .from('profiles')
-        .select('role, full_name, email')
+        .select('role, full_name, email, username, phone, company, profile_image_url')
         .eq('id', user.id)
         .single();
       

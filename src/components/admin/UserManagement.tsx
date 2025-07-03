@@ -6,8 +6,9 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { useToast } from "@/hooks/use-toast";
-import { Search, Plus, Edit, Trash2, UserCheck, UserX } from 'lucide-react';
+import { Search, Plus, Edit, Trash2, UserCheck, UserX, Mail, Phone, Building } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useUserRole } from '@/hooks/useUserRole';
 
@@ -15,9 +16,11 @@ interface UserProfile {
   id: string;
   email: string;
   full_name: string;
+  username: string;
   role: string;
   company: string;
   phone: string;
+  profile_image_url: string;
   created_at: string;
   updated_at: string;
 }
@@ -83,6 +86,7 @@ const UserManagement = () => {
   const filteredUsers = users.filter(user => {
     const matchesSearch = user.full_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          user.email?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                         user.username?.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          user.company?.toLowerCase().includes(searchTerm.toLowerCase());
     
     const matchesRole = selectedRole === 'all' || user.role === selectedRole;
@@ -116,6 +120,15 @@ const UserManagement = () => {
     }
   };
 
+  const getInitials = (name: string) => {
+    return name
+      ?.split(' ')
+      .map(word => word.charAt(0))
+      .join('')
+      .toUpperCase()
+      .slice(0, 2) || '??';
+  };
+
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-[400px]">
@@ -139,7 +152,7 @@ const UserManagement = () => {
                 <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
                 <Input
                   id="search"
-                  placeholder="Buscar por nombre, email o empresa..."
+                  placeholder="Buscar por nombre, email, usuario o empresa..."
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
                   className="pl-10"
@@ -196,14 +209,14 @@ const UserManagement = () => {
             </Card>
           </div>
 
-          {/* Users Table */}
+          {/* Enhanced Users Table */}
           <div className="border rounded-lg overflow-hidden">
             <div className="overflow-x-auto">
               <table className="w-full">
                 <thead className="bg-gray-50">
                   <tr>
                     <th className="px-4 py-3 text-left text-sm font-medium text-gray-500">Usuario</th>
-                    <th className="px-4 py-3 text-left text-sm font-medium text-gray-500">Email</th>
+                    <th className="px-4 py-3 text-left text-sm font-medium text-gray-500">Contacto</th>
                     <th className="px-4 py-3 text-left text-sm font-medium text-gray-500">Empresa</th>
                     <th className="px-4 py-3 text-left text-sm font-medium text-gray-500">Rol</th>
                     <th className="px-4 py-3 text-left text-sm font-medium text-gray-500">Fecha Registro</th>
@@ -214,18 +227,44 @@ const UserManagement = () => {
                   {filteredUsers.map((user) => (
                     <tr key={user.id} className="hover:bg-gray-50">
                       <td className="px-4 py-4">
-                        <div>
-                          <div className="text-sm font-medium text-gray-900">
-                            {user.full_name || 'Sin nombre'}
+                        <div className="flex items-center gap-3">
+                          <Avatar className="h-10 w-10">
+                            <AvatarImage src={user.profile_image_url} alt={user.full_name} />
+                            <AvatarFallback className="bg-primary/10 text-primary">
+                              {getInitials(user.full_name)}
+                            </AvatarFallback>
+                          </Avatar>
+                          <div>
+                            <div className="text-sm font-medium text-gray-900">
+                              {user.full_name || 'Sin nombre'}
+                            </div>
+                            {user.username && (
+                              <div className="text-sm text-gray-500 flex items-center gap-1">
+                                <span>@{user.username}</span>
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      </td>
+                      <td className="px-4 py-4">
+                        <div className="space-y-1">
+                          <div className="text-sm text-gray-900 flex items-center gap-2">
+                            <Mail className="w-3 h-3 text-gray-400" />
+                            {user.email}
                           </div>
                           {user.phone && (
-                            <div className="text-sm text-gray-500">{user.phone}</div>
+                            <div className="text-sm text-gray-500 flex items-center gap-2">
+                              <Phone className="w-3 h-3 text-gray-400" />
+                              {user.phone}
+                            </div>
                           )}
                         </div>
                       </td>
-                      <td className="px-4 py-4 text-sm text-gray-900">{user.email}</td>
-                      <td className="px-4 py-4 text-sm text-gray-900">
-                        {user.company || 'No especificada'}
+                      <td className="px-4 py-4">
+                        <div className="text-sm text-gray-900 flex items-center gap-2">
+                          <Building className="w-3 h-3 text-gray-400" />
+                          {user.company || 'No especificada'}
+                        </div>
                       </td>
                       <td className="px-4 py-4">
                         <Badge className={getRoleBadgeColor(user.role || 'user')}>

@@ -7,7 +7,7 @@ import { Label } from '@/components/ui/label';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useAuth } from '@/hooks/useAuth';
 import { useToast } from '@/hooks/use-toast';
-import { Mail, Lock, User, Eye, EyeOff, Loader2 } from 'lucide-react';
+import { Mail, Lock, User, Eye, EyeOff, Loader2, AtSign } from 'lucide-react';
 
 interface AuthModalProps {
   isOpen: boolean;
@@ -18,21 +18,25 @@ const AuthModal = ({ isOpen, onClose }: AuthModalProps) => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [fullName, setFullName] = useState('');
+  const [username, setUsername] = useState('');
+  const [loginIdentifier, setLoginIdentifier] = useState('');
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
-  const { signInWithEmail, signUpWithEmail } = useAuth();
+  const { signInWithEmail, signInWithUsername, signUpWithEmail } = useAuth();
   const { toast } = useToast();
 
   const resetForm = () => {
     setEmail('');
     setPassword('');
     setFullName('');
+    setUsername('');
+    setLoginIdentifier('');
     setShowPassword(false);
   };
 
   const handleSignIn = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!email || !password) {
+    if (!loginIdentifier || !password) {
       toast({
         title: "Campos requeridos",
         description: "Por favor completa todos los campos",
@@ -44,14 +48,18 @@ const AuthModal = ({ isOpen, onClose }: AuthModalProps) => {
     setLoading(true);
     
     try {
-      const { error } = await signInWithEmail(email, password);
+      // Determine if identifier is email or username
+      const isEmail = loginIdentifier.includes('@');
+      const { error } = isEmail 
+        ? await signInWithEmail(loginIdentifier, password)
+        : await signInWithUsername(loginIdentifier, password);
       
       if (error) {
         console.error('Sign in error:', error);
         let errorMessage = "Error al iniciar sesión";
         
-        if (error.message.includes('Invalid login credentials')) {
-          errorMessage = "Credenciales incorrectas. Verifica tu email y contraseña";
+        if (error.message.includes('Invalid login credentials') || error.message.includes('Usuario no encontrado')) {
+          errorMessage = "Credenciales incorrectas. Verifica tu email/usuario y contraseña";
         } else if (error.message.includes('Email not confirmed')) {
           errorMessage = "Por favor confirma tu email antes de iniciar sesión";
         } else if (error.message.includes('Too many requests')) {
@@ -88,7 +96,7 @@ const AuthModal = ({ isOpen, onClose }: AuthModalProps) => {
     if (!email || !password || !fullName) {
       toast({
         title: "Campos requeridos",
-        description: "Por favor completa todos los campos",
+        description: "Por favor completa todos los campos requeridos",
         variant: "destructive",
       });
       return;
@@ -106,7 +114,7 @@ const AuthModal = ({ isOpen, onClose }: AuthModalProps) => {
     setLoading(true);
     
     try {
-      const { error } = await signUpWithEmail(email, password, fullName);
+      const { error } = await signUpWithEmail(email, password, fullName, username || undefined);
       
       if (error) {
         console.error('Sign up error:', error);
@@ -163,15 +171,15 @@ const AuthModal = ({ isOpen, onClose }: AuthModalProps) => {
           <TabsContent value="signin" className="space-y-4">
             <form onSubmit={handleSignIn} className="space-y-4">
               <div className="space-y-2">
-                <Label htmlFor="signin-email">Email</Label>
+                <Label htmlFor="signin-identifier">Email o Usuario</Label>
                 <div className="relative">
-                  <Mail className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
+                  <AtSign className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
                   <Input
-                    id="signin-email"
-                    type="email"
-                    placeholder="tu@email.com"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
+                    id="signin-identifier"
+                    type="text"
+                    placeholder="tu@email.com o tuusuario"
+                    value={loginIdentifier}
+                    onChange={(e) => setLoginIdentifier(e.target.value)}
                     className="pl-10"
                     required
                     disabled={loading}
@@ -220,7 +228,7 @@ const AuthModal = ({ isOpen, onClose }: AuthModalProps) => {
           <TabsContent value="signup" className="space-y-4">
             <form onSubmit={handleSignUp} className="space-y-4">
               <div className="space-y-2">
-                <Label htmlFor="signup-name">Nombre Completo</Label>
+                <Label htmlFor="signup-name">Nombre Completo *</Label>
                 <div className="relative">
                   <User className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
                   <Input
@@ -235,9 +243,25 @@ const AuthModal = ({ isOpen, onClose }: AuthModalProps) => {
                   />
                 </div>
               </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="signup-username">Usuario (opcional)</Label>
+                <div className="relative">
+                  <AtSign className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
+                  <Input
+                    id="signup-username"
+                    type="text"
+                    placeholder="usuario_único"
+                    value={username}
+                    onChange={(e) => setUsername(e.target.value)}
+                    className="pl-10"
+                    disabled={loading}
+                  />
+                </div>
+              </div>
               
               <div className="space-y-2">
-                <Label htmlFor="signup-email">Email</Label>
+                <Label htmlFor="signup-email">Email *</Label>
                 <div className="relative">
                   <Mail className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
                   <Input
@@ -255,7 +279,7 @@ const AuthModal = ({ isOpen, onClose }: AuthModalProps) => {
               
               <div className="space-y-2">
                 <Label htmlFor="signup-password">
-                  Contraseña <span className="text-sm text-gray-500">(mínimo 6 caracteres)</span>
+                  Contraseña * <span className="text-sm text-gray-500">(mínimo 6 caracteres)</span>
                 </Label>
                 <div className="relative">
                   <Lock className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
