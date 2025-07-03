@@ -6,7 +6,6 @@ import {
   SidebarContent,
   SidebarGroup,
   SidebarGroupContent,
-  SidebarGroupLabel,
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
@@ -20,7 +19,8 @@ import {
   Settings,
   Plus,
   Eye,
-  PenTool
+  PenTool,
+  User
 } from 'lucide-react';
 
 const iconMap = {
@@ -31,6 +31,7 @@ const iconMap = {
   'plus': Plus,
   'eye': Eye,
   'pen-tool': PenTool,
+  'user': User,
 };
 
 const AppSidebar = () => {
@@ -59,9 +60,6 @@ const AppSidebar = () => {
     <Sidebar className={isCollapsed ? "w-14" : "w-60"} collapsible="icon">
       <SidebarContent>
         <SidebarGroup>
-          <SidebarGroupLabel className={isCollapsed ? "sr-only" : ""}>
-            Navegación Principal
-          </SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
               {visibleItems.map((item) => {

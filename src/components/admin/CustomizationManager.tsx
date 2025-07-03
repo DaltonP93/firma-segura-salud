@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -8,7 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
 import { Separator } from "@/components/ui/separator";
-import { Save, Eye, Plus, Palette, Monitor, Smartphone } from 'lucide-react';
+import { Save, Eye, Plus, Palette, Monitor, Smartphone, Upload, X } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { usePersonalization } from '@/components/personalization/PersonalizationProvider';
@@ -50,6 +51,7 @@ const CustomizationManager = () => {
   const [isEditing, setIsEditing] = useState(false);
   const [loading, setLoading] = useState(true);
   const [previewMode, setPreviewMode] = useState(false);
+  const [uploading, setUploading] = useState({ background: false, logo: false });
 
   const [formData, setFormData] = useState({
     company_type_id: '',
@@ -97,6 +99,45 @@ const CustomizationManager = () => {
       });
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleFileUpload = async (file: File, type: 'background' | 'logo') => {
+    try {
+      setUploading(prev => ({ ...prev, [type]: true }));
+      
+      const bucket = type === 'background' ? 'background-images' : 'company-icons';
+      const fileName = `${Date.now()}-${file.name}`;
+      
+      const { error: uploadError } = await supabase.storage
+        .from(bucket)
+        .upload(fileName, file);
+
+      if (uploadError) throw uploadError;
+
+      const { data: { publicUrl } } = supabase.storage
+        .from(bucket)
+        .getPublicUrl(fileName);
+
+      if (type === 'background') {
+        setFormData(prev => ({ ...prev, background_image_url: publicUrl }));
+      } else {
+        setFormData(prev => ({ ...prev, logo_url: publicUrl }));
+      }
+
+      toast({
+        title: "Éxito",
+        description: `${type === 'background' ? 'Imagen de fondo' : 'Logo'} subido correctamente`,
+      });
+    } catch (error) {
+      console.error('Error uploading file:', error);
+      toast({
+        title: "Error",
+        description: `Error al subir ${type === 'background' ? 'la imagen de fondo' : 'el logo'}`,
+        variant: "destructive",
+      });
+    } finally {
+      setUploading(prev => ({ ...prev, [type]: false }));
     }
   };
 
@@ -287,6 +328,28 @@ const CustomizationManager = () => {
                       </div>
                       <span className="text-xs text-gray-500">{customization.font_family}</span>
                     </div>
+
+                    {/* Show background and logo previews */}
+                    <div className="flex gap-2">
+                      {customization.background_image_url && (
+                        <div className="w-8 h-8 rounded border overflow-hidden">
+                          <img 
+                            src={customization.background_image_url} 
+                            alt="Background" 
+                            className="w-full h-full object-cover"
+                          />
+                        </div>
+                      )}
+                      {customization.logo_url && (
+                        <div className="w-8 h-8 rounded border overflow-hidden">
+                          <img 
+                            src={customization.logo_url} 
+                            alt="Logo" 
+                            className="w-full h-full object-contain"
+                          />
+                        </div>
+                      )}
+                    </div>
                   </div>
                   
                   <div className="flex flex-wrap gap-2">
@@ -454,6 +517,91 @@ const CustomizationManager = () => {
                       <SelectItem value="Poppins">Poppins</SelectItem>
                     </SelectContent>
                   </Select>
+                </div>
+              </div>
+            </div>
+
+            <Separator />
+
+            {/* Images Section */}
+            <div className="space-y-4">
+              <h3 className="text-lg font-medium">Imágenes y Logos</h3>
+              
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                {/* Background Image Upload */}
+                <div className="space-y-2">
+                  <Label>Imagen de Fondo</Label>
+                  <div className="border-2 border-dashed border-gray-300 rounded-lg p-4 text-center">
+                    {formData.background_image_url ? (
+                      <div className="space-y-2">
+                        <img 
+                          src={formData.background_image_url} 
+                          alt="Background" 
+                          className="w-full h-32 object-cover rounded"
+                        />
+                        <Button 
+                          variant="outline" 
+                          size="sm"
+                          onClick={() => setFormData({...formData, background_image_url: ''})}
+                        >
+                          <X className="w-3 h-3 mr-1" />
+                          Remover
+                        </Button>
+                      </div>
+                    ) : (
+                      <div className="space-y-2">
+                        <Upload className="w-8 h-8 mx-auto text-gray-400" />
+                        <p className="text-sm text-gray-500">Subir imagen de fondo</p>
+                        <Input
+                          type="file"
+                          accept="image/*"
+                          onChange={(e) => {
+                            const file = e.target.files?.[0];
+                            if (file) handleFileUpload(file, 'background');
+                          }}
+                          disabled={uploading.background}
+                        />
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                {/* Logo Upload */}
+                <div className="space-y-2">
+                  <Label>Logo de la Empresa</Label>
+                  <div className="border-2 border-dashed border-gray-300 rounded-lg p-4 text-center">
+                    {formData.logo_url ? (
+                      <div className="space-y-2">
+                        <img 
+                          src={formData.logo_url} 
+                          alt="Logo" 
+                          className="w-full h-32 object-contain rounded"
+                        />
+                        <Button 
+                          variant="outline" 
+                          size="sm"
+                          onClick={() => setFormData({...formData, logo_url: ''})}
+                        >
+                          <X className="w-3 h-3 mr-1" />
+                          Remover
+                        </Button>
+                      </div>
+                    ) : (
+                      <div className="space-y-2">
+                        <Upload className="w-8 h-8 mx-auto text-gray-400" />
+                        <p className="text-sm text-gray-500">Subir logo</p>
+                        <Input
+                          type="file"
+                          accept="image/*"
+                          onChange={(e) => {
+                            const file = e.target.files?.[0];
+                            if (file) handleFileUpload(file, 'logo');
+                          }}
+                          disabled={uploading.logo}
+                        />
+                      </div>
+                    )}
+                  </div>
                 </div>
               </div>
             </div>

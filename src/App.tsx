@@ -12,6 +12,7 @@ import AppHeader from "@/components/navigation/AppHeader";
 import AppSidebar from "@/components/navigation/AppSidebar";
 import Login from "./pages/Login";
 import Dashboard from "./pages/Dashboard";
+import Profile from "./pages/Profile";
 import Index from "./pages/Index";
 import NotFound from "./pages/NotFound";
 import AdminPanel from "./components/admin/AdminPanel";
@@ -94,6 +95,17 @@ const App = () => (
               <ProtectedRoute>
                 <AppLayout>
                   <Dashboard />
+                </AppLayout>
+              </ProtectedRoute>
+            } 
+          />
+
+          <Route 
+            path="/profile" 
+            element={
+              <ProtectedRoute>
+                <AppLayout>
+                  <Profile />
                 </AppLayout>
               </ProtectedRoute>
             } 

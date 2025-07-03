@@ -1,4 +1,3 @@
-
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { useUserRole } from '@/hooks/useUserRole';
 import { supabase } from '@/integrations/supabase/client';
@@ -71,13 +70,21 @@ const defaultNavigationItems: NavigationItem[] = [
     sortOrder: 4,
   },
   {
+    id: 'profile',
+    label: 'Mi Perfil',
+    path: '/profile',
+    icon: 'user',
+    isVisible: true,
+    sortOrder: 5,
+  },
+  {
     id: 'admin',
     label: 'Administración',
     path: '/admin',
     icon: 'settings',
     roles: ['admin', 'super_admin'],
     isVisible: true,
-    sortOrder: 5,
+    sortOrder: 6,
   },
 ];
 
