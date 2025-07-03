@@ -9,6 +9,7 @@ import Login from "./pages/Login";
 import Dashboard from "./pages/Dashboard";
 import Index from "./pages/Index";
 import NotFound from "./pages/NotFound";
+import AdminPanel from "./components/admin/AdminPanel";
 
 const queryClient = new QueryClient();
 
@@ -68,14 +69,26 @@ const App = () => (
               </ProtectedRoute>
             } 
           />
+
+          {/* Admin route */}
+          <Route 
+            path="/admin" 
+            element={
+              <ProtectedRoute>
+                <div className="min-h-screen bg-gradient-to-br from-blue-50 to-cyan-50 p-6">
+                  <AdminPanel />
+                </div>
+              </ProtectedRoute>
+            } 
+          />
           
-          {/* Legacy route - redirect to appropriate page */}
+          {/* Main application route with document management */}
           <Route 
             path="/" 
             element={
-              <PublicRoute>
-                <Login />
-              </PublicRoute>
+              <ProtectedRoute>
+                <Index />
+              </ProtectedRoute>
             } 
           />
 

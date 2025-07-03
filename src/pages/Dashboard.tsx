@@ -13,13 +13,36 @@ import {
   Plus,
   Eye,
   Download,
-  Clock
+  Clock,
+  Shield
 } from 'lucide-react';
+import { useSupabaseData } from '@/hooks/useSupabaseData';
+import { useQuery } from '@tanstack/react-query';
+import { supabase } from '@/integrations/supabase/client';
 
 const Dashboard = () => {
   const { user, signOut, loading } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
+  const { contracts, templates, pdfTemplates, loading: dataLoading } = useSupabaseData();
+
+  // Check if user is admin
+  const { data: userProfile } = useQuery({
+    queryKey: ['user-profile', user?.id],
+    queryFn: async () => {
+      if (!user?.id) return null;
+      
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('role')
+        .eq('id', user.id)
+        .single();
+      
+      if (error) throw error;
+      return data;
+    },
+    enabled: !!user?.id,
+  });
 
   // Redirect to login if not authenticated
   if (!loading && !user) {
@@ -44,7 +67,9 @@ const Dashboard = () => {
     }
   };
 
-  if (loading) {
+  const isAdmin = userProfile?.role === 'admin' || userProfile?.role === 'super_admin';
+
+  if (loading || dataLoading) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-blue-50 to-cyan-50 flex items-center justify-center">
         <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-primary"></div>
@@ -68,13 +93,26 @@ const Dashboard = () => {
                 </h1>
                 <p className="text-sm text-gray-500">
                   Bienvenido, {user?.user_metadata?.full_name || user?.email}
+                  {isAdmin && <span className="ml-2 text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded-full">Admin</span>}
                 </p>
               </div>
             </div>
-            <Button variant="outline" onClick={handleSignOut}>
-              <LogOut className="w-4 h-4 mr-2" />
-              Cerrar Sesión
-            </Button>
+            <div className="flex items-center gap-3">
+              {isAdmin && (
+                <Button 
+                  variant="outline" 
+                  onClick={() => navigate('/admin')}
+                  className="flex items-center gap-2"
+                >
+                  <Shield className="w-4 h-4" />
+                  Panel Admin
+                </Button>
+              )}
+              <Button variant="outline" onClick={handleSignOut}>
+                <LogOut className="w-4 h-4 mr-2" />
+                Cerrar Sesión
+              </Button>
+            </div>
           </div>
         </div>
       </header>
@@ -84,18 +122,37 @@ const Dashboard = () => {
         {/* Quick Actions */}
         <div className="mb-8">
           <h2 className="text-lg font-medium text-gray-900 mb-4">Acciones Rápidas</h2>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <Button className="h-20 flex-col space-y-2">
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+            <Button 
+              className="h-20 flex-col space-y-2"
+              onClick={() => navigate('/?tab=create')}
+            >
               <Plus className="w-6 h-6" />
               <span>Nuevo Documento</span>
             </Button>
-            <Button variant="outline" className="h-20 flex-col space-y-2">
+            <Button 
+              variant="outline" 
+              className="h-20 flex-col space-y-2"
+              onClick={() => navigate('/?tab=templates')}
+            >
               <FileText className="w-6 h-6" />
-              <span>Nueva Plantilla</span>
+              <span>Gestionar Plantillas</span>
             </Button>
-            <Button variant="outline" className="h-20 flex-col space-y-2">
+            <Button 
+              variant="outline" 
+              className="h-20 flex-col space-y-2"
+              onClick={() => navigate('/?tab=pdf-templates')}
+            >
               <PenTool className="w-6 h-6" />
-              <span>Firmar Documento</span>
+              <span>Plantillas PDF</span>
+            </Button>
+            <Button 
+              variant="outline" 
+              className="h-20 flex-col space-y-2"
+              onClick={() => navigate('/?tab=contracts')}
+            >
+              <Eye className="w-6 h-6" />
+              <span>Ver Documentos</span>
             </Button>
           </div>
         </div>
@@ -108,7 +165,7 @@ const Dashboard = () => {
               <FileText className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">0</div>
+              <div className="text-2xl font-bold">{contracts.length}</div>
               <p className="text-xs text-muted-foreground">
                 Documentos creados
               </p>
@@ -121,7 +178,9 @@ const Dashboard = () => {
               <Clock className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">0</div>
+              <div className="text-2xl font-bold">
+                {contracts.filter(c => c.status === 'sent' || c.status === 'opened').length}
+              </div>
               <p className="text-xs text-muted-foreground">
                 Esperando firma
               </p>
@@ -134,7 +193,9 @@ const Dashboard = () => {
               <Users className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">0</div>
+              <div className="text-2xl font-bold">
+                {contracts.filter(c => c.status === 'completed').length}
+              </div>
               <p className="text-xs text-muted-foreground">
                 Firmados este mes
               </p>
@@ -147,7 +208,7 @@ const Dashboard = () => {
               <Settings className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">0</div>
+              <div className="text-2xl font-bold">{templates.length + pdfTemplates.length}</div>
               <p className="text-xs text-muted-foreground">
                 Plantillas activas
               </p>
@@ -161,11 +222,44 @@ const Dashboard = () => {
             <CardTitle>Actividad Reciente</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-center py-8 text-gray-500">
-              <FileText className="w-12 h-12 mx-auto mb-4 opacity-50" />
-              <p>No hay actividad reciente</p>
-              <p className="text-sm">Los documentos y actividades aparecerán aquí</p>
-            </div>
+            {contracts.length > 0 ? (
+              <div className="space-y-4">
+                {contracts.slice(0, 5).map((contract) => (
+                  <div key={contract.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                    <div className="flex items-center space-x-3">
+                      <FileText className="w-4 h-4 text-gray-500" />
+                      <div>
+                        <p className="text-sm font-medium">{contract.clientName}</p>
+                        <p className="text-xs text-gray-500">{contract.clientEmail}</p>
+                      </div>
+                    </div>
+                    <div className="text-right">
+                      <p className="text-xs text-gray-500">
+                        {contract.createdAt.toLocaleDateString()}
+                      </p>
+                      <span className={`text-xs px-2 py-1 rounded-full ${
+                        contract.status === 'completed' ? 'bg-green-100 text-green-800' :
+                        contract.status === 'signed' ? 'bg-blue-100 text-blue-800' :
+                        contract.status === 'sent' ? 'bg-yellow-100 text-yellow-800' :
+                        'bg-gray-100 text-gray-800'
+                      }`}>
+                        {contract.status === 'completed' ? 'Completado' :
+                         contract.status === 'signed' ? 'Firmado' :
+                         contract.status === 'sent' ? 'Enviado' :
+                         contract.status === 'opened' ? 'Abierto' :
+                         'Borrador'}
+                      </span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className="text-center py-8 text-gray-500">
+                <FileText className="w-12 h-12 mx-auto mb-4 opacity-50" />
+                <p>No hay actividad reciente</p>
+                <p className="text-sm">Los documentos y actividades aparecerán aquí</p>
+              </div>
+            )}
           </CardContent>
         </Card>
       </main>
