@@ -4,7 +4,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { useSupabaseData } from '@/hooks/useSupabaseData';
 import { useUserRole } from '@/hooks/useUserRole';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
-import { FileText, Users, CheckCircle, Clock, TrendingUp, AlertCircle } from 'lucide-react';
+import { FileText, Users, CheckCircle, Clock, TrendingUp, AlertCircle, Layers } from 'lucide-react';
 
 const Dashboard = () => {
   const { contracts, templates, pdfTemplates, loading } = useSupabaseData();
@@ -21,13 +21,13 @@ const Dashboard = () => {
   // Dashboard statistics
   const totalDocuments = contracts.length;
   const completedDocuments = contracts.filter(c => c.status === 'completed').length;
-  const pendingDocuments = contracts.filter(c => c.status === 'pending').length;
+  const sentDocuments = contracts.filter(c => c.status === 'sent').length;
   const draftDocuments = contracts.filter(c => c.status === 'draft').length;
 
   // Chart data
   const statusData = [
     { name: 'Completados', value: completedDocuments, color: '#10b981' },
-    { name: 'Pendientes', value: pendingDocuments, color: '#f59e0b' },
+    { name: 'Enviados', value: sentDocuments, color: '#f59e0b' },
     { name: 'Borradores', value: draftDocuments, color: '#6b7280' },
   ];
 
@@ -82,11 +82,11 @@ const Dashboard = () => {
 
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Pendientes</CardTitle>
+            <CardTitle className="text-sm font-medium">Enviados</CardTitle>
             <Clock className="h-4 w-4 text-yellow-600" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-yellow-600">{pendingDocuments}</div>
+            <div className="text-2xl font-bold text-yellow-600">{sentDocuments}</div>
             <p className="text-xs text-muted-foreground">
               Requieren atención
             </p>
@@ -181,7 +181,7 @@ const Dashboard = () => {
                   <div>
                     <p className="font-medium">{contract.clientName}</p>
                     <p className="text-sm text-gray-500">
-                      Documento #{contract.documentNumber}
+                      Documento #{contract.id.slice(0, 8)}
                     </p>
                   </div>
                 </div>
@@ -189,12 +189,12 @@ const Dashboard = () => {
                   <span className={`px-2 py-1 rounded-full text-xs font-medium ${
                     contract.status === 'completed' 
                       ? 'bg-green-100 text-green-800'
-                      : contract.status === 'pending'
+                      : contract.status === 'sent'
                       ? 'bg-yellow-100 text-yellow-800'
                       : 'bg-gray-100 text-gray-800'
                   }`}>
                     {contract.status === 'completed' ? 'Completado' :
-                     contract.status === 'pending' ? 'Pendiente' : 'Borrador'}
+                     contract.status === 'sent' ? 'Enviado' : 'Borrador'}
                   </span>
                   <p className="text-xs text-gray-500 mt-1">
                     {new Date(contract.createdAt).toLocaleDateString('es-ES')}
