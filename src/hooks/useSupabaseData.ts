@@ -94,7 +94,7 @@ export const useSupabaseData = () => {
       id: template.id,
       name: template.name,
       type: template.type as 'contrato' | 'anexo' | 'declaracion',
-      fields: template.fields || [],
+      fields: Array.isArray(template.fields) ? template.fields as Template['fields'] : [],
       content: template.content,
       createdAt: new Date(template.created_at),
     }));
@@ -118,7 +118,7 @@ export const useSupabaseData = () => {
       id: template.id,
       name: template.name,
       fileName: template.file_name,
-      fields: template.fields || [],
+      fields: Array.isArray(template.fields) ? template.fields as PDFTemplate['fields'] : [],
       createdAt: new Date(template.created_at),
       updatedAt: new Date(template.updated_at),
       fileSize: template.file_size || 0,
@@ -192,7 +192,7 @@ export const useSupabaseData = () => {
         name: template.name,
         type: template.type,
         content: template.content,
-        fields: template.fields,
+        fields: template.fields as any, // Cast to any for JSON compatibility
         created_by: user.id,
       });
 
@@ -220,7 +220,7 @@ export const useSupabaseData = () => {
       .insert({
         name: template.name,
         file_name: template.fileName,
-        fields: template.fields,
+        fields: template.fields as any, // Cast to any for JSON compatibility
         file_size: template.fileSize,
         created_by: user.id,
       });
@@ -241,7 +241,7 @@ export const useSupabaseData = () => {
     const { error } = await supabase
       .from('pdf_templates')
       .update({
-        fields: updates.fields,
+        fields: updates.fields as any, // Cast to any for JSON compatibility
         updated_at: new Date().toISOString(),
       })
       .eq('id', templateId);
