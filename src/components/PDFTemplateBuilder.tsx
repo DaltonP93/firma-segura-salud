@@ -1,11 +1,11 @@
-
 import { useState } from 'react';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
 import { Plus, FileText, Edit, Trash2, Eye } from 'lucide-react';
-import PDFEditor, { PDFField } from './PDFEditor';
+import PDFEditor from './PDFEditor';
+import { PDFField } from './pdf/PDFFieldTypes';
 
 export interface PDFTemplate {
   id: string;
