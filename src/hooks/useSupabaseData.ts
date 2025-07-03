@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from './useAuth';
@@ -122,6 +121,7 @@ export const useSupabaseData = () => {
       createdAt: new Date(template.created_at),
       updatedAt: new Date(template.updated_at),
       fileSize: template.file_size || 0,
+      fileUrl: template.file_url || undefined,
     }));
 
     setPdfTemplates(mappedPDFTemplates);
@@ -220,8 +220,9 @@ export const useSupabaseData = () => {
       .insert({
         name: template.name,
         file_name: template.fileName,
-        fields: template.fields as any, // Cast to any for JSON compatibility
+        fields: template.fields as any,
         file_size: template.fileSize,
+        file_url: template.fileUrl || null,
         created_by: user.id,
       });
 
@@ -238,12 +239,19 @@ export const useSupabaseData = () => {
   };
 
   const updatePDFTemplate = async (templateId: string, updates: Partial<PDFTemplate>) => {
+    const updateData: any = {
+      updated_at: new Date().toISOString(),
+    };
+
+    if (updates.fields) updateData.fields = updates.fields;
+    if (updates.name) updateData.name = updates.name;
+    if (updates.fileName) updateData.file_name = updates.fileName;
+    if (updates.fileSize) updateData.file_size = updates.fileSize;
+    if (updates.fileUrl) updateData.file_url = updates.fileUrl;
+
     const { error } = await supabase
       .from('pdf_templates')
-      .update({
-        fields: updates.fields as any, // Cast to any for JSON compatibility
-        updated_at: new Date().toISOString(),
-      })
+      .update(updateData)
       .eq('id', templateId);
 
     if (error) {
@@ -281,9 +289,88 @@ export const useSupabaseData = () => {
     contracts,
     templates,
     pdfTemplates,
-    createDocument,
-    updateDocumentStatus,
-    createTemplate,
+    createDocument: async (contractData: Omit<Contract, 'id' | 'status' | 'createdAt'>) => {
+      if (!user) return;
+
+      const { data, error } = await supabase
+        .from('documents')
+        .insert({
+          client_name: contractData.clientName,
+          client_email: contractData.clientEmail,
+          client_phone: contractData.clientPhone,
+          policy_type: contractData.policyType,
+          template_id: contractData.templateId || null,
+          template_type: contractData.templateType || 'contrato',
+          created_by: user.id,
+          document_number: `DOC-${Date.now()}`,
+        })
+        .select()
+        .single();
+
+      if (error) {
+        toast({
+          title: "Error",
+          description: "Error al crear el documento",
+          variant: "destructive",
+        });
+        throw error;
+      }
+
+      await fetchDocuments();
+      return data;
+    },
+    updateDocumentStatus: async (contractId: string, status: Contract['status'], additionalData?: Partial<Contract>) => {
+      const updates: any = { status };
+      
+      if (status === 'sent') updates.sent_at = new Date().toISOString();
+      if (status === 'opened') updates.opened_at = new Date().toISOString();
+      if (status === 'signed') updates.signed_at = new Date().toISOString();
+      if (status === 'completed') updates.completed_at = new Date().toISOString();
+
+      const { error } = await supabase
+        .from('documents')
+        .update(updates)
+        .eq('id', contractId);
+
+      if (error) {
+        toast({
+          title: "Error",
+          description: "Error al actualizar el documento",
+          variant: "destructive",
+        });
+        throw error;
+      }
+
+      await fetchDocuments();
+    },
+    createTemplate: async (template: Omit<Template, 'id' | 'createdAt'>) => {
+      if (!user) return;
+
+      const { error } = await supabase
+        .from('document_templates')
+        .insert({
+          name: template.name,
+          type: template.type,
+          content: template.content,
+          fields: template.fields as any,
+          created_by: user.id,
+        });
+
+      if (error) {
+        toast({
+          title: "Error",
+          description: "Error al crear la plantilla",
+          variant: "destructive",
+        });
+        throw error;
+      }
+
+      await fetchTemplates();
+      toast({
+        title: "Plantilla Creada",
+        description: `La plantilla "${template.name}" ha sido creada exitosamente`,
+      });
+    },
     createPDFTemplate,
     updatePDFTemplate,
     deletePDFTemplate,

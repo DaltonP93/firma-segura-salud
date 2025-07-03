@@ -1,9 +1,8 @@
-
 import React, { useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
-import { Settings, Palette, Building, FileText, ArrowLeft } from 'lucide-react';
+import { Settings, Palette, Building, FileText, ArrowLeft, Users } from 'lucide-react';
 import { useUserRole } from '@/hooks/useUserRole';
 import { useToast } from '@/hooks/use-toast';
 import { useNavigate } from 'react-router-dom';
@@ -11,6 +10,7 @@ import { useSupabaseData } from '@/hooks/useSupabaseData';
 import CustomizationManager from './CustomizationManager';
 import CompanyTypesManager from './CompanyTypesManager';
 import SectionCustomizer from './SectionCustomizer';
+import UserManagement from './UserManagement';
 
 const AdminPanel = () => {
   const { isAdmin, isLoading } = useUserRole();
@@ -72,10 +72,14 @@ const AdminPanel = () => {
       </div>
 
       <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-        <TabsList className="grid w-full grid-cols-4">
+        <TabsList className="grid w-full grid-cols-5">
           <TabsTrigger value="overview" className="flex items-center gap-2">
             <FileText className="w-4 h-4" />
             Resumen
+          </TabsTrigger>
+          <TabsTrigger value="users" className="flex items-center gap-2">
+            <Users className="w-4 h-4" />
+            Usuarios
           </TabsTrigger>
           <TabsTrigger value="customization" className="flex items-center gap-2">
             <Palette className="w-4 h-4" />
@@ -146,7 +150,15 @@ const AdminPanel = () => {
               <CardDescription>Acciones comunes de administración</CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                <Button 
+                  onClick={() => setActiveTab('users')}
+                  className="justify-start"
+                  variant="outline"
+                >
+                  <Users className="w-4 h-4 mr-2" />
+                  Gestionar Usuarios
+                </Button>
                 <Button 
                   onClick={() => setActiveTab('customization')}
                   className="justify-start"
@@ -214,6 +226,10 @@ const AdminPanel = () => {
               )}
             </CardContent>
           </Card>
+        </TabsContent>
+
+        <TabsContent value="users">
+          <UserManagement />
         </TabsContent>
 
         <TabsContent value="customization">

@@ -15,6 +15,7 @@ export interface PDFTemplate {
   createdAt: Date;
   updatedAt: Date;
   fileSize: number;
+  fileUrl?: string;
 }
 
 interface PDFTemplateBuilderProps {
@@ -34,9 +35,9 @@ const PDFTemplateBuilder = ({
   const [isCreating, setIsCreating] = useState(false);
   const [editingTemplate, setEditingTemplate] = useState<PDFTemplate | null>(null);
 
-  const handleCreateTemplate = (fields: PDFField[], pdfFile: File) => {
+  const handleCreateTemplate = (fields: PDFField[], pdfFile: File, templateName?: string) => {
     const newTemplate = {
-      name: pdfFile.name.replace('.pdf', ''),
+      name: templateName || pdfFile.name.replace('.pdf', ''),
       fileName: pdfFile.name,
       fields,
       fileSize: pdfFile.size
@@ -51,13 +52,22 @@ const PDFTemplateBuilder = ({
     });
   };
 
-  const handleUpdateTemplate = (fields: PDFField[], pdfFile: File) => {
+  const handleUpdateTemplate = (fields: PDFField[], pdfFile: File | null, templateName?: string) => {
     if (!editingTemplate) return;
 
-    const updates = {
+    const updates: Partial<PDFTemplate> = {
       fields,
       updatedAt: new Date()
     };
+
+    if (templateName && templateName !== editingTemplate.name) {
+      updates.name = templateName;
+    }
+
+    if (pdfFile) {
+      updates.fileName = pdfFile.name;
+      updates.fileSize = pdfFile.size;
+    }
 
     onUpdateTemplate(editingTemplate.id, updates);
     setEditingTemplate(null);
@@ -99,6 +109,11 @@ const PDFTemplateBuilder = ({
       <PDFEditor
         mode="edit"
         initialFields={editingTemplate.fields}
+        initialTemplate={{
+          name: editingTemplate.name,
+          fileName: editingTemplate.fileName,
+          fileUrl: editingTemplate.fileUrl
+        }}
         onSave={handleUpdateTemplate}
         onCancel={() => setEditingTemplate(null)}
       />

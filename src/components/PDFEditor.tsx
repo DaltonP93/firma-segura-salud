@@ -23,27 +23,37 @@ export interface PDFField {
 }
 
 interface PDFEditorProps {
-  onSave?: (fields: PDFField[], pdfFile: File) => void;
+  onSave?: (fields: PDFField[], pdfFile: File, templateName?: string) => void;
   onCancel?: () => void;
   initialFields?: PDFField[];
+  initialTemplate?: { name: string; fileName: string; fileUrl?: string };
   mode?: 'create' | 'edit';
 }
 
-const PDFEditor = ({ onSave, onCancel, initialFields = [], mode = 'create' }: PDFEditorProps) => {
+const PDFEditor = ({ 
+  onSave, 
+  onCancel, 
+  initialFields = [], 
+  initialTemplate,
+  mode = 'create' 
+}: PDFEditorProps) => {
   const { toast } = useToast();
   const [pdfFile, setPdfFile] = useState<File | null>(null);
+  const [pdfUrl, setPdfUrl] = useState<string | null>(initialTemplate?.fileUrl || null);
+  const [templateName, setTemplateName] = useState(initialTemplate?.name || '');
   const [fields, setFields] = useState<PDFField[]>(initialFields);
   const [selectedField, setSelectedField] = useState<PDFField | null>(null);
   const [isDragging, setIsDragging] = useState(false);
   const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 });
   const [selectedTool, setSelectedTool] = useState<PDFField['type'] | null>(null);
-  const [pdfDimensions, setPdfDimensions] = useState({ width: 0, height: 0 });
   const canvasRef = useRef<HTMLDivElement>(null);
 
   const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (file && file.type === 'application/pdf') {
       setPdfFile(file);
+      setPdfUrl(null); // Clear existing URL when new file is uploaded
+      setTemplateName(file.name.replace('.pdf', ''));
       toast({
         title: "PDF Cargado",
         description: "El archivo PDF se ha cargado correctamente",
@@ -132,7 +142,7 @@ const PDFEditor = ({ onSave, onCancel, initialFields = [], mode = 'create' }: PD
   };
 
   const handleSave = () => {
-    if (!pdfFile && mode === 'create') {
+    if (!pdfFile && !pdfUrl && mode === 'create') {
       toast({
         title: "Error",
         description: "Por favor carga un archivo PDF primero",
@@ -150,7 +160,16 @@ const PDFEditor = ({ onSave, onCancel, initialFields = [], mode = 'create' }: PD
       return;
     }
 
-    onSave?.(fields, pdfFile!);
+    if (!templateName.trim()) {
+      toast({
+        title: "Error",
+        description: "Por favor ingresa un nombre para la plantilla",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    onSave?.(fields, pdfFile!, templateName);
     toast({
       title: "Plantilla Guardada",
       description: "La plantilla PDF interactiva ha sido guardada exitosamente",
@@ -169,6 +188,8 @@ const PDFEditor = ({ onSave, onCancel, initialFields = [], mode = 'create' }: PD
     }
   };
 
+  const pdfSource = pdfFile || pdfUrl;
+
   return (
     <div className="space-y-6">
       <Card className="bg-white shadow-lg border-0">
@@ -178,24 +199,55 @@ const PDFEditor = ({ onSave, onCancel, initialFields = [], mode = 'create' }: PD
           </CardTitle>
         </CardHeader>
         <CardContent>
-          {mode === 'create' && (
-            <div className="mb-6">
-              <Label htmlFor="pdf-upload">Cargar Archivo PDF</Label>
-              <div className="mt-2 flex items-center gap-4">
-                <Input
-                  id="pdf-upload"
-                  type="file"
-                  accept=".pdf"
-                  onChange={handleFileUpload}
-                  className="flex-1"
-                />
-                <Button variant="outline" disabled={!pdfFile}>
-                  <Upload className="w-4 h-4 mr-2" />
-                  {pdfFile ? pdfFile.name : 'No hay archivo'}
-                </Button>
-              </div>
+          <div className="mb-6 space-y-4">
+            <div>
+              <Label htmlFor="template-name">Nombre de la Plantilla</Label>
+              <Input
+                id="template-name"
+                value={templateName}
+                onChange={(e) => setTemplateName(e.target.value)}
+                placeholder="Ingresa el nombre de la plantilla"
+                className="mt-2"
+              />
             </div>
-          )}
+
+            {mode === 'create' && (
+              <div>
+                <Label htmlFor="pdf-upload">Cargar Archivo PDF</Label>
+                <div className="mt-2 flex items-center gap-4">
+                  <Input
+                    id="pdf-upload"
+                    type="file"
+                    accept=".pdf"
+                    onChange={handleFileUpload}
+                    className="flex-1"
+                  />
+                  <Button variant="outline" disabled={!pdfFile}>
+                    <Upload className="w-4 h-4 mr-2" />
+                    {pdfFile ? pdfFile.name : 'No hay archivo'}
+                  </Button>
+                </div>
+              </div>
+            )}
+
+            {mode === 'edit' && !pdfFile && (
+              <div>
+                <Label htmlFor="pdf-upload-edit">Cambiar Archivo PDF (Opcional)</Label>
+                <div className="mt-2 flex items-center gap-4">
+                  <Input
+                    id="pdf-upload-edit"
+                    type="file"
+                    accept=".pdf"
+                    onChange={handleFileUpload}
+                    className="flex-1"
+                  />
+                  <span className="text-sm text-gray-500">
+                    Archivo actual: {initialTemplate?.fileName || 'No disponible'}
+                  </span>
+                </div>
+              </div>
+            )}
+          </div>
 
           <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
             {/* Tool Palette */}
@@ -256,7 +308,7 @@ const PDFEditor = ({ onSave, onCancel, initialFields = [], mode = 'create' }: PD
             {/* Canvas Area */}
             <div className="lg:col-span-3">
               <div className="border-2 border-dashed border-gray-300 rounded-lg p-4 min-h-[600px] bg-gray-50 relative">
-                {pdfFile ? (
+                {pdfSource ? (
                   <div
                     ref={canvasRef}
                     className="relative bg-white shadow-lg rounded overflow-hidden cursor-crosshair"
@@ -266,7 +318,7 @@ const PDFEditor = ({ onSave, onCancel, initialFields = [], mode = 'create' }: PD
                   >
                     {/* PDF Viewer */}
                     <PDFViewer
-                      file={pdfFile}
+                      file={pdfSource}
                       onLoadSuccess={handlePDFLoadSuccess}
                       className="min-h-[500px]"
                       width={800}
@@ -297,7 +349,12 @@ const PDFEditor = ({ onSave, onCancel, initialFields = [], mode = 'create' }: PD
                 ) : (
                   <div className="flex flex-col items-center justify-center h-full text-gray-500">
                     <Upload className="w-12 h-12 mb-4" />
-                    <p>Carga un archivo PDF para comenzar</p>
+                    <p>
+                      {mode === 'edit' 
+                        ? 'Cargando PDF original o sube un nuevo archivo...' 
+                        : 'Carga un archivo PDF para comenzar'
+                      }
+                    </p>
                   </div>
                 )}
               </div>
