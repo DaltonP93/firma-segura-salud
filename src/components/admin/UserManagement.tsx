@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -8,10 +7,11 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { Users, Plus, Edit, Trash2, Mail, Phone, Building, Calendar, Search } from 'lucide-react';
+import { Users, Plus, Edit, Trash2, Mail, Phone, Building, Calendar, Search, AlertCircle } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { Alert, AlertDescription } from '@/components/ui/alert';
 
 interface Profile {
   id: string;
@@ -35,6 +35,7 @@ const UserManagement = () => {
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [selectedUser, setSelectedUser] = useState<Profile | null>(null);
+  const [createLoading, setCreateLoading] = useState(false);
 
   const [formData, setFormData] = useState({
     full_name: '',
@@ -45,6 +46,27 @@ const UserManagement = () => {
     role: 'user',
     password: '',
   });
+
+  // Función para validar contraseña
+  const validatePassword = (password: string) => {
+    const minLength = 8;
+    const hasLowercase = /[a-z]/.test(password);
+    const hasUppercase = /[A-Z]/.test(password);
+    const hasNumbers = /\d/.test(password);
+    const hasSpecialChar = /[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/.test(password);
+
+    const errors = [];
+    if (password.length < minLength) errors.push(`Mínimo ${minLength} caracteres`);
+    if (!hasLowercase) errors.push('Una letra minúscula');
+    if (!hasUppercase) errors.push('Una letra mayúscula');
+    if (!hasNumbers) errors.push('Un número');
+    if (!hasSpecialChar) errors.push('Un carácter especial');
+
+    return {
+      isValid: password.length >= minLength && hasLowercase && hasUppercase && hasNumbers && hasSpecialChar,
+      errors
+    };
+  };
 
   useEffect(() => {
     fetchUsers();
@@ -72,6 +94,29 @@ const UserManagement = () => {
   };
 
   const handleCreateUser = async () => {
+    // Validar campos requeridos
+    if (!formData.email || !formData.password || !formData.full_name) {
+      toast({
+        title: "Campos requeridos",
+        description: "Por favor completa email, contraseña y nombre completo",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    // Validar contraseña
+    const passwordValidation = validatePassword(formData.password);
+    if (!passwordValidation.isValid) {
+      toast({
+        title: "Contraseña inválida",
+        description: `La contraseña debe contener: ${passwordValidation.errors.join(', ')}`,
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setCreateLoading(true);
+    
     try {
       // First create the user via signup
       const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
@@ -104,7 +149,6 @@ const UserManagement = () => {
 
         if (profileError) {
           console.error('Profile update error:', profileError);
-          // Don't throw here as the user was created successfully
           toast({
             title: "Usuario creado",
             description: "Usuario creado exitosamente. Algunos datos adicionales pueden necesitar ser actualizados manualmente.",
@@ -122,11 +166,23 @@ const UserManagement = () => {
       fetchUsers();
     } catch (error: any) {
       console.error('Error creating user:', error);
+      
+      let errorMessage = "Error al crear el usuario";
+      if (error.message?.includes('Password should contain')) {
+        errorMessage = "La contraseña debe contener al menos: una minúscula, una mayúscula, un número y un carácter especial";
+      } else if (error.message?.includes('already registered')) {
+        errorMessage = "Este email ya está registrado";
+      } else if (error.message?.includes('Invalid email')) {
+        errorMessage = "El formato del email no es válido";
+      }
+      
       toast({
         title: "Error",
-        description: error.message || "Error al crear el usuario",
+        description: errorMessage,
         variant: "destructive",
       });
+    } finally {
+      setCreateLoading(false);
     }
   };
 
@@ -171,7 +227,6 @@ const UserManagement = () => {
     if (!confirm('¿Estás seguro de que quieres eliminar este usuario?')) return;
 
     try {
-      // We can only delete the profile, not the auth user due to RLS
       const { error } = await supabase
         .from('profiles')
         .delete()
@@ -249,6 +304,8 @@ const UserManagement = () => {
     return <div className="flex justify-center py-8">Cargando usuarios...</div>;
   }
 
+  const passwordValidation = validatePassword(formData.password);
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
@@ -276,35 +333,54 @@ const UserManagement = () => {
             </DialogHeader>
             <div className="space-y-4">
               <div className="space-y-2">
-                <Label htmlFor="create-full-name">Nombre Completo</Label>
+                <Label htmlFor="create-full-name">Nombre Completo *</Label>
                 <Input
                   id="create-full-name"
                   value={formData.full_name}
                   onChange={(e) => setFormData({...formData, full_name: e.target.value})}
                   placeholder="Juan Pérez"
+                  required
                 />
               </div>
               
               <div className="space-y-2">
-                <Label htmlFor="create-email">Email</Label>
+                <Label htmlFor="create-email">Email *</Label>
                 <Input
                   id="create-email"
                   type="email"
                   value={formData.email}
                   onChange={(e) => setFormData({...formData, email: e.target.value})}
                   placeholder="juan@ejemplo.com"
+                  required
                 />
               </div>
               
               <div className="space-y-2">
-                <Label htmlFor="create-password">Contraseña</Label>
+                <Label htmlFor="create-password">Contraseña *</Label>
                 <Input
                   id="create-password"
                   type="password"
                   value={formData.password}
                   onChange={(e) => setFormData({...formData, password: e.target.value})}
                   placeholder="Contraseña segura"
+                  required
                 />
+                {formData.password && !passwordValidation.isValid && (
+                  <Alert>
+                    <AlertCircle className="h-4 w-4" />
+                    <AlertDescription>
+                      La contraseña debe contener:
+                      <ul className="list-disc list-inside mt-1 text-sm">
+                        {passwordValidation.errors.map((error, index) => (
+                          <li key={index}>{error}</li>
+                        ))}
+                      </ul>
+                    </AlertDescription>
+                  </Alert>
+                )}
+                {formData.password && passwordValidation.isValid && (
+                  <p className="text-sm text-green-600">✓ Contraseña válida</p>
+                )}
               </div>
               
               <div className="space-y-2">
@@ -336,8 +412,12 @@ const UserManagement = () => {
                 <Button onClick={() => setIsCreateDialogOpen(false)} variant="outline" className="flex-1">
                   Cancelar
                 </Button>
-                <Button onClick={handleCreateUser} className="flex-1">
-                  Crear Usuario
+                <Button 
+                  onClick={handleCreateUser} 
+                  className="flex-1"
+                  disabled={createLoading || !passwordValidation.isValid || !formData.email || !formData.full_name}
+                >
+                  {createLoading ? "Creando..." : "Crear Usuario"}
                 </Button>
               </div>
             </div>
@@ -345,7 +425,6 @@ const UserManagement = () => {
         </Dialog>
       </div>
 
-      {/* Filters */}
       <Card>
         <CardContent className="pt-6">
           <div className="flex flex-col sm:flex-row gap-4">
@@ -376,7 +455,6 @@ const UserManagement = () => {
         </CardContent>
       </Card>
 
-      {/* Users List */}
       <div className="grid gap-4">
         {filteredUsers.map((user) => (
           <Card key={user.id}>
@@ -464,7 +542,6 @@ const UserManagement = () => {
         )}
       </div>
 
-      {/* Edit User Dialog */}
       <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
         <DialogContent className="max-w-md">
           <DialogHeader>
