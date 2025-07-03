@@ -4,8 +4,6 @@ import { Document, Page, pdfjs } from 'react-pdf';
 import { useToast } from "@/hooks/use-toast";
 import { Loader2, ZoomIn, ZoomOut, RotateCw } from 'lucide-react';
 import { Button } from "@/components/ui/button";
-import 'react-pdf/dist/esm/Page/AnnotationLayer.css';
-import 'react-pdf/dist/esm/Page/TextLayer.css';
 
 // Configure PDF.js worker
 pdfjs.GlobalWorkerOptions.workerSrc = `//unpkg.com/pdfjs-dist@${pdfjs.version}/build/pdf.worker.min.js`;
@@ -139,8 +137,8 @@ const PDFViewer: React.FC<PDFViewerProps> = ({
             rotate={rotation}
             width={width}
             height={height}
-            renderTextLayer={true}
-            renderAnnotationLayer={true}
+            renderTextLayer={false}
+            renderAnnotationLayer={false}
           />
         </Document>
       </div>
