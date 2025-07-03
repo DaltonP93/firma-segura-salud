@@ -94,7 +94,7 @@ export const useSupabaseData = () => {
       id: template.id,
       name: template.name,
       type: template.type as 'contrato' | 'anexo' | 'declaracion',
-      fields: Array.isArray(template.fields) ? template.fields as Template['fields'] : [],
+      fields: Array.isArray(template.fields) ? template.fields as unknown as Template['fields'] : [],
       content: template.content,
       createdAt: new Date(template.created_at),
     }));
@@ -118,7 +118,7 @@ export const useSupabaseData = () => {
       id: template.id,
       name: template.name,
       fileName: template.file_name,
-      fields: Array.isArray(template.fields) ? template.fields as PDFTemplate['fields'] : [],
+      fields: Array.isArray(template.fields) ? template.fields as unknown as PDFTemplate['fields'] : [],
       createdAt: new Date(template.created_at),
       updatedAt: new Date(template.updated_at),
       fileSize: template.file_size || 0,

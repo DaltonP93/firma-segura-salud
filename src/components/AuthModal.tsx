@@ -7,7 +7,7 @@ import { Label } from '@/components/ui/label';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useAuth } from '@/hooks/useAuth';
 import { useToast } from '@/hooks/use-toast';
-import { Mail, Lock, User } from 'lucide-react';
+import { Mail, Lock, User, Eye, EyeOff, Loader2 } from 'lucide-react';
 
 interface AuthModalProps {
   isOpen: boolean;
@@ -19,60 +19,139 @@ const AuthModal = ({ isOpen, onClose }: AuthModalProps) => {
   const [password, setPassword] = useState('');
   const [fullName, setFullName] = useState('');
   const [loading, setLoading] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
   const { signInWithEmail, signUpWithEmail } = useAuth();
   const { toast } = useToast();
 
+  const resetForm = () => {
+    setEmail('');
+    setPassword('');
+    setFullName('');
+    setShowPassword(false);
+  };
+
   const handleSignIn = async (e: React.FormEvent) => {
     e.preventDefault();
-    setLoading(true);
-    
-    const { error } = await signInWithEmail(email, password);
-    
-    if (error) {
+    if (!email || !password) {
       toast({
-        title: "Error al iniciar sesión",
-        description: error.message,
+        title: "Campos requeridos",
+        description: "Por favor completa todos los campos",
         variant: "destructive",
       });
-    } else {
-      toast({
-        title: "¡Bienvenido!",
-        description: "Has iniciado sesión exitosamente",
-      });
-      onClose();
+      return;
     }
+
+    setLoading(true);
     
-    setLoading(false);
+    try {
+      const { error } = await signInWithEmail(email, password);
+      
+      if (error) {
+        console.error('Sign in error:', error);
+        let errorMessage = "Error al iniciar sesión";
+        
+        if (error.message.includes('Invalid login credentials')) {
+          errorMessage = "Credenciales incorrectas. Verifica tu email y contraseña";
+        } else if (error.message.includes('Email not confirmed')) {
+          errorMessage = "Por favor confirma tu email antes de iniciar sesión";
+        } else if (error.message.includes('Too many requests')) {
+          errorMessage = "Demasiados intentos. Espera un momento e intenta de nuevo";
+        }
+        
+        toast({
+          title: "Error al iniciar sesión",
+          description: errorMessage,
+          variant: "destructive",
+        });
+      } else {
+        toast({
+          title: "¡Bienvenido!",
+          description: "Has iniciado sesión exitosamente",
+        });
+        resetForm();
+        onClose();
+      }
+    } catch (err) {
+      console.error('Unexpected error:', err);
+      toast({
+        title: "Error inesperado",
+        description: "Ocurrió un error inesperado. Intenta de nuevo",
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(false);
+    }
   };
 
   const handleSignUp = async (e: React.FormEvent) => {
     e.preventDefault();
-    setLoading(true);
-    
-    const { error } = await signUpWithEmail(email, password, fullName);
-    
-    if (error) {
+    if (!email || !password || !fullName) {
       toast({
-        title: "Error al crear cuenta",
-        description: error.message,
+        title: "Campos requeridos",
+        description: "Por favor completa todos los campos",
         variant: "destructive",
       });
-    } else {
-      toast({
-        title: "¡Cuenta creada!",
-        description: "Revisa tu email para confirmar tu cuenta",
-      });
-      onClose();
+      return;
     }
+
+    if (password.length < 6) {
+      toast({
+        title: "Contraseña muy corta",
+        description: "La contraseña debe tener al menos 6 caracteres",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setLoading(true);
     
-    setLoading(false);
+    try {
+      const { error } = await signUpWithEmail(email, password, fullName);
+      
+      if (error) {
+        console.error('Sign up error:', error);
+        let errorMessage = "Error al crear la cuenta";
+        
+        if (error.message.includes('already registered')) {
+          errorMessage = "Este email ya está registrado. Intenta iniciar sesión";
+        } else if (error.message.includes('Password should be')) {
+          errorMessage = "La contraseña debe tener al menos 6 caracteres";
+        } else if (error.message.includes('Invalid email')) {
+          errorMessage = "El formato del email no es válido";
+        }
+        
+        toast({
+          title: "Error al crear cuenta",
+          description: errorMessage,
+          variant: "destructive",
+        });
+      } else {
+        toast({
+          title: "¡Cuenta creada!",
+          description: "Revisa tu email para confirmar tu cuenta",
+        });
+        resetForm();
+        onClose();
+      }
+    } catch (err) {
+      console.error('Unexpected error:', err);
+      toast({
+        title: "Error inesperado",
+        description: "Ocurrió un error inesperado. Intenta de nuevo",
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
-          <DialogTitle className="text-center text-2xl">Acceder al Sistema</DialogTitle>
+          <DialogTitle className="text-center text-2xl font-bold text-gray-900">
+            Acceder al Sistema
+          </DialogTitle>
         </DialogHeader>
         
         <Tabs defaultValue="signin" className="w-full">
@@ -81,7 +160,7 @@ const AuthModal = ({ isOpen, onClose }: AuthModalProps) => {
             <TabsTrigger value="signup">Crear Cuenta</TabsTrigger>
           </TabsList>
           
-          <TabsContent value="signin">
+          <TabsContent value="signin" className="space-y-4">
             <form onSubmit={handleSignIn} className="space-y-4">
               <div className="space-y-2">
                 <Label htmlFor="signin-email">Email</Label>
@@ -95,6 +174,7 @@ const AuthModal = ({ isOpen, onClose }: AuthModalProps) => {
                     onChange={(e) => setEmail(e.target.value)}
                     className="pl-10"
                     required
+                    disabled={loading}
                   />
                 </div>
               </div>
@@ -105,23 +185,39 @@ const AuthModal = ({ isOpen, onClose }: AuthModalProps) => {
                   <Lock className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
                   <Input
                     id="signin-password"
-                    type="password"
+                    type={showPassword ? "text" : "password"}
                     placeholder="••••••••"
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
-                    className="pl-10"
+                    className="pl-10 pr-10"
                     required
+                    disabled={loading}
                   />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    className="absolute right-3 top-3 text-gray-400 hover:text-gray-600"
+                    disabled={loading}
+                  >
+                    {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                  </button>
                 </div>
               </div>
               
               <Button type="submit" className="w-full" disabled={loading}>
-                {loading ? "Iniciando sesión..." : "Iniciar Sesión"}
+                {loading ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Iniciando sesión...
+                  </>
+                ) : (
+                  "Iniciar Sesión"
+                )}
               </Button>
             </form>
           </TabsContent>
           
-          <TabsContent value="signup">
+          <TabsContent value="signup" className="space-y-4">
             <form onSubmit={handleSignUp} className="space-y-4">
               <div className="space-y-2">
                 <Label htmlFor="signup-name">Nombre Completo</Label>
@@ -135,6 +231,7 @@ const AuthModal = ({ isOpen, onClose }: AuthModalProps) => {
                     onChange={(e) => setFullName(e.target.value)}
                     className="pl-10"
                     required
+                    disabled={loading}
                   />
                 </div>
               </div>
@@ -151,29 +248,48 @@ const AuthModal = ({ isOpen, onClose }: AuthModalProps) => {
                     onChange={(e) => setEmail(e.target.value)}
                     className="pl-10"
                     required
+                    disabled={loading}
                   />
                 </div>
               </div>
               
               <div className="space-y-2">
-                <Label htmlFor="signup-password">Contraseña</Label>
+                <Label htmlFor="signup-password">
+                  Contraseña <span className="text-sm text-gray-500">(mínimo 6 caracteres)</span>
+                </Label>
                 <div className="relative">
                   <Lock className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
                   <Input
                     id="signup-password"
-                    type="password"
+                    type={showPassword ? "text" : "password"}
                     placeholder="••••••••"
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
-                    className="pl-10"
+                    className="pl-10 pr-10"
                     required
                     minLength={6}
+                    disabled={loading}
                   />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    className="absolute right-3 top-3 text-gray-400 hover:text-gray-600"
+                    disabled={loading}
+                  >
+                    {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                  </button>
                 </div>
               </div>
               
               <Button type="submit" className="w-full" disabled={loading}>
-                {loading ? "Creando cuenta..." : "Crear Cuenta"}
+                {loading ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Creando cuenta...
+                  </>
+                ) : (
+                  "Crear Cuenta"
+                )}
               </Button>
             </form>
           </TabsContent>
