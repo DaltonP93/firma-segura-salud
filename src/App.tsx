@@ -4,12 +4,18 @@ import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
+import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { useAuth } from "@/hooks/useAuth";
+import { NavigationProvider } from "@/components/navigation/NavigationProvider";
+import { PersonalizationProvider } from "@/components/personalization/PersonalizationProvider";
+import AppHeader from "@/components/navigation/AppHeader";
+import AppSidebar from "@/components/navigation/AppSidebar";
 import Login from "./pages/Login";
 import Dashboard from "./pages/Dashboard";
 import Index from "./pages/Index";
 import NotFound from "./pages/NotFound";
 import AdminPanel from "./components/admin/AdminPanel";
+import PersonalizationPanel from "./components/personalization/PersonalizationPanel";
 
 const queryClient = new QueryClient();
 
@@ -43,6 +49,27 @@ const PublicRoute = ({ children }: { children: React.ReactNode }) => {
   return user ? <Navigate to="/dashboard" replace /> : <>{children}</>;
 };
 
+// Layout component for authenticated pages
+const AppLayout = ({ children }: { children: React.ReactNode }) => {
+  return (
+    <NavigationProvider>
+      <PersonalizationProvider>
+        <SidebarProvider>
+          <div className="min-h-screen flex w-full">
+            <AppSidebar />
+            <div className="flex-1 flex flex-col">
+              <AppHeader />
+              <main className="flex-1 overflow-auto">
+                {children}
+              </main>
+            </div>
+          </div>
+        </SidebarProvider>
+      </PersonalizationProvider>
+    </NavigationProvider>
+  );
+};
+
 const App = () => (
   <QueryClientProvider client={queryClient}>
     <TooltipProvider>
@@ -60,34 +87,51 @@ const App = () => (
             } 
           />
           
-          {/* Protected routes */}
+          {/* Protected routes with layout */}
           <Route 
             path="/dashboard" 
             element={
               <ProtectedRoute>
-                <Dashboard />
+                <AppLayout>
+                  <Dashboard />
+                </AppLayout>
               </ProtectedRoute>
             } 
           />
 
-          {/* Admin route */}
           <Route 
             path="/admin" 
             element={
               <ProtectedRoute>
-                <div className="min-h-screen bg-gradient-to-br from-blue-50 to-cyan-50 p-6">
-                  <AdminPanel />
-                </div>
+                <AppLayout>
+                  <div className="p-6">
+                    <AdminPanel />
+                  </div>
+                </AppLayout>
+              </ProtectedRoute>
+            } 
+          />
+
+          <Route 
+            path="/settings" 
+            element={
+              <ProtectedRoute>
+                <AppLayout>
+                  <div className="p-6">
+                    <PersonalizationPanel />
+                  </div>
+                </AppLayout>
               </ProtectedRoute>
             } 
           />
           
-          {/* Main application route with document management */}
           <Route 
             path="/" 
             element={
               <ProtectedRoute>
-                <Index />
+                <AppLayout>
+                  <Index />
+                </AppLayout>
               </ProtectedRoute>
             } 
           />
