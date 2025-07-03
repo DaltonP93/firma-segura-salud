@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
-import { FileText, Users, Send, CheckCircle, Layers, Plus, LogOut, User, Menu } from 'lucide-react';
+import { FileText, Users, Send, CheckCircle, Layers, Plus, LogOut, User, Menu, Settings } from 'lucide-react';
 import ContractForm from '@/components/ContractForm';
 import ContractTracker from '@/components/ContractTracker';
 import ContractsList from '@/components/ContractsList';
@@ -14,6 +14,7 @@ import PDFTemplateBuilder, { PDFTemplate } from '@/components/PDFTemplateBuilder
 import PDFDocumentGenerator from '@/components/PDFDocumentGenerator';
 import AuthWrapper from '@/components/AuthWrapper';
 import AuthModal from '@/components/AuthModal';
+import AdminPanel from '@/components/admin/AdminPanel';
 import { useAuth } from '@/hooks/useAuth';
 import { useSupabaseData } from '@/hooks/useSupabaseData';
 import { useToast } from '@/hooks/use-toast';
@@ -195,6 +196,7 @@ const Index = () => {
     { value: 'pdf-generator', label: 'PDF Docs', icon: Plus },
     { value: 'contracts', label: 'Generar Nuevo', icon: Plus },
     { value: 'documents', label: 'Documentos', icon: CheckCircle },
+    { value: 'admin', label: 'Admin', icon: Settings },
   ];
 
   return (
@@ -276,7 +278,7 @@ const Index = () => {
               </div>
 
               {/* Desktop Tabs */}
-              <TabsList className="hidden sm:grid w-full grid-cols-6 lg:w-auto lg:grid-cols-6">
+              <TabsList className="hidden sm:grid w-full grid-cols-7 lg:w-auto lg:grid-cols-7">
                 {tabItems.map((item) => (
                   <TabsTrigger key={item.value} value={item.value} className="flex items-center gap-2 text-xs lg:text-sm">
                     <item.icon className="w-4 h-4" />
@@ -438,6 +440,10 @@ const Index = () => {
                   contracts={contracts} 
                   onUpdateStatus={updateDocumentStatus}
                 />
+              </TabsContent>
+
+              <TabsContent value="admin">
+                <AdminPanel />
               </TabsContent>
             </Tabs>
           )}

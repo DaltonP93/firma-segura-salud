@@ -9,6 +9,104 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
+      app_customization: {
+        Row: {
+          accent_color: string | null
+          app_subtitle: string | null
+          app_title: string | null
+          background_image_url: string | null
+          company_type_id: string | null
+          created_at: string | null
+          created_by: string | null
+          custom_css: string | null
+          font_family: string | null
+          footer_text: string | null
+          id: string
+          is_active: boolean | null
+          logo_url: string | null
+          primary_color: string | null
+          secondary_color: string | null
+          theme_name: string
+          updated_at: string | null
+          welcome_message: string | null
+        }
+        Insert: {
+          accent_color?: string | null
+          app_subtitle?: string | null
+          app_title?: string | null
+          background_image_url?: string | null
+          company_type_id?: string | null
+          created_at?: string | null
+          created_by?: string | null
+          custom_css?: string | null
+          font_family?: string | null
+          footer_text?: string | null
+          id?: string
+          is_active?: boolean | null
+          logo_url?: string | null
+          primary_color?: string | null
+          secondary_color?: string | null
+          theme_name?: string
+          updated_at?: string | null
+          welcome_message?: string | null
+        }
+        Update: {
+          accent_color?: string | null
+          app_subtitle?: string | null
+          app_title?: string | null
+          background_image_url?: string | null
+          company_type_id?: string | null
+          created_at?: string | null
+          created_by?: string | null
+          custom_css?: string | null
+          font_family?: string | null
+          footer_text?: string | null
+          id?: string
+          is_active?: boolean | null
+          logo_url?: string | null
+          primary_color?: string | null
+          secondary_color?: string | null
+          theme_name?: string
+          updated_at?: string | null
+          welcome_message?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "app_customization_company_type_id_fkey"
+            columns: ["company_type_id"]
+            isOneToOne: false
+            referencedRelation: "company_types"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      company_types: {
+        Row: {
+          created_at: string | null
+          description: string | null
+          id: string
+          is_active: boolean | null
+          name: string
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          is_active?: boolean | null
+          name: string
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          is_active?: boolean | null
+          name?: string
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       digital_signatures: {
         Row: {
           document_id: string | null
@@ -272,6 +370,62 @@ export type Database = {
           updated_at?: string | null
         }
         Relationships: []
+      }
+      section_customization: {
+        Row: {
+          app_customization_id: string | null
+          background_color: string | null
+          created_at: string | null
+          custom_properties: Json | null
+          icon_name: string | null
+          id: string
+          is_visible: boolean | null
+          section_description: string | null
+          section_key: string
+          section_title: string | null
+          sort_order: number | null
+          text_color: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          app_customization_id?: string | null
+          background_color?: string | null
+          created_at?: string | null
+          custom_properties?: Json | null
+          icon_name?: string | null
+          id?: string
+          is_visible?: boolean | null
+          section_description?: string | null
+          section_key: string
+          section_title?: string | null
+          sort_order?: number | null
+          text_color?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          app_customization_id?: string | null
+          background_color?: string | null
+          created_at?: string | null
+          custom_properties?: Json | null
+          icon_name?: string | null
+          id?: string
+          is_visible?: boolean | null
+          section_description?: string | null
+          section_key?: string
+          section_title?: string | null
+          sort_order?: number | null
+          text_color?: string | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "section_customization_app_customization_id_fkey"
+            columns: ["app_customization_id"]
+            isOneToOne: false
+            referencedRelation: "app_customization"
+            referencedColumns: ["id"]
+          },
+        ]
       }
     }
     Views: {
