@@ -1,10 +1,11 @@
 
 import React from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
 import { useSupabaseData } from '@/hooks/useSupabaseData';
 import { useUserProfile } from '@/hooks/useUserProfile';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
-import { FileText, Users, CheckCircle, Clock, TrendingUp, AlertCircle, Layers } from 'lucide-react';
+import { FileText, Users, CheckCircle, Clock, TrendingUp, AlertCircle, Layers, Shield } from 'lucide-react';
 
 const Dashboard = () => {
   console.log('Dashboard component rendering...');
@@ -35,7 +36,7 @@ const Dashboard = () => {
   // Datos de ejemplo para las gráficas
   const contractsData = [
     { name: 'Completados', value: contracts?.filter(c => c.status === 'completed').length || 0, color: '#22c55e' },
-    { name: 'Pendientes', value: contracts?.filter(c => c.status === 'pending').length || 0, color: '#f59e0b' },
+    { name: 'Borradores', value: contracts?.filter(c => c.status === 'draft').length || 0, color: '#f59e0b' },
     { name: 'Enviados', value: contracts?.filter(c => c.status === 'sent').length || 0, color: '#3b82f6' },
   ];
 
@@ -109,12 +110,12 @@ const Dashboard = () => {
 
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Pendientes</CardTitle>
+            <CardTitle className="text-sm font-medium">Borradores</CardTitle>
             <Clock className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">
-              {contracts?.filter(c => c.status === 'pending').length || 0}
+              {contracts?.filter(c => c.status === 'draft').length || 0}
             </div>
             <p className="text-xs text-muted-foreground">
               Requieren atención
@@ -190,12 +191,12 @@ const Dashboard = () => {
               <div key={contract.id} className="flex items-center space-x-4">
                 <div className={`w-2 h-2 rounded-full ${
                   contract.status === 'completed' ? 'bg-green-500' :
-                  contract.status === 'pending' ? 'bg-yellow-500' :
+                  contract.status === 'draft' ? 'bg-yellow-500' :
                   'bg-blue-500'
                 }`} />
                 <div className="flex-1">
                   <p className="text-sm font-medium">{contract.clientName}</p>
-                  <p className="text-xs text-gray-500">{contract.documentNumber}</p>
+                  <p className="text-xs text-gray-500">{contract.id}</p>
                 </div>
                 <div className="text-xs text-gray-500">
                   {new Date(contract.createdAt).toLocaleDateString()}
