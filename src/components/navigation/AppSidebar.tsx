@@ -43,6 +43,8 @@ const AppSidebar = () => {
   const { profile, isLoading } = useUserProfile();
   const location = useLocation();
 
+  console.log('AppSidebar rendering - state:', state, 'profile loading:', isLoading, 'profile:', profile?.role);
+
   const isCollapsed = state === 'collapsed';
 
   const getNavClass = (isActive: boolean) =>
@@ -56,25 +58,37 @@ const AppSidebar = () => {
     return location.pathname === path;
   };
 
-  // Filter items based on user role
+  // Filter items based on user role - more defensive approach
   const visibleItems = navigationItems
     .filter(item => {
       if (!item.isVisible) return false;
       
-      // If item has role restrictions and user profile is loaded
-      if (item.roles && profile) {
-        return item.roles.includes(profile.role || 'user');
-      }
-      
-      // If item has role restrictions but profile is not loaded yet, hide it
-      if (item.roles && !profile && !isLoading) {
+      // If item has role restrictions
+      if (item.roles && item.roles.length > 0) {
+        // If profile is still loading, hide role-restricted items temporarily
+        if (isLoading) {
+          console.log('Profile still loading, hiding role-restricted item:', item.id);
+          return false;
+        }
+        
+        // If profile is loaded, check role
+        if (profile && profile.role) {
+          const hasRole = item.roles.includes(profile.role);
+          console.log('Checking role for item:', item.id, 'user role:', profile.role, 'required roles:', item.roles, 'has access:', hasRole);
+          return hasRole;
+        }
+        
+        // If no profile or role, hide role-restricted items
+        console.log('No profile or role, hiding role-restricted item:', item.id);
         return false;
       }
       
       // Show items without role restrictions
-      return !item.roles;
+      return true;
     })
     .sort((a, b) => a.sortOrder - b.sortOrder);
+
+  console.log('AppSidebar - visible items:', visibleItems.map(item => item.id));
 
   return (
     <Sidebar className={isCollapsed ? "w-14" : "w-60"} collapsible="icon">
@@ -101,7 +115,10 @@ const AppSidebar = () => {
                       <NavLink 
                         to={item.path} 
                         className={getNavClass(isActive)}
-                        onClick={() => setActiveItem(item.id)}
+                        onClick={() => {
+                          console.log('Navigation item clicked:', item.id);
+                          setActiveItem(item.id);
+                        }}
                       >
                         <IconComponent className="h-4 w-4" />
                         {!isCollapsed && (

@@ -11,6 +11,8 @@ export const useUserProfile = () => {
     queryFn: async () => {
       if (!user?.id) return null;
       
+      console.log('Fetching user profile for:', user.id);
+      
       const { data, error } = await supabase
         .from('profiles')
         .select('id, role, full_name, email, username, phone, company, profile_image_url, created_at, updated_at')
@@ -22,11 +24,12 @@ export const useUserProfile = () => {
         return null;
       }
       
+      console.log('User profile loaded:', data);
       return data;
     },
     enabled: !!user?.id,
     staleTime: 5 * 60 * 1000, // 5 minutes
-    cacheTime: 10 * 60 * 1000, // 10 minutes
+    gcTime: 10 * 60 * 1000, // 10 minutes (updated from deprecated cacheTime)
   });
 
   const isAdmin = profile?.role === 'admin' || profile?.role === 'super_admin';

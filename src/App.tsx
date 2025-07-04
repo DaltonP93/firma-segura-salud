@@ -45,6 +45,7 @@ const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
   console.log('ProtectedRoute - user:', user?.email, 'loading:', loading);
 
   if (loading) {
+    console.log('ProtectedRoute - Still loading, showing spinner');
     return <LoadingSpinner />;
   }
 
@@ -53,6 +54,7 @@ const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
     return <Navigate to="/login" replace />;
   }
 
+  console.log('ProtectedRoute - User authenticated, rendering children');
   return <>{children}</>;
 };
 
@@ -63,6 +65,7 @@ const PublicRoute = ({ children }: { children: React.ReactNode }) => {
   console.log('PublicRoute - user:', user?.email, 'loading:', loading);
 
   if (loading) {
+    console.log('PublicRoute - Still loading, showing spinner');
     return <LoadingSpinner />;
   }
 
@@ -71,6 +74,7 @@ const PublicRoute = ({ children }: { children: React.ReactNode }) => {
     return <Navigate to="/dashboard" replace />;
   }
 
+  console.log('PublicRoute - No user, rendering children');
   return <>{children}</>;
 };
 

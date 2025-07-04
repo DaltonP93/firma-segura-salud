@@ -1,6 +1,5 @@
 
 import React, { createContext, useContext, useState, useEffect } from 'react';
-import { useAuth } from '@/hooks/useAuth';
 
 interface NavigationItem {
   id: string;
@@ -76,15 +75,15 @@ export const NavigationProvider = ({ children }: NavigationProviderProps) => {
   const [navigationItems, setNavigationItems] = useState<NavigationItem[]>(defaultNavigationItems);
   const [activeItem, setActiveItem] = useState('');
   const [loading, setLoading] = useState(false);
-  const { user } = useAuth();
 
-  // Simple initialization without complex role checking
+  console.log('NavigationProvider rendering with items:', navigationItems.length);
+
+  // Simplified initialization - no complex role checking to avoid circular dependencies
   useEffect(() => {
-    if (user !== undefined) {
-      setNavigationItems(defaultNavigationItems);
-      setLoading(false);
-    }
-  }, [user]);
+    console.log('NavigationProvider - initializing navigation items');
+    setNavigationItems(defaultNavigationItems);
+    setLoading(false);
+  }, []);
 
   const toggleItemVisibility = (id: string) => {
     setNavigationItems(items =>
