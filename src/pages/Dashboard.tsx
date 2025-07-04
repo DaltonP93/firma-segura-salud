@@ -5,21 +5,20 @@ import { Button } from "@/components/ui/button";
 import { useSupabaseData } from '@/hooks/useSupabaseData';
 import { useUserProfile } from '@/hooks/useUserProfile';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
-import { FileText, Users, CheckCircle, Clock, TrendingUp, AlertCircle, Layers, Shield } from 'lucide-react';
+import { FileText, Users, CheckCircle, Clock, TrendingUp, AlertCircle, Layers } from 'lucide-react';
 
 const Dashboard = () => {
   console.log('Dashboard component rendering...');
   
   const { contracts, templates, pdfTemplates, loading } = useSupabaseData();
-  const { profile, isAdmin } = useUserProfile();
+  const { profile } = useUserProfile();
 
   console.log('Dashboard data:', { 
     contracts: contracts?.length, 
     templates: templates?.length, 
     pdfTemplates: pdfTemplates?.length, 
     loading,
-    profile: profile?.full_name,
-    isAdmin 
+    profile: profile?.full_name
   });
 
   if (loading) {
@@ -212,33 +211,6 @@ const Dashboard = () => {
           </div>
         </CardContent>
       </Card>
-
-      {/* Admin Section */}
-      {isAdmin && (
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Shield className="w-5 h-5" />
-              Panel de Administración
-            </CardTitle>
-            <CardDescription>
-              Herramientas avanzadas para administradores
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="flex gap-4">
-              <Button variant="outline" size="sm">
-                <Users className="w-4 h-4 mr-2" />
-                Gestionar Usuarios
-              </Button>
-              <Button variant="outline" size="sm">
-                <FileText className="w-4 h-4 mr-2" />
-                Plantillas del Sistema
-              </Button>
-            </div>
-          </CardContent>
-        </Card>
-      )}
     </div>
   );
 };

@@ -1,8 +1,9 @@
+
 import React, { useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
-import { Palette, Building, FileText, Users, Settings } from 'lucide-react';
+import { Palette, Building, FileText, Users, Settings, AlertTriangle } from 'lucide-react';
 import { useUserProfile } from '@/hooks/useUserProfile';
 import { useSupabaseData } from '@/hooks/useSupabaseData';
 import CustomizationManager from './CustomizationManager';
@@ -14,11 +15,14 @@ import AdminQuickActions from './AdminQuickActions';
 import AdminRecentDocuments from './AdminRecentDocuments';
 
 const AdminPanel = () => {
-  const { isAdmin, isLoading } = useUserProfile();
+  const { isAdmin, isSuperAdmin, isLoading, profile, error } = useUserProfile();
   const [activeTab, setActiveTab] = useState('overview');
   const { contracts, templates, pdfTemplates } = useSupabaseData();
 
+  console.log('AdminPanel rendering - isLoading:', isLoading, 'isAdmin:', isAdmin, 'profile:', profile?.role, 'error:', error);
+
   if (isLoading) {
+    console.log('AdminPanel showing loading state');
     return (
       <div className="flex items-center justify-center min-h-[400px]">
         <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-primary"></div>
@@ -26,7 +30,36 @@ const AdminPanel = () => {
     );
   }
 
+  if (error) {
+    console.error('AdminPanel error:', error);
+    return (
+      <div className="flex items-center justify-center min-h-[400px]">
+        <Card className="w-full max-w-md">
+          <CardHeader>
+            <CardTitle className="text-center flex items-center gap-2 justify-center">
+              <AlertTriangle className="w-5 h-5 text-yellow-500" />
+              Error de Conexión
+            </CardTitle>
+            <CardDescription className="text-center">
+              Hubo un problema al cargar tu perfil. Por favor, recarga la página o contacta al administrador.
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="text-center">
+            <Button 
+              onClick={() => window.location.reload()} 
+              variant="outline"
+              className="mt-4"
+            >
+              Recargar Página
+            </Button>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
   if (!isAdmin) {
+    console.log('AdminPanel - Access denied. User role:', profile?.role, 'isAdmin:', isAdmin);
     return (
       <div className="flex items-center justify-center min-h-[400px]">
         <Card className="w-full max-w-md">
@@ -36,10 +69,23 @@ const AdminPanel = () => {
               No tienes permisos para acceder al panel de administración
             </CardDescription>
           </CardHeader>
+          <CardContent className="text-center text-sm text-gray-600">
+            <p>Tu rol actual: <strong>{profile?.role || 'usuario'}</strong></p>
+            <p className="mt-2">Se requiere rol de administrador o super administrador</p>
+            {profile?.role && (
+              <div className="mt-4 p-3 bg-gray-50 rounded-lg">
+                <p className="text-xs">
+                  Si crees que esto es un error, contacta al administrador del sistema.
+                </p>
+              </div>
+            )}
+          </CardContent>
         </Card>
       </div>
     );
   }
+
+  console.log('AdminPanel - Access granted. User role:', profile?.role, 'isSuperAdmin:', isSuperAdmin);
 
   return (
     <div className="space-y-6">
@@ -51,7 +97,9 @@ const AdminPanel = () => {
         </div>
         <div className="flex items-center gap-2">
           <Settings className="w-5 h-5 text-gray-500" />
-          <span className="text-sm text-gray-500">Admin</span>
+          <span className="text-sm text-gray-500">
+            {isSuperAdmin ? 'Super Admin' : 'Admin'}
+          </span>
         </div>
       </div>
 
