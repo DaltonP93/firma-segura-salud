@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { useAuth } from './useAuth';
 import { useToast } from './use-toast';
@@ -16,18 +15,26 @@ export const useSupabaseData = () => {
   const [templates, setTemplates] = useState<Template[]>([]);
   const [pdfTemplates, setPdfTemplates] = useState<PDFTemplate[]>([]);
 
+  console.log('useSupabaseData hook called, user:', user?.email);
+
   // Fetch all data when user is authenticated
   useEffect(() => {
     if (user) {
+      console.log('User authenticated, fetching data...');
       fetchAllData();
     } else {
+      console.log('No user, setting loading to false');
       setLoading(false);
     }
   }, [user]);
 
   const fetchAllData = async () => {
-    if (!user) return;
+    if (!user) {
+      console.log('No user in fetchAllData');
+      return;
+    }
     
+    console.log('Starting fetchAllData...');
     setLoading(true);
     try {
       await Promise.all([
@@ -35,6 +42,7 @@ export const useSupabaseData = () => {
         fetchTemplates(),
         fetchPDFTemplates(),
       ]);
+      console.log('All data fetched successfully');
     } catch (error) {
       console.error('Error fetching data:', error);
       toast({
@@ -44,12 +52,15 @@ export const useSupabaseData = () => {
       });
     } finally {
       setLoading(false);
+      console.log('fetchAllData completed, loading set to false');
     }
   };
 
   const fetchDocuments = async () => {
     try {
+      console.log('Fetching documents...');
       const documents = await documentsService.fetchDocuments();
+      console.log('Documents fetched:', documents.length);
       setContracts(documents);
     } catch (error) {
       console.error('Error fetching documents:', error);
@@ -58,7 +69,9 @@ export const useSupabaseData = () => {
 
   const fetchTemplates = async () => {
     try {
+      console.log('Fetching templates...');
       const templates = await templatesService.fetchTemplates();
+      console.log('Templates fetched:', templates.length);
       setTemplates(templates);
     } catch (error) {
       console.error('Error fetching templates:', error);
@@ -67,7 +80,9 @@ export const useSupabaseData = () => {
 
   const fetchPDFTemplates = async () => {
     try {
+      console.log('Fetching PDF templates...');
       const pdfTemplates = await pdfTemplatesService.fetchPDFTemplates();
+      console.log('PDF templates fetched:', pdfTemplates.length);
       setPdfTemplates(pdfTemplates);
     } catch (error) {
       console.error('Error fetching PDF templates:', error);
@@ -168,6 +183,13 @@ export const useSupabaseData = () => {
       throw error;
     }
   };
+
+  console.log('useSupabaseData returning:', {
+    loading,
+    contracts: contracts.length,
+    templates: templates.length,
+    pdfTemplates: pdfTemplates.length
+  });
 
   return {
     loading,

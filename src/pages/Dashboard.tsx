@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { useSupabaseData } from '@/hooks/useSupabaseData';
@@ -6,49 +7,61 @@ import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContaine
 import { FileText, Users, CheckCircle, Clock, TrendingUp, AlertCircle, Layers } from 'lucide-react';
 
 const Dashboard = () => {
+  console.log('Dashboard component rendering...');
+  
   const { contracts, templates, pdfTemplates, loading } = useSupabaseData();
   const { profile, isAdmin } = useUserProfile();
 
+  console.log('Dashboard data:', { 
+    contracts: contracts?.length, 
+    templates: templates?.length, 
+    pdfTemplates: pdfTemplates?.length, 
+    loading,
+    profile: profile?.full_name,
+    isAdmin 
+  });
+
   if (loading) {
+    console.log('Dashboard showing loading state');
     return (
-      <div className="flex items-center justify-center min-h-screen">
+      <div className="flex items-center justify-center min-h-[400px]">
         <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-primary"></div>
       </div>
     );
   }
 
-  // Dashboard statistics
-  const totalDocuments = contracts.length;
-  const completedDocuments = contracts.filter(c => c.status === 'completed').length;
-  const sentDocuments = contracts.filter(c => c.status === 'sent').length;
-  const draftDocuments = contracts.filter(c => c.status === 'draft').length;
+  console.log('Dashboard rendering main content');
 
-  // Chart data
-  const statusData = [
-    { name: 'Completados', value: completedDocuments, color: '#10b981' },
-    { name: 'Enviados', value: sentDocuments, color: '#f59e0b' },
-    { name: 'Borradores', value: draftDocuments, color: '#6b7280' },
+  // Datos de ejemplo para las gráficas
+  const contractsData = [
+    { name: 'Completados', value: contracts?.filter(c => c.status === 'completed').length || 0, color: '#22c55e' },
+    { name: 'Pendientes', value: contracts?.filter(c => c.status === 'pending').length || 0, color: '#f59e0b' },
+    { name: 'Enviados', value: contracts?.filter(c => c.status === 'sent').length || 0, color: '#3b82f6' },
   ];
 
   const monthlyData = [
-    { month: 'Ene', documents: 12 },
-    { month: 'Feb', documents: 19 },
-    { month: 'Mar', documents: 15 },
-    { month: 'Abr', documents: 25 },
-    { month: 'May', documents: 22 },
-    { month: 'Jun', documents: 30 },
+    { month: 'Ene', contracts: 12 },
+    { month: 'Feb', contracts: 19 },
+    { month: 'Mar', contracts: 3 },
+    { month: 'Abr', contracts: 5 },
+    { month: 'May', contracts: 2 },
+    { month: 'Jun', contracts: 3 },
   ];
 
   return (
-    <div className="p-6 space-y-6">
-      {/* Welcome Section */}
-      <div className="mb-8">
-        <h1 className="text-3xl font-bold text-gray-900">
-          ¡Bienvenido de vuelta, {profile?.full_name || 'Usuario'}!
-        </h1>
-        <p className="text-gray-600 mt-2">
-          Aquí tienes un resumen de tu actividad reciente
-        </p>
+    <div className="space-y-6">
+      {/* Header */}
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-3xl font-bold text-gray-900">Dashboard</h1>
+          <p className="text-gray-600">
+            Bienvenido de vuelta, {profile?.full_name || 'Usuario'}
+          </p>
+        </div>
+        <div className="flex items-center gap-2">
+          <TrendingUp className="w-5 h-5 text-green-500" />
+          <span className="text-sm text-gray-500">Actualizado ahora</span>
+        </div>
       </div>
 
       {/* Stats Cards */}
@@ -59,35 +72,9 @@ const Dashboard = () => {
             <FileText className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{totalDocuments}</div>
+            <div className="text-2xl font-bold">{contracts?.length || 0}</div>
             <p className="text-xs text-muted-foreground">
-              +2 desde el mes pasado
-            </p>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Completados</CardTitle>
-            <CheckCircle className="h-4 w-4 text-green-600" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-green-600">{completedDocuments}</div>
-            <p className="text-xs text-muted-foreground">
-              {totalDocuments > 0 ? Math.round((completedDocuments / totalDocuments) * 100) : 0}% del total
-            </p>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Enviados</CardTitle>
-            <Clock className="h-4 w-4 text-yellow-600" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-yellow-600">{sentDocuments}</div>
-            <p className="text-xs text-muted-foreground">
-              Requieren atención
+              +20.1% desde el mes pasado
             </p>
           </CardContent>
         </Card>
@@ -98,50 +85,51 @@ const Dashboard = () => {
             <Layers className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{templates.length + pdfTemplates.length}</div>
+            <div className="text-2xl font-bold">{templates?.length || 0}</div>
             <p className="text-xs text-muted-foreground">
-              Disponibles para usar
+              +2 nuevas esta semana
+            </p>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Completados</CardTitle>
+            <CheckCircle className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">
+              {contracts?.filter(c => c.status === 'completed').length || 0}
+            </div>
+            <p className="text-xs text-muted-foreground">
+              +12% desde ayer
+            </p>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Pendientes</CardTitle>
+            <Clock className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">
+              {contracts?.filter(c => c.status === 'pending').length || 0}
+            </div>
+            <p className="text-xs text-muted-foreground">
+              Requieren atención
             </p>
           </CardContent>
         </Card>
       </div>
 
-      {/* Charts Section */}
+      {/* Charts */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <Card>
           <CardHeader>
-            <CardTitle>Estado de Documentos</CardTitle>
+            <CardTitle>Contratos por Mes</CardTitle>
             <CardDescription>
-              Distribución actual de tus documentos
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <ResponsiveContainer width="100%" height={300}>
-              <PieChart>
-                <Pie
-                  data={statusData}
-                  cx="50%"
-                  cy="50%"
-                  outerRadius={80}
-                  fill="#8884d8"
-                  dataKey="value"
-                  label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
-                >
-                  {statusData.map((entry, index) => (
-                    <Cell key={`cell-${index}`} fill={entry.color} />
-                  ))}
-                </Pie>
-                <Tooltip />
-              </PieChart>
-            </ResponsiveContainer>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader>
-            <CardTitle>Actividad Mensual</CardTitle>
-            <CardDescription>
-              Documentos creados por mes
+              Contratos creados en los últimos 6 meses
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -151,8 +139,38 @@ const Dashboard = () => {
                 <XAxis dataKey="month" />
                 <YAxis />
                 <Tooltip />
-                <Bar dataKey="documents" fill="#3b82f6" />
+                <Bar dataKey="contracts" fill="#3b82f6" />
               </BarChart>
+            </ResponsiveContainer>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle>Estado de Contratos</CardTitle>
+            <CardDescription>
+              Distribución actual de contratos por estado
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <ResponsiveContainer width="100%" height={300}>
+              <PieChart>
+                <Pie
+                  data={contractsData}
+                  cx="50%"
+                  cy="50%"
+                  labelLine={false}
+                  label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
+                  outerRadius={80}
+                  fill="#8884d8"
+                  dataKey="value"
+                >
+                  {contractsData.map((entry, index) => (
+                    <Cell key={`cell-${index}`} fill={entry.color} />
+                  ))}
+                </Pie>
+                <Tooltip />
+              </PieChart>
             </ResponsiveContainer>
           </CardContent>
         </Card>
@@ -161,56 +179,65 @@ const Dashboard = () => {
       {/* Recent Activity */}
       <Card>
         <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <TrendingUp className="h-5 w-5" />
-            Actividad Reciente
-          </CardTitle>
+          <CardTitle>Actividad Reciente</CardTitle>
           <CardDescription>
-            Últimos documentos y cambios en tu cuenta
+            Los documentos más recientes en tu cuenta
           </CardDescription>
         </CardHeader>
         <CardContent>
           <div className="space-y-4">
-            {contracts.slice(0, 5).map((contract) => (
-              <div key={contract.id} className="flex items-center justify-between p-3 border rounded-lg">
-                <div className="flex items-center gap-3">
-                  <div className="p-2 bg-blue-100 rounded-full">
-                    <FileText className="h-4 w-4 text-blue-600" />
-                  </div>
-                  <div>
-                    <p className="font-medium">{contract.clientName}</p>
-                    <p className="text-sm text-gray-500">
-                      Documento #{contract.id.slice(0, 8)}
-                    </p>
-                  </div>
+            {contracts?.slice(0, 5).map((contract) => (
+              <div key={contract.id} className="flex items-center space-x-4">
+                <div className={`w-2 h-2 rounded-full ${
+                  contract.status === 'completed' ? 'bg-green-500' :
+                  contract.status === 'pending' ? 'bg-yellow-500' :
+                  'bg-blue-500'
+                }`} />
+                <div className="flex-1">
+                  <p className="text-sm font-medium">{contract.clientName}</p>
+                  <p className="text-xs text-gray-500">{contract.documentNumber}</p>
                 </div>
-                <div className="text-right">
-                  <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-                    contract.status === 'completed' 
-                      ? 'bg-green-100 text-green-800'
-                      : contract.status === 'sent'
-                      ? 'bg-yellow-100 text-yellow-800'
-                      : 'bg-gray-100 text-gray-800'
-                  }`}>
-                    {contract.status === 'completed' ? 'Completado' :
-                     contract.status === 'sent' ? 'Enviado' : 'Borrador'}
-                  </span>
-                  <p className="text-xs text-gray-500 mt-1">
-                    {new Date(contract.createdAt).toLocaleDateString('es-ES')}
-                  </p>
+                <div className="text-xs text-gray-500">
+                  {new Date(contract.createdAt).toLocaleDateString()}
                 </div>
               </div>
-            ))}
-            {contracts.length === 0 && (
-              <div className="text-center py-8 text-gray-500">
-                <AlertCircle className="h-12 w-12 mx-auto mb-4 text-gray-400" />
-                <p>No hay documentos recientes</p>
-                <p className="text-sm">Crea tu primer documento para comenzar</p>
+            )) || (
+              <div className="text-center py-4 text-gray-500">
+                <AlertCircle className="w-8 h-8 mx-auto mb-2" />
+                <p>No hay contratos disponibles</p>
+                <p className="text-xs">Crea tu primer contrato para comenzar</p>
               </div>
             )}
           </div>
         </CardContent>
       </Card>
+
+      {/* Admin Section */}
+      {isAdmin && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Shield className="w-5 h-5" />
+              Panel de Administración
+            </CardTitle>
+            <CardDescription>
+              Herramientas avanzadas para administradores
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="flex gap-4">
+              <Button variant="outline" size="sm">
+                <Users className="w-4 h-4 mr-2" />
+                Gestionar Usuarios
+              </Button>
+              <Button variant="outline" size="sm">
+                <FileText className="w-4 h-4 mr-2" />
+                Plantillas del Sistema
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+      )}
     </div>
   );
 };
