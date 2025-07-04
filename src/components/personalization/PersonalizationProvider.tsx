@@ -1,3 +1,4 @@
+
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useUserProfile } from '@/hooks/useUserProfile';
@@ -13,6 +14,7 @@ interface PersonalizationSettings {
   customWelcomeMessage?: string;
   dashboardLayout: 'grid' | 'list';
   notificationsEnabled: boolean;
+  backgroundImageUrl?: string;
 }
 
 interface AppCustomization {
@@ -25,6 +27,7 @@ interface AppCustomization {
   app_title: string;
   app_subtitle: string;
   welcome_message: string | null;
+  background_image_url: string | null;
   is_active: boolean;
 }
 
@@ -115,6 +118,7 @@ export const PersonalizationProvider = ({ children }: PersonalizationProviderPro
       accentColor: customization.accent_color,
       fontFamily: customization.font_family,
       customWelcomeMessage: customization.welcome_message || undefined,
+      backgroundImageUrl: customization.background_image_url || undefined,
     };
     
     setSettings(prev => ({ ...prev, ...newSettings }));
@@ -128,6 +132,15 @@ export const PersonalizationProvider = ({ children }: PersonalizationProviderPro
     root.style.setProperty('--secondary-color', settings.secondaryColor);
     root.style.setProperty('--accent-color', settings.accentColor);
     root.style.setProperty('--font-family', settings.fontFamily);
+    
+    // Apply background image if available
+    if (settings.backgroundImageUrl) {
+      root.style.setProperty('--background-image', `url(${settings.backgroundImageUrl})`);
+      document.body.classList.add('has-background-image');
+    } else {
+      root.style.removeProperty('--background-image');
+      document.body.classList.remove('has-background-image');
+    }
     
     // Apply theme class
     root.classList.remove('light', 'dark');

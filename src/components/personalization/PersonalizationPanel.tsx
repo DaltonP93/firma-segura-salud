@@ -1,4 +1,5 @@
 
+
 import React from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
@@ -8,10 +9,56 @@ import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
 import { usePersonalization } from './PersonalizationProvider';
-import { Palette, Monitor, Layout, Bell, RotateCcw } from 'lucide-react';
+import { Palette, Monitor, Layout, Bell, RotateCcw, Upload, X, Image } from 'lucide-react';
+import { useToast } from '@/hooks/use-toast';
+import { supabase } from '@/integrations/supabase/client';
 
 const PersonalizationPanel = () => {
   const { settings, updateSettings, resetToDefaults } = usePersonalization();
+  const { toast } = useToast();
+  const [uploading, setUploading] = React.useState(false);
+
+  const handleBackgroundImageUpload = async (file: File) => {
+    try {
+      setUploading(true);
+      
+      const fileName = `${Date.now()}-${file.name}`;
+      
+      const { error: uploadError } = await supabase.storage
+        .from('background-images')
+        .upload(fileName, file);
+
+      if (uploadError) throw uploadError;
+
+      const { data: { publicUrl } } = supabase.storage
+        .from('background-images')
+        .getPublicUrl(fileName);
+
+      updateSettings({ backgroundImageUrl: publicUrl });
+
+      toast({
+        title: "Éxito",
+        description: "Imagen de fondo subida correctamente",
+      });
+    } catch (error) {
+      console.error('Error uploading background image:', error);
+      toast({
+        title: "Error",
+        description: "Error al subir la imagen de fondo",
+        variant: "destructive",
+      });
+    } finally {
+      setUploading(false);
+    }
+  };
+
+  const removeBackgroundImage = () => {
+    updateSettings({ backgroundImageUrl: undefined });
+    toast({
+      title: "Imagen removida",
+      description: "La imagen de fondo ha sido removida",
+    });
+  };
 
   return (
     <div className="space-y-6">
@@ -105,6 +152,62 @@ const PersonalizationPanel = () => {
           </CardContent>
         </Card>
 
+        {/* Background Image Settings */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Image className="w-5 h-5" />
+              Imagen de Fondo
+            </CardTitle>
+            <CardDescription>
+              Personaliza la imagen de fondo de la aplicación
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="space-y-2">
+              <Label>Imagen de Fondo Actual</Label>
+              {settings.backgroundImageUrl ? (
+                <div className="space-y-2">
+                  <div className="w-full h-32 border-2 border-dashed border-gray-300 rounded-lg overflow-hidden">
+                    <img 
+                      src={settings.backgroundImageUrl} 
+                      alt="Background" 
+                      className="w-full h-full object-cover"
+                    />
+                  </div>
+                  <Button 
+                    variant="outline" 
+                    size="sm"
+                    onClick={removeBackgroundImage}
+                    className="w-full"
+                  >
+                    <X className="w-3 h-3 mr-1" />
+                    Remover Imagen de Fondo
+                  </Button>
+                </div>
+              ) : (
+                <div className="border-2 border-dashed border-gray-300 rounded-lg p-4 text-center">
+                  <Upload className="w-8 h-8 mx-auto text-gray-400 mb-2" />
+                  <p className="text-sm text-gray-500 mb-2">No hay imagen de fondo configurada</p>
+                  <Input
+                    type="file"
+                    accept="image/*"
+                    onChange={(e) => {
+                      const file = e.target.files?.[0];
+                      if (file) handleBackgroundImageUpload(file);
+                    }}
+                    disabled={uploading}
+                    className="w-full"
+                  />
+                  {uploading && (
+                    <p className="text-xs text-gray-500 mt-1">Subiendo...</p>
+                  )}
+                </div>
+              )}
+            </div>
+          </CardContent>
+        </Card>
+
         {/* Layout Settings */}
         <Card>
           <CardHeader>
@@ -189,7 +292,7 @@ const PersonalizationPanel = () => {
         </Card>
 
         {/* System Settings */}
-        <Card>
+        <Card className="md:col-span-2">
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <Monitor className="w-5 h-5" />

@@ -1,4 +1,5 @@
 
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -99,6 +100,48 @@ All colors MUST be HSL.
 
   body {
     @apply bg-background text-foreground;
+  }
+
+  /* Background image styles */
+  body.has-background-image {
+    background-image: var(--background-image);
+    background-size: cover;
+    background-position: center;
+    background-repeat: no-repeat;
+    background-attachment: fixed;
+  }
+
+  /* Ensure content is readable over background images */
+  body.has-background-image::before {
+    content: '';
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(255, 255, 255, 0.85);
+    z-index: -1;
+    pointer-events: none;
+  }
+
+  .dark body.has-background-image::before {
+    background: rgba(0, 0, 0, 0.75);
+  }
+
+  /* Adjust content containers for better readability */
+  body.has-background-image .bg-white {
+    background-color: rgba(255, 255, 255, 0.95);
+    backdrop-filter: blur(10px);
+  }
+
+  body.has-background-image .bg-gray-50 {
+    background-color: rgba(248, 250, 252, 0.95);
+    backdrop-filter: blur(10px);
+  }
+
+  .dark body.has-background-image .bg-gray-900 {
+    background-color: rgba(17, 24, 39, 0.95);
+    backdrop-filter: blur(10px);
   }
 }
 
