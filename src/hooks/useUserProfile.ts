@@ -56,8 +56,8 @@ export const useUserProfile = () => {
       return data;
     },
     enabled: !!user?.id,
-    staleTime: 1 * 60 * 1000, // Reduce stale time to 1 minute for faster updates
-    gcTime: 5 * 60 * 1000, // Reduce garbage collection time to 5 minutes
+    staleTime: 1 * 60 * 1000, // 1 minute
+    gcTime: 5 * 60 * 1000, // 5 minutes
     retry: (failureCount, error: any) => {
       console.log(`Profile fetch failed (attempt ${failureCount + 1}):`, error?.message);
       // Retry up to 3 times for network errors, but not for auth errors

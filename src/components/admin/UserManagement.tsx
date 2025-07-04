@@ -1,6 +1,7 @@
+
 import React, { useState, useEffect } from 'react';
 import { useToast } from '@/hooks/use-toast';
-import { supabase } from '@/integrations/supabase/client';
+import { userManagementService } from '@/services/userManagementService';
 import UserManagementHeader from './user-management/UserManagementHeader';
 import UserFilters from './user-management/UserFilters';
 import UserList from './user-management/UserList';
@@ -36,18 +37,16 @@ const UserManagement = () => {
 
   const fetchUsers = async () => {
     try {
-      const { data, error } = await supabase
-        .from('profiles')
-        .select('*')
-        .order('created_at', { ascending: false });
-
-      if (error) throw error;
-      setUsers(data || []);
+      setLoading(true);
+      console.log('Fetching users in UserManagement component...');
+      const fetchedUsers = await userManagementService.fetchAllUsers();
+      console.log('Users fetched:', fetchedUsers.length);
+      setUsers(fetchedUsers);
     } catch (error) {
       console.error('Error fetching users:', error);
       toast({
         title: "Error",
-        description: "Error al cargar los usuarios",
+        description: "Error al cargar los usuarios. Verifica que tengas permisos de administrador.",
         variant: "destructive",
       });
     } finally {
@@ -55,19 +54,8 @@ const UserManagement = () => {
     }
   };
 
-  const checkEmailConfirmationStatus = async () => {
-    try {
-      // Check if email confirmation is required by attempting to get auth settings
-      const { data: settings } = await supabase.auth.getSession();
-      return settings !== null;
-    } catch (error) {
-      console.warn('Could not check email confirmation status:', error);
-      return true; // Assume confirmation is required if we can't check
-    }
-  };
-
   const handleCreateUser = async () => {
-    // Validar campos requeridos
+    // Validate required fields
     if (!formData.email || !formData.password || !formData.full_name) {
       toast({
         title: "Campos requeridos",
@@ -77,7 +65,7 @@ const UserManagement = () => {
       return;
     }
 
-    // Validar contraseña
+    // Validate password strength
     const passwordStrength = calculatePasswordStrength(formData.password);
     if (passwordStrength.score < 75) {
       toast({
@@ -89,124 +77,28 @@ const UserManagement = () => {
     }
 
     setCreateLoading(true);
-    console.log('Starting user creation process...', { email: formData.email, name: formData.full_name });
     
     try {
-      // First create the user via signup
-      const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
+      await userManagementService.createUser({
         email: formData.email,
         password: formData.password,
-        options: {
-          emailRedirectTo: `${window.location.origin}/`,
-          data: {
-            full_name: formData.full_name,
-            username: formData.username,
-          },
-        },
+        full_name: formData.full_name,
+        username: formData.username,
+        phone: formData.phone,
+        company: formData.company,
+        role: formData.role,
       });
 
-      if (signUpError) {
-        console.error('SignUp error:', signUpError);
-        throw signUpError;
-      }
-
-      console.log('SignUp successful:', signUpData);
-
-      // Check if user was created successfully
-      if (signUpData.user) {
-        const userId = signUpData.user.id;
-        console.log('User created with ID:', userId);
-
-        // Check if email confirmation is required
-        const needsConfirmation = !signUpData.user.email_confirmed_at;
-        
-        if (needsConfirmation) {
-          console.log('User needs email confirmation');
-          toast({
-            title: "Usuario creado",
-            description: "Usuario creado exitosamente. Se ha enviado un email de confirmación. El perfil se completará una vez que se confirme el email.",
-            duration: 6000,
-          });
-        }
-
-        // Try to update/create the profile regardless of confirmation status
-        try {
-          // First check if profile already exists
-          const { data: existingProfile } = await supabase
-            .from('profiles')
-            .select('id')
-            .eq('id', userId)
-            .single();
-
-          if (existingProfile) {
-            // Update existing profile
-            const { error: updateError } = await supabase
-              .from('profiles')
-              .update({
-                full_name: formData.full_name,
-                username: formData.username,
-                phone: formData.phone,
-                company: formData.company,
-                role: formData.role,
-                email: formData.email,
-                updated_at: new Date().toISOString(),
-              })
-              .eq('id', userId);
-
-            if (updateError) {
-              console.error('Profile update error:', updateError);
-            } else {
-              console.log('Profile updated successfully');
-            }
-          } else {
-            // Create new profile
-            const { error: insertError } = await supabase
-              .from('profiles')
-              .insert({
-                id: userId,
-                full_name: formData.full_name,
-                username: formData.username,
-                phone: formData.phone,
-                company: formData.company,
-                role: formData.role,
-                email: formData.email,
-                created_at: new Date().toISOString(),
-                updated_at: new Date().toISOString(),
-              });
-
-            if (insertError) {
-              console.error('Profile insert error:', insertError);
-            } else {
-              console.log('Profile created successfully');
-            }
-          }
-
-          if (!needsConfirmation) {
-            toast({
-              title: "Éxito",
-              description: "Usuario creado correctamente",
-            });
-          }
-        } catch (profileError) {
-          console.error('Profile operation error:', profileError);
-          toast({
-            title: "Usuario creado",
-            description: "Usuario creado pero hubo un problema al configurar el perfil. Será configurado automáticamente cuando el usuario confirme su email.",
-            variant: "default",
-          });
-        }
-      } else {
-        console.warn('SignUp succeeded but no user returned');
-        toast({
-          title: "Advertencia",
-          description: "La creación del usuario puede estar pendiente de confirmación por email",
-        });
-      }
+      toast({
+        title: "Éxito",
+        description: "Usuario creado correctamente. Se ha enviado un email de confirmación.",
+        duration: 6000,
+      });
 
       setIsCreateDialogOpen(false);
       resetForm();
       
-      // Refresh users list after a short delay to allow for database updates
+      // Refresh users list
       setTimeout(() => {
         fetchUsers();
       }, 1000);
@@ -241,19 +133,13 @@ const UserManagement = () => {
     if (!selectedUser) return;
 
     try {
-      const { error } = await supabase
-        .from('profiles')
-        .update({
-          full_name: formData.full_name,
-          username: formData.username,
-          phone: formData.phone,
-          company: formData.company,
-          role: formData.role,
-          updated_at: new Date().toISOString(),
-        })
-        .eq('id', selectedUser.id);
-
-      if (error) throw error;
+      await userManagementService.updateUser(selectedUser.id, {
+        full_name: formData.full_name,
+        username: formData.username,
+        phone: formData.phone,
+        company: formData.company,
+        role: formData.role,
+      });
 
       toast({
         title: "Éxito",
@@ -278,16 +164,11 @@ const UserManagement = () => {
     if (!confirm('¿Estás seguro de que quieres eliminar este usuario?')) return;
 
     try {
-      const { error } = await supabase
-        .from('profiles')
-        .delete()
-        .eq('id', userId);
-
-      if (error) throw error;
+      await userManagementService.deleteUser(userId);
 
       toast({
         title: "Éxito",
-        description: "Perfil de usuario eliminado correctamente",
+        description: "Usuario eliminado correctamente",
       });
 
       fetchUsers();
@@ -339,7 +220,12 @@ const UserManagement = () => {
   });
 
   if (loading) {
-    return <div className="flex justify-center py-8">Cargando usuarios...</div>;
+    return (
+      <div className="flex items-center justify-center py-8">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
+        <span className="ml-4 text-gray-600">Cargando usuarios...</span>
+      </div>
+    );
   }
 
   return (
