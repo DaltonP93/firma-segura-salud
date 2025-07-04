@@ -252,12 +252,8 @@ const PDFViewer: React.FC<PDFViewerProps> = ({
             cMapUrl: `https://unpkg.com/pdfjs-dist@${pdfjs.version}/cmaps/`,
             cMapPacked: true,
             standardFontDataUrl: `https://unpkg.com/pdfjs-dist@${pdfjs.version}/standard_fonts/`,
-            // Disable worker in options to prevent conflicts
-            disableWorker: false,
             isEvalSupported: false,
-            // Additional options for better compatibility
-            maxImageSize: 1024 * 1024,
-            cMapPacked: true
+            maxImageSize: 1024 * 1024
           }}
         >
           {!isLoading && !error && (
