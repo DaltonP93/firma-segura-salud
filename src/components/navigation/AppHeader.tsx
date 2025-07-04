@@ -25,33 +25,42 @@ import {
   Settings, 
   Shield,
   FileText,
-  Bell,
-  Check,
-  X
+  Bell
 } from 'lucide-react';
+import NotificationList from '@/components/notifications/NotificationList';
+import NotificationDetails from '@/components/notifications/NotificationDetails';
+import { Notification } from '@/components/notifications/NotificationItem';
 
 interface AppHeaderProps {
   title?: string;
   subtitle?: string;
 }
 
-// Mock notifications data - in a real app, this would come from a backend
-const mockNotifications = [
+// Enhanced mock notifications with more detailed data
+const mockNotifications: Notification[] = [
   {
     id: '1',
     title: 'Documento firmado',
-    message: 'El contrato de Juan Pérez ha sido firmado',
+    message: 'El contrato de Juan Pérez ha sido firmado exitosamente',
     time: '5 min',
     read: false,
-    type: 'success'
+    type: 'success',
+    category: 'document',
+    details: 'El documento "Contrato de Servicios - Juan Pérez" ha sido firmado digitalmente. Puedes descargar el documento final desde la sección de documentos.',
+    actionUrl: '/documents/1',
+    actionText: 'Ver documento'
   },
   {
     id: '2',
     title: 'Nueva plantilla disponible',
-    message: 'Se ha añadido una nueva plantilla PDF',
+    message: 'Se ha añadido una nueva plantilla PDF al sistema',
     time: '1 hora',
     read: false,
-    type: 'info'  
+    type: 'info',
+    category: 'system',
+    details: 'La plantilla "Contrato de Arrendamiento" está ahora disponible para crear nuevos documentos. Incluye campos automáticos para datos del inquilino y propietario.',
+    actionUrl: '/templates',
+    actionText: 'Ver plantillas'
   },
   {
     id: '3',
@@ -59,7 +68,23 @@ const mockNotifications = [
     message: 'Se envió el contrato a cliente@email.com',
     time: '2 horas',
     read: true,
-    type: 'info'
+    type: 'info',
+    category: 'document',
+    details: 'El documento ha sido enviado por correo electrónico al cliente. Se notificará cuando sea abierto o firmado.',
+    actionUrl: '/documents/3',
+    actionText: 'Ver estado'
+  },
+  {
+    id: '4',
+    title: 'Nuevo usuario registrado',
+    message: 'Un nuevo usuario se ha registrado en el sistema',
+    time: '3 horas',
+    read: false,
+    type: 'info',
+    category: 'user',
+    details: 'El usuario "Maria García" se ha registrado y está pendiente de aprobación. Revisa sus datos y asigna los permisos correspondientes.',
+    actionUrl: '/admin/users',
+    actionText: 'Gestionar usuarios'
   }
 ];
 
@@ -68,8 +93,10 @@ const AppHeader = ({ title, subtitle }: AppHeaderProps) => {
   const { profile, isAdmin } = useUserProfile();
   const navigate = useNavigate();
   const { toast } = useToast();
-  const [notifications, setNotifications] = useState(mockNotifications);
+  const [notifications, setNotifications] = useState<Notification[]>(mockNotifications);
   const [isNotificationsOpen, setIsNotificationsOpen] = useState(false);
+  const [selectedNotification, setSelectedNotification] = useState<Notification | null>(null);
+  const [isDetailsOpen, setIsDetailsOpen] = useState(false);
 
   const handleSignOut = async () => {
     try {
@@ -102,6 +129,17 @@ const AppHeader = ({ title, subtitle }: AppHeaderProps) => {
 
   const unreadCount = notifications.filter(n => !n.read).length;
 
+  const handleNotificationClick = (notification: Notification) => {
+    setSelectedNotification(notification);
+    setIsDetailsOpen(true);
+    setIsNotificationsOpen(false);
+    
+    // Mark as read when opened
+    if (!notification.read) {
+      markAsRead(notification.id);
+    }
+  };
+
   const markAsRead = (notificationId: string) => {
     setNotifications(prev => 
       prev.map(n => 
@@ -120,6 +158,16 @@ const AppHeader = ({ title, subtitle }: AppHeaderProps) => {
     setNotifications(prev => 
       prev.filter(n => n.id !== notificationId)
     );
+  };
+
+  const handleNotificationAction = (notification: Notification) => {
+    if (notification.actionUrl) {
+      navigate(notification.actionUrl);
+      toast({
+        title: "Redirigiendo",
+        description: `Navegando a ${notification.actionText}`,
+      });
+    }
   };
 
   return (
@@ -153,65 +201,25 @@ const AppHeader = ({ title, subtitle }: AppHeaderProps) => {
                   )}
                 </Button>
               </PopoverTrigger>
-              <PopoverContent className="w-80 p-0" align="end">
-                <div className="p-4 border-b">
-                  <div className="flex items-center justify-between">
-                    <h3 className="font-semibold">Notificaciones</h3>
-                    {unreadCount > 0 && (
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={markAllAsRead}
-                        className="text-xs"
-                      >
-                        Marcar todas como leídas
-                      </Button>
-                    )}
-                  </div>
-                </div>
-                <div className="max-h-80 overflow-y-auto">
-                  {notifications.length === 0 ? (
-                    <div className="p-4 text-center text-gray-500 text-sm">
-                      No hay notificaciones
-                    </div>
-                  ) : (
-                    notifications.map((notification) => (
-                      <div
-                        key={notification.id}
-                        className={`p-4 border-b hover:bg-gray-50 cursor-pointer ${
-                          !notification.read ? 'bg-blue-50' : ''
-                        }`}
-                        onClick={() => !notification.read && markAsRead(notification.id)}
-                      >
-                        <div className="flex items-start justify-between">
-                          <div className="flex-1">
-                            <div className="flex items-center gap-2 mb-1">
-                              <h4 className="text-sm font-medium">{notification.title}</h4>
-                              {!notification.read && (
-                                <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
-                              )}
-                            </div>
-                            <p className="text-xs text-gray-600 mb-1">{notification.message}</p>
-                            <p className="text-xs text-gray-400">{notification.time}</p>
-                          </div>
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              removeNotification(notification.id);
-                            }}
-                            className="h-6 w-6 p-0 ml-2"
-                          >
-                            <X className="w-3 h-3" />
-                          </Button>
-                        </div>
-                      </div>
-                    ))
-                  )}
-                </div>
+              <PopoverContent className="p-0" align="end">
+                <NotificationList
+                  notifications={notifications}
+                  onNotificationClick={handleNotificationClick}
+                  onMarkAsRead={markAsRead}
+                  onMarkAllAsRead={markAllAsRead}
+                  onRemove={removeNotification}
+                />
               </PopoverContent>
             </Popover>
+
+            {/* Notification Details Modal */}
+            <NotificationDetails
+              notification={selectedNotification}
+              isOpen={isDetailsOpen}
+              onClose={() => setIsDetailsOpen(false)}
+              onMarkAsRead={markAsRead}
+              onAction={handleNotificationAction}
+            />
 
             {/* Admin Panel Access */}
             {isAdmin && (
