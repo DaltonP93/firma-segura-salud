@@ -38,7 +38,7 @@ const iconMap = {
 
 const AppSidebar = () => {
   const { state } = useSidebar();
-  const { navigationItems, activeItem, setActiveItem } = useNavigation();
+  const { navigationItems, setActiveItem } = useNavigation();
   const location = useLocation();
 
   const isCollapsed = state === 'collapsed';

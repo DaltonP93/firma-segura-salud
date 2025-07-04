@@ -74,16 +74,18 @@ const defaultNavigationItems: NavigationItem[] = [
 ];
 
 export const NavigationProvider = ({ children }: NavigationProviderProps) => {
-  const [navigationItems, setNavigationItems] = useState<NavigationItem[]>(defaultNavigationItems);
+  const [navigationItems, setNavigationItems] = useState<NavigationItem[]>([]);
   const [activeItem, setActiveItem] = useState('');
   const [loading, setLoading] = useState(true);
-  const { profile, isAdmin } = useUserRole();
+  const { profile } = useUserRole();
 
   useEffect(() => {
-    loadNavigationCustomization();
+    if (profile !== undefined) {
+      loadNavigationCustomization();
+    }
   }, [profile]);
 
-  const loadNavigationCustomization = async () => {
+  const loadNavigationCustomization = () => {
     try {
       // Filter items based on user role
       const filteredItems = defaultNavigationItems.filter(item => {
@@ -95,14 +97,8 @@ export const NavigationProvider = ({ children }: NavigationProviderProps) => {
       setNavigationItems(filteredItems);
     } catch (error) {
       console.error('Error loading navigation customization:', error);
-      // Fallback to default items
-      const filteredItems = defaultNavigationItems.filter(item => {
-        if (item.roles) {
-          return item.roles.includes(profile?.role || 'user');
-        }
-        return true;
-      });
-      setNavigationItems(filteredItems);
+      // Fallback to default items without role filtering
+      setNavigationItems(defaultNavigationItems.filter(item => !item.roles));
     } finally {
       setLoading(false);
     }
