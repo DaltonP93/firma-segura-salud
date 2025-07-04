@@ -14,6 +14,7 @@ import {
   useSidebar,
 } from '@/components/ui/sidebar';
 import { useNavigation } from './NavigationProvider';
+import { useUserProfile } from '@/hooks/useUserProfile';
 import { 
   LayoutDashboard,
   FileText,
@@ -39,6 +40,7 @@ const iconMap = {
 const AppSidebar = () => {
   const { state } = useSidebar();
   const { navigationItems, setActiveItem } = useNavigation();
+  const { profile, isLoading } = useUserProfile();
   const location = useLocation();
 
   const isCollapsed = state === 'collapsed';
@@ -54,9 +56,24 @@ const AppSidebar = () => {
     return location.pathname === path;
   };
 
+  // Filter items based on user role
   const visibleItems = navigationItems
-    .filter(item => item.isVisible)
-    .filter(item => !['templates', 'pdf-templates'].includes(item.id)) // Remove templates and pdf-templates
+    .filter(item => {
+      if (!item.isVisible) return false;
+      
+      // If item has role restrictions and user profile is loaded
+      if (item.roles && profile) {
+        return item.roles.includes(profile.role || 'user');
+      }
+      
+      // If item has role restrictions but profile is not loaded yet, hide it
+      if (item.roles && !profile && !isLoading) {
+        return false;
+      }
+      
+      // Show items without role restrictions
+      return !item.roles;
+    })
     .sort((a, b) => a.sortOrder - b.sortOrder);
 
   return (

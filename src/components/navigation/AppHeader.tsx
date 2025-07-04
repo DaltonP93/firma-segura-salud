@@ -11,7 +11,7 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { useAuth } from '@/hooks/useAuth';
-import { useUserRole } from '@/hooks/useUserRole';
+import { useUserProfile } from '@/hooks/useUserProfile';
 import { useNavigate } from 'react-router-dom';
 import { useToast } from '@/hooks/use-toast';
 import { 
@@ -30,7 +30,7 @@ interface AppHeaderProps {
 
 const AppHeader = ({ title, subtitle }: AppHeaderProps) => {
   const { user, signOut } = useAuth();
-  const { profile, isAdmin } = useUserRole();
+  const { profile, isAdmin } = useUserProfile();
   const navigate = useNavigate();
   const { toast } = useToast();
 

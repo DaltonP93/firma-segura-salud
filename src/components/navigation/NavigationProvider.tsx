@@ -1,7 +1,6 @@
 
 import React, { createContext, useContext, useState, useEffect } from 'react';
-import { useUserRole } from '@/hooks/useUserRole';
-import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from '@/hooks/useAuth';
 
 interface NavigationItem {
   id: string;
@@ -74,35 +73,18 @@ const defaultNavigationItems: NavigationItem[] = [
 ];
 
 export const NavigationProvider = ({ children }: NavigationProviderProps) => {
-  const [navigationItems, setNavigationItems] = useState<NavigationItem[]>([]);
+  const [navigationItems, setNavigationItems] = useState<NavigationItem[]>(defaultNavigationItems);
   const [activeItem, setActiveItem] = useState('');
-  const [loading, setLoading] = useState(true);
-  const { profile } = useUserRole();
+  const [loading, setLoading] = useState(false);
+  const { user } = useAuth();
 
+  // Simple initialization without complex role checking
   useEffect(() => {
-    if (profile !== undefined) {
-      loadNavigationCustomization();
-    }
-  }, [profile]);
-
-  const loadNavigationCustomization = () => {
-    try {
-      // Filter items based on user role
-      const filteredItems = defaultNavigationItems.filter(item => {
-        if (item.roles) {
-          return item.roles.includes(profile?.role || 'user');
-        }
-        return true;
-      });
-      setNavigationItems(filteredItems);
-    } catch (error) {
-      console.error('Error loading navigation customization:', error);
-      // Fallback to default items without role filtering
-      setNavigationItems(defaultNavigationItems.filter(item => !item.roles));
-    } finally {
+    if (user !== undefined) {
+      setNavigationItems(defaultNavigationItems);
       setLoading(false);
     }
-  };
+  }, [user]);
 
   const toggleItemVisibility = (id: string) => {
     setNavigationItems(items =>
