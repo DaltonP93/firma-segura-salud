@@ -5,23 +5,20 @@ import { useToast } from "@/hooks/use-toast";
 import { Loader2, ZoomIn, ZoomOut, RotateCw } from 'lucide-react';
 import { Button } from "@/components/ui/button";
 
-// Configure PDF.js worker with fallback
+// Configure PDF.js worker with better fallback strategy
 const configurePDFWorker = () => {
-  const workerSrc = `https://cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjs.version}/pdf.worker.min.js`;
-  
-  pdfjs.GlobalWorkerOptions.workerSrc = workerSrc;
-  
-  // Test if worker loads, fallback if needed
-  const testWorker = new Worker(workerSrc);
-  testWorker.onerror = () => {
-    console.warn('Primary PDF worker failed, using fallback');
-    // Fallback to unpkg if cdnjs fails
-    pdfjs.GlobalWorkerOptions.workerSrc = `//unpkg.com/pdfjs-dist@${pdfjs.version}/build/pdf.worker.min.js`;
-  };
-  testWorker.terminate();
+  // Try to use a more compatible worker source
+  try {
+    // Use unpkg as primary source (more reliable for CORS)
+    pdfjs.GlobalWorkerOptions.workerSrc = `https://unpkg.com/pdfjs-dist@${pdfjs.version}/build/pdf.worker.min.js`;
+  } catch (error) {
+    console.warn('Failed to set PDF worker, trying fallback');
+    // Fallback to legacy worker
+    pdfjs.GlobalWorkerOptions.workerSrc = `https://unpkg.com/pdfjs-dist@${pdfjs.version}/legacy/build/pdf.worker.min.js`;
+  }
 };
 
-// Initialize worker configuration
+// Initialize worker configuration immediately
 configurePDFWorker();
 
 interface PDFViewerProps {
@@ -76,8 +73,8 @@ const PDFViewer: React.FC<PDFViewerProps> = ({
     
     // Show user-friendly error message
     let userMessage = "No se pudo cargar el archivo PDF.";
-    if (errorMessage.includes('fetch')) {
-      userMessage = "Error de conexión al cargar el PDF. Verifica tu conexión a internet.";
+    if (errorMessage.includes('fetch') || errorMessage.includes('CORS')) {
+      userMessage = "Error de conexión al cargar el PDF. Esto puede ser un problema temporal.";
     } else if (errorMessage.includes('Invalid PDF')) {
       userMessage = "El archivo no es un PDF válido.";
     } else if (errorMessage.includes('worker')) {
@@ -94,17 +91,21 @@ const PDFViewer: React.FC<PDFViewerProps> = ({
   };
 
   const handleRetry = () => {
-    if (retryCount < 3) {
+    if (retryCount < 2) {
       setRetryCount(prev => prev + 1);
       setIsLoading(true);
       setError(null);
       
-      // Reconfigure worker on retry
-      configurePDFWorker();
+      // Try different worker configuration on retry
+      if (retryCount === 0) {
+        pdfjs.GlobalWorkerOptions.workerSrc = `https://cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjs.version}/pdf.worker.min.js`;
+      } else {
+        pdfjs.GlobalWorkerOptions.workerSrc = `https://unpkg.com/pdfjs-dist@${pdfjs.version}/legacy/build/pdf.worker.min.js`;
+      }
       
       toast({
         title: "Reintentando...",
-        description: `Intento ${retryCount + 1} de 3`,
+        description: `Intento ${retryCount + 1} de 2`,
       });
     }
   };
@@ -136,14 +137,15 @@ const PDFViewer: React.FC<PDFViewerProps> = ({
           <p className="font-semibold mb-2">Error al cargar el PDF</p>
           <p className="text-sm text-gray-600 mb-4">{error}</p>
           <div className="flex gap-2 justify-center">
-            {retryCount < 3 && (
-              <Button onClick={handleRetry} variant="outline">
-                Reintentar ({retryCount + 1}/3)
+            {retryCount < 2 && (
+              <Button onClick={handleRetry} variant="outline" size="sm">
+                Reintentar ({retryCount + 1}/2)
               </Button>
             )}
             <Button 
               onClick={() => window.location.reload()}
               variant="outline"
+              size="sm"
             >
               Recargar página
             </Button>
@@ -219,6 +221,11 @@ const PDFViewer: React.FC<PDFViewerProps> = ({
               <span>Error al cargar el PDF</span>
             </div>
           }
+          options={{
+            cMapUrl: `https://unpkg.com/pdfjs-dist@${pdfjs.version}/cmaps/`,
+            cMapPacked: true,
+            standardFontDataUrl: `https://unpkg.com/pdfjs-dist@${pdfjs.version}/standard_fonts/`,
+          }}
         >
           {!isLoading && !error && (
             <Page

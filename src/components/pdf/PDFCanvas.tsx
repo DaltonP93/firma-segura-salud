@@ -1,7 +1,8 @@
 
-import { useRef, useCallback } from 'react';
+import { useRef, useCallback, useState } from 'react';
 import { Upload, Type, Calendar, Edit } from 'lucide-react';
 import PDFViewer from '../PDFViewer';
+import PDFCanvasFallback from './PDFCanvasFallback';
 import { PDFField } from './PDFFieldTypes';
 
 interface PDFCanvasProps {
@@ -34,6 +35,8 @@ const PDFCanvas = ({
   mode
 }: PDFCanvasProps) => {
   const canvasRef = useRef<HTMLDivElement>(null);
+  const [pdfError, setPdfError] = useState<string | null>(null);
+  const [retryCount, setRetryCount] = useState(0);
 
   const getFieldIcon = (type: PDFField['type']) => {
     switch (type) {
@@ -46,6 +49,27 @@ const PDFCanvas = ({
       default: return <Type className="w-4 h-4" />;
     }
   };
+
+  const handlePDFError = (error: Error) => {
+    console.error('PDF Canvas error:', error);
+    setPdfError(error.message);
+  };
+
+  const handleRetry = () => {
+    setRetryCount(prev => prev + 1);
+    setPdfError(null);
+  };
+
+  // Show fallback if there's a persistent PDF error
+  if (pdfError && retryCount >= 2) {
+    return (
+      <PDFCanvasFallback 
+        onRetry={handleRetry}
+        error={pdfError}
+        mode={mode}
+      />
+    );
+  }
 
   return (
     <div className="border-2 border-dashed border-gray-300 rounded-lg p-4 min-h-[600px] bg-gray-50 relative">
@@ -61,6 +85,7 @@ const PDFCanvas = ({
           <PDFViewer
             file={pdfSource}
             onLoadSuccess={onPDFLoadSuccess}
+            onLoadError={handlePDFError}
             className="min-h-[500px]"
             width={800}
           />
