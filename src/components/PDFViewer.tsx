@@ -5,34 +5,19 @@ import { useToast } from "@/hooks/use-toast";
 import { Loader2, ZoomIn, ZoomOut, RotateCw } from 'lucide-react';
 import { Button } from "@/components/ui/button";
 
-// Enhanced PDF.js worker configuration with better error handling
+// Simplified and more reliable PDF.js worker configuration
 const configurePDFWorker = () => {
-  // Check if worker is already configured
+  // Only configure if not already set
   if (pdfjs.GlobalWorkerOptions.workerSrc) {
-    console.log('PDF worker already configured');
     return;
   }
 
-  try {
-    // Primary worker source - use CDN for better reliability
-    pdfjs.GlobalWorkerOptions.workerSrc = `https://cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjs.version}/pdf.worker.min.js`;
-    console.log('PDF worker configured with CDN source');
-  } catch (error) {
-    console.warn('Failed to set primary PDF worker, trying fallback');
-    try {
-      // Fallback to unpkg
-      pdfjs.GlobalWorkerOptions.workerSrc = `https://unpkg.com/pdfjs-dist@${pdfjs.version}/build/pdf.worker.min.js`;
-      console.log('PDF worker configured with unpkg fallback');
-    } catch (fallbackError) {
-      console.error('Failed to configure PDF worker:', fallbackError);
-      // Last resort - legacy worker
-      pdfjs.GlobalWorkerOptions.workerSrc = `https://unpkg.com/pdfjs-dist@${pdfjs.version}/legacy/build/pdf.worker.min.js`;
-      console.log('PDF worker configured with legacy fallback');
-    }
-  }
+  // Use the most reliable CDN source first
+  pdfjs.GlobalWorkerOptions.workerSrc = `https://cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjs.version}/pdf.worker.min.js`;
+  console.log('PDF worker configured with CDN source:', pdfjs.GlobalWorkerOptions.workerSrc);
 };
 
-// Initialize worker configuration immediately
+// Configure worker immediately
 configurePDFWorker();
 
 interface PDFViewerProps {
@@ -59,16 +44,13 @@ const PDFViewer: React.FC<PDFViewerProps> = ({
   const [rotation, setRotation] = useState<number>(0);
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
-  const [retryCount, setRetryCount] = useState<number>(0);
-  const [workerRetryCount, setWorkerRetryCount] = useState<number>(0);
 
   // Reset state when file changes
   useEffect(() => {
     setIsLoading(true);
     setError(null);
-    setRetryCount(0);
-    setWorkerRetryCount(0);
     setPageNumber(1);
+    setNumPages(0);
     console.log('PDF file changed, resetting state');
   }, [file]);
 
@@ -77,8 +59,6 @@ const PDFViewer: React.FC<PDFViewerProps> = ({
     setNumPages(numPages);
     setIsLoading(false);
     setError(null);
-    setRetryCount(0);
-    setWorkerRetryCount(0);
     onLoadSuccess?.({ numPages });
   };
 
@@ -89,68 +69,14 @@ const PDFViewer: React.FC<PDFViewerProps> = ({
     const errorMessage = error.message || 'Error desconocido al cargar PDF';
     setError(errorMessage);
     
-    // Determine user-friendly error message
-    let userMessage = "No se pudo cargar el archivo PDF.";
-    let shouldRetry = false;
-    
-    if (errorMessage.includes('fetch') || errorMessage.includes('CORS') || errorMessage.includes('NetworkError')) {
-      userMessage = "Error de conexión al cargar el PDF. Verificando configuración...";
-      shouldRetry = true;
-    } else if (errorMessage.includes('Invalid PDF') || errorMessage.includes('PDF header')) {
-      userMessage = "El archivo no es un PDF válido o está corrupto.";
-    } else if (errorMessage.includes('worker') || errorMessage.includes('Worker')) {
-      userMessage = "Error al cargar el visualizador de PDF. Reconfigurando...";
-      shouldRetry = true;
-    } else if (errorMessage.includes('security') || errorMessage.includes('blocked')) {
-      userMessage = "Error de seguridad al cargar el PDF. Cambiando configuración...";
-      shouldRetry = true;
-    }
-    
+    // Show user-friendly error message
     toast({
       title: "Error cargando PDF",
-      description: userMessage,
+      description: "No se pudo cargar el archivo PDF. Verifica que el archivo sea válido.",
       variant: "destructive",
     });
     
-    // Auto-retry for certain errors
-    if (shouldRetry && retryCount < 2) {
-      setTimeout(() => {
-        handleRetry();
-      }, 1000);
-    }
-    
     onLoadError?.(error);
-  };
-
-  const handleRetry = () => {
-    if (retryCount >= 2) {
-      toast({
-        title: "Múltiples errores",
-        description: "No se pudo cargar el PDF después de varios intentos. Intenta con otro archivo o recarga la página.",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    setRetryCount(prev => prev + 1);
-    setIsLoading(true);
-    setError(null);
-    
-    // Try different worker configuration on retry
-    if (workerRetryCount === 0) {
-      pdfjs.GlobalWorkerOptions.workerSrc = `https://unpkg.com/pdfjs-dist@${pdfjs.version}/build/pdf.worker.min.js`;
-      setWorkerRetryCount(1);
-    } else if (workerRetryCount === 1) {
-      pdfjs.GlobalWorkerOptions.workerSrc = `https://unpkg.com/pdfjs-dist@${pdfjs.version}/legacy/build/pdf.worker.min.js`;
-      setWorkerRetryCount(2);
-    }
-    
-    console.log(`Retrying PDF load (attempt ${retryCount + 1}) with worker:`, pdfjs.GlobalWorkerOptions.workerSrc);
-    
-    toast({
-      title: "Reintentando...",
-      description: `Intento ${retryCount + 1} de 2`,
-    });
   };
 
   const handleZoomIn = () => {
@@ -173,33 +99,22 @@ const PDFViewer: React.FC<PDFViewerProps> = ({
     setPageNumber(prev => Math.min(prev + 1, numPages));
   };
 
-  if (error && retryCount >= 2) {
+  if (error) {
     return (
       <div className={`flex flex-col items-center justify-center p-8 ${className}`}>
         <div className="text-red-500 text-center max-w-md">
           <p className="font-semibold mb-2">Error al cargar el PDF</p>
           <p className="text-sm text-gray-600 mb-4">{error}</p>
-          <div className="flex gap-2 justify-center">
-            <Button 
-              onClick={() => window.location.reload()}
-              variant="outline"
-              size="sm"
-            >
-              Recargar página
-            </Button>
-            <Button 
-              onClick={() => {
-                setError(null);
-                setRetryCount(0);
-                setWorkerRetryCount(0);
-                setIsLoading(true);
-              }}
-              variant="outline"
-              size="sm"
-            >
-              Reintentar
-            </Button>
-          </div>
+          <Button 
+            onClick={() => {
+              setError(null);
+              setIsLoading(true);
+            }}
+            variant="outline"
+            size="sm"
+          >
+            Reintentar
+          </Button>
         </div>
       </div>
     );
@@ -249,13 +164,6 @@ const PDFViewer: React.FC<PDFViewerProps> = ({
 
       {/* PDF Document */}
       <div className="flex-1 overflow-auto border rounded-lg bg-white">
-        {isLoading && (
-          <div className="flex items-center justify-center p-8">
-            <Loader2 className="w-8 h-8 animate-spin mr-2" />
-            <span>Cargando PDF...</span>
-          </div>
-        )}
-        
         <Document
           file={file}
           onLoadSuccess={onDocumentLoadSuccess}
@@ -266,15 +174,12 @@ const PDFViewer: React.FC<PDFViewerProps> = ({
               <span>Cargando PDF...</span>
             </div>
           }
-          error={
-            <div className="flex items-center justify-center p-8 text-red-500">
-              <span>Error al cargar el PDF</span>
-            </div>
-          }
+          error={null}
           options={{
             cMapUrl: `https://unpkg.com/pdfjs-dist@${pdfjs.version}/cmaps/`,
             cMapPacked: true,
             standardFontDataUrl: `https://unpkg.com/pdfjs-dist@${pdfjs.version}/standard_fonts/`,
+            workerSrc: `https://cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjs.version}/pdf.worker.min.js`
           }}
         >
           {!isLoading && !error && (
