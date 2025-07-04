@@ -1,7 +1,6 @@
-
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
-import { useUserRole } from '@/hooks/useUserRole';
+import { useUserProfile } from '@/hooks/useUserProfile';
 
 interface PersonalizationSettings {
   theme: 'light' | 'dark' | 'auto';
@@ -66,7 +65,7 @@ interface PersonalizationProviderProps {
 export const PersonalizationProvider = ({ children }: PersonalizationProviderProps) => {
   const [settings, setSettings] = useState<PersonalizationSettings>(defaultSettings);
   const [loading, setLoading] = useState(true);
-  const { profile } = useUserRole();
+  const { profile } = useUserProfile();
 
   useEffect(() => {
     loadPersonalizationSettings();

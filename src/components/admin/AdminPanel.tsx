@@ -1,10 +1,9 @@
-
 import React, { useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { Palette, Building, FileText, Users, Settings } from 'lucide-react';
-import { useUserRole } from '@/hooks/useUserRole';
+import { useUserProfile } from '@/hooks/useUserProfile';
 import { useSupabaseData } from '@/hooks/useSupabaseData';
 import CustomizationManager from './CustomizationManager';
 import CompanyTypesManager from './CompanyTypesManager';
@@ -15,7 +14,7 @@ import AdminQuickActions from './AdminQuickActions';
 import AdminRecentDocuments from './AdminRecentDocuments';
 
 const AdminPanel = () => {
-  const { isAdmin, isLoading } = useUserRole();
+  const { isAdmin, isLoading } = useUserProfile();
   const [activeTab, setActiveTab] = useState('overview');
   const { contracts, templates, pdfTemplates } = useSupabaseData();
 

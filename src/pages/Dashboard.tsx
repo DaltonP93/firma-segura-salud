@@ -1,14 +1,13 @@
-
 import React from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { useSupabaseData } from '@/hooks/useSupabaseData';
-import { useUserRole } from '@/hooks/useUserRole';
+import { useUserProfile } from '@/hooks/useUserProfile';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
 import { FileText, Users, CheckCircle, Clock, TrendingUp, AlertCircle, Layers } from 'lucide-react';
 
 const Dashboard = () => {
   const { contracts, templates, pdfTemplates, loading } = useSupabaseData();
-  const { profile, isAdmin } = useUserRole();
+  const { profile, isAdmin } = useUserProfile();
 
   if (loading) {
     return (

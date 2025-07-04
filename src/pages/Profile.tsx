@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -8,13 +7,13 @@ import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { User, Mail, Phone, Building, Save, Shield } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
-import { useUserRole } from '@/hooks/useUserRole';
+import { useUserProfile } from '@/hooks/useUserProfile';
 import { supabase } from '@/integrations/supabase/client';
 import ProfileImageUpload from '@/components/ProfileImageUpload';
 
 const Profile = () => {
   const { toast } = useToast();
-  const { profile, isLoading } = useUserRole();
+  const { profile, isLoading } = useUserProfile();
   const [saving, setSaving] = useState(false);
 
   const [formData, setFormData] = useState({
