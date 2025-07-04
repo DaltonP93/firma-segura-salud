@@ -1,5 +1,4 @@
-
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { 
@@ -30,10 +29,24 @@ import {
 import NotificationList from '@/components/notifications/NotificationList';
 import NotificationDetails from '@/components/notifications/NotificationDetails';
 import { Notification } from '@/components/notifications/NotificationItem';
+import { supabase } from '@/integrations/supabase/client';
 
 interface AppHeaderProps {
   title?: string;
   subtitle?: string;
+}
+
+interface AppCustomization {
+  id: string;
+  theme_name: string;
+  logo_url: string | null;
+  app_title: string;
+  app_subtitle: string;
+  primary_color: string;
+  secondary_color: string;
+  accent_color: string;
+  font_family: string;
+  is_active: boolean;
 }
 
 // Enhanced mock notifications with more detailed data
@@ -97,6 +110,28 @@ const AppHeader = ({ title, subtitle }: AppHeaderProps) => {
   const [isNotificationsOpen, setIsNotificationsOpen] = useState(false);
   const [selectedNotification, setSelectedNotification] = useState<Notification | null>(null);
   const [isDetailsOpen, setIsDetailsOpen] = useState(false);
+  const [activeCustomization, setActiveCustomization] = useState<AppCustomization | null>(null);
+
+  // Load active customization
+  useEffect(() => {
+    const fetchActiveCustomization = async () => {
+      try {
+        const { data: customization } = await supabase
+          .from('app_customization')
+          .select('*')
+          .eq('is_active', true)
+          .single();
+
+        if (customization) {
+          setActiveCustomization(customization);
+        }
+      } catch (error) {
+        console.error('Error fetching active customization:', error);
+      }
+    };
+
+    fetchActiveCustomization();
+  }, []);
 
   const handleSignOut = async () => {
     try {
@@ -170,20 +205,35 @@ const AppHeader = ({ title, subtitle }: AppHeaderProps) => {
     }
   };
 
+  // Get the title and subtitle from customization or props
+  const displayTitle = activeCustomization?.app_title || title || 'Sistema de Gestión Documental';
+  const displaySubtitle = activeCustomization?.app_subtitle || subtitle;
+
   return (
     <header className="bg-white shadow-sm border-b sticky top-0 z-50">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between items-center py-4">
           <div className="flex items-center">
-            <div className="w-10 h-10 bg-primary/10 rounded-full flex items-center justify-center mr-3">
-              <FileText className="w-6 h-6 text-primary" />
-            </div>
+            {/* Display custom logo if available, otherwise show default icon */}
+            {activeCustomization?.logo_url ? (
+              <div className="w-10 h-10 rounded-full flex items-center justify-center mr-3 overflow-hidden">
+                <img 
+                  src={activeCustomization.logo_url} 
+                  alt="Company Logo" 
+                  className="w-full h-full object-contain"
+                />
+              </div>
+            ) : (
+              <div className="w-10 h-10 bg-primary/10 rounded-full flex items-center justify-center mr-3">
+                <FileText className="w-6 h-6 text-primary" />
+              </div>
+            )}
             <div>
               <h1 className="text-xl font-semibold text-gray-900">
-                {title || 'Sistema de Gestión Documental'}
+                {displayTitle}
               </h1>
-              {subtitle && (
-                <p className="text-sm text-gray-500">{subtitle}</p>
+              {displaySubtitle && (
+                <p className="text-sm text-gray-500">{displaySubtitle}</p>
               )}
             </div>
           </div>

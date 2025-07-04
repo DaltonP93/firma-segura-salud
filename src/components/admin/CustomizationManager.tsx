@@ -174,6 +174,9 @@ const CustomizationManager = () => {
       await fetchData();
       setIsEditing(false);
       setSelectedCustomization(null);
+      
+      // Force a page refresh to update the header with new customization
+      window.location.reload();
     } catch (error) {
       console.error('Error saving customization:', error);
       toast({
@@ -252,6 +255,9 @@ const CustomizationManager = () => {
       if (!customization.is_active) {
         applyCustomization({ ...customization, is_active: true });
       }
+      
+      // Force a page refresh to update the header immediately
+      window.location.reload();
     } catch (error) {
       console.error('Error toggling customization:', error);
       toast({
