@@ -11,14 +11,21 @@ export default defineConfig(({ mode }) => ({
     port: 8080,
     // Add CORS headers to help with PDF.js worker loading
     cors: true,
+    // Add headers for better PDF.js compatibility
+    headers: {
+      'Cross-Origin-Embedder-Policy': 'require-corp',
+      'Cross-Origin-Opener-Policy': 'same-origin',
+    },
   },
   // Optimize dependencies to avoid issues with PDF.js
   optimizeDeps: {
     include: ['react-pdf', 'pdfjs-dist'],
+    exclude: ['pdfjs-dist/build/pdf.worker.js'],
   },
   // Add worker configuration for better PDF.js support
   worker: {
     format: 'es',
+    plugins: () => [react()],
   },
   plugins: [
     react(),
@@ -30,7 +37,7 @@ export default defineConfig(({ mode }) => ({
       "@": path.resolve(__dirname, "./src"),
     },
   },
-  // Add build configuration for better PDF.js compatibility
+  // Enhanced build configuration for better PDF.js compatibility
   build: {
     rollupOptions: {
       external: [],
@@ -40,5 +47,11 @@ export default defineConfig(({ mode }) => ({
         },
       },
     },
+    // Increase chunk size warning limit for PDF.js
+    chunkSizeWarningLimit: 1600,
+  },
+  // Define global constants for better PDF.js worker handling
+  define: {
+    global: 'globalThis',
   },
 }));
