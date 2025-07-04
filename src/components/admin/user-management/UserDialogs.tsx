@@ -19,6 +19,7 @@ interface UserDialogsProps {
   onCreateUser: () => void;
   onEditUser: () => void;
   onResetForm: () => void;
+  onPasswordReset: (email: string) => void;
 }
 
 const UserDialogs: React.FC<UserDialogsProps> = ({
@@ -33,7 +34,8 @@ const UserDialogs: React.FC<UserDialogsProps> = ({
   createLoading,
   onCreateUser,
   onEditUser,
-  onResetForm
+  onResetForm,
+  onPasswordReset
 }) => {
   const passwordStrength = calculatePasswordStrength(formData.password);
 
@@ -79,6 +81,7 @@ const UserDialogs: React.FC<UserDialogsProps> = ({
             formData={formData}
             setFormData={setFormData}
             isEditMode={true}
+            onPasswordReset={onPasswordReset}
           />
           <div className="flex gap-2 pt-4">
             <Button 

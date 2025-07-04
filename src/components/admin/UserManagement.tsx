@@ -160,6 +160,24 @@ const UserManagement = () => {
     }
   };
 
+  const handlePasswordReset = async (email: string) => {
+    try {
+      await userManagementService.sendPasswordReset(email);
+      toast({
+        title: "Éxito",
+        description: "Se ha enviado un email de restablecimiento de contraseña al usuario",
+        duration: 5000,
+      });
+    } catch (error: any) {
+      console.error('Error sending password reset:', error);
+      toast({
+        title: "Error",
+        description: "Error al enviar el email de restablecimiento",
+        variant: "destructive",
+      });
+    }
+  };
+
   const handleDeleteUser = async (userId: string) => {
     if (!confirm('¿Estás seguro de que quieres eliminar este usuario?')) return;
 
@@ -261,6 +279,7 @@ const UserManagement = () => {
         onCreateUser={handleCreateUser}
         onEditUser={handleEditUser}
         onResetForm={resetForm}
+        onPasswordReset={handlePasswordReset}
       />
     </div>
   );

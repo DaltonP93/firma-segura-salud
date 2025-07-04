@@ -3,6 +3,9 @@ import React from 'react';
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Mail, Key } from 'lucide-react';
 import PasswordStrengthIndicator, { calculatePasswordStrength } from './PasswordStrengthIndicator';
 
 interface UserFormData {
@@ -19,10 +22,22 @@ interface UserFormProps {
   formData: UserFormData;
   setFormData: (data: UserFormData) => void;
   isEditMode?: boolean;
+  onPasswordReset?: (email: string) => void;
 }
 
-const UserForm: React.FC<UserFormProps> = ({ formData, setFormData, isEditMode = false }) => {
+const UserForm: React.FC<UserFormProps> = ({ 
+  formData, 
+  setFormData, 
+  isEditMode = false,
+  onPasswordReset 
+}) => {
   const passwordStrength = calculatePasswordStrength(formData.password);
+
+  const handlePasswordReset = () => {
+    if (formData.email && onPasswordReset) {
+      onPasswordReset(formData.email);
+    }
+  };
 
   return (
     <div className="space-y-4">
@@ -66,6 +81,32 @@ const UserForm: React.FC<UserFormProps> = ({ formData, setFormData, isEditMode =
           />
           <PasswordStrengthIndicator password={formData.password} />
         </div>
+      )}
+
+      {isEditMode && formData.email && (
+        <Card className="bg-blue-50 border-blue-200">
+          <CardHeader className="pb-3">
+            <CardTitle className="text-sm font-medium text-blue-800 flex items-center gap-2">
+              <Key className="w-4 h-4" />
+              Gestión de Contraseña
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="pt-0">
+            <p className="text-sm text-blue-700 mb-3">
+              Para cambiar la contraseña del usuario, se enviará un email de restablecimiento.
+            </p>
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={handlePasswordReset}
+              className="w-full border-blue-300 text-blue-700 hover:bg-blue-100"
+            >
+              <Mail className="w-4 h-4 mr-2" />
+              Enviar Email de Restablecimiento
+            </Button>
+          </CardContent>
+        </Card>
       )}
       
       <div className="space-y-2">

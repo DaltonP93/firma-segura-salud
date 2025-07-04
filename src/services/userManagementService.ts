@@ -12,6 +12,11 @@ export interface CreateUserData {
   role: string;
 }
 
+export interface PasswordResetData {
+  userId: string;
+  forceReset?: boolean;
+}
+
 export const userManagementService = {
   // Fetch all users (admins only)
   async fetchAllUsers(): Promise<Profile[]> {
@@ -106,6 +111,41 @@ export const userManagementService = {
     }
 
     console.log('User updated successfully');
+  },
+
+  // Send password reset email
+  async sendPasswordReset(email: string): Promise<void> {
+    console.log('Sending password reset email to:', email);
+    
+    const { error } = await supabase.auth.resetPasswordForEmail(email, {
+      redirectTo: `${window.location.origin}/auth/reset-password`,
+    });
+
+    if (error) {
+      console.error('Error sending password reset:', error);
+      throw error;
+    }
+
+    console.log('Password reset email sent successfully');
+  },
+
+  // Update user password (for admin use)
+  async updateUserPassword(userId: string, newPassword: string): Promise<void> {
+    console.log('Updating password for user:', userId);
+    
+    // This requires admin privileges and should be done through the admin API
+    // For now, we'll send a password reset email as a workaround
+    const { data: profile } = await supabase
+      .from('profiles')
+      .select('email')
+      .eq('id', userId)
+      .single();
+
+    if (!profile?.email) {
+      throw new Error('User email not found');
+    }
+
+    await this.sendPasswordReset(profile.email);
   },
 
   // Delete user profile
