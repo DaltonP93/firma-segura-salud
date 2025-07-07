@@ -1,10 +1,9 @@
-
 import React, { useState } from 'react';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
-import { FileText, Users, Send, CheckCircle, Layers, Plus, LogOut, User, Menu } from 'lucide-react';
+import { FileText, Users, Send, CheckCircle, Layers, Plus, LogOut, User, Menu, ShoppingCart } from 'lucide-react';
 import ContractForm from '@/components/ContractForm';
 import ContractTracker from '@/components/ContractTracker';
 import ContractsList from '@/components/ContractsList';
@@ -12,6 +11,7 @@ import TemplateBuilder from '@/components/TemplateBuilder';
 import DocumentManager from '@/components/DocumentManager';
 import PDFTemplateBuilder, { PDFTemplate } from '@/components/PDFTemplateBuilder';
 import PDFDocumentGenerator from '@/components/PDFDocumentGenerator';
+import SalesManager from '@/components/sales/SalesManager';
 import AuthWrapper from '@/components/AuthWrapper';
 import AuthModal from '@/components/AuthModal';
 import { useAuth } from '@/hooks/useAuth';
@@ -195,6 +195,7 @@ const Index = () => {
     { value: 'templates', label: 'Templates', icon: Layers },
     { value: 'pdf-templates', label: 'PDF Templates', icon: FileText },
     { value: 'pdf-generator', label: 'PDF Docs', icon: Plus },
+    { value: 'sales', label: 'Registrar Ventas', icon: ShoppingCart },
     { value: 'dashboard', label: 'Dashboard', icon: CheckCircle },
   ];
 
@@ -277,7 +278,7 @@ const Index = () => {
               </div>
 
               {/* Desktop Tabs */}
-              <TabsList className="hidden sm:grid w-full grid-cols-6 lg:w-auto lg:grid-cols-6">
+              <TabsList className="hidden sm:grid w-full grid-cols-7 lg:w-auto lg:grid-cols-7">
                 {tabItems.map((item) => (
                   <TabsTrigger key={item.value} value={item.value} className="flex items-center gap-2 text-xs lg:text-sm">
                     <item.icon className="w-4 h-4" />
@@ -322,6 +323,10 @@ const Index = () => {
                   templates={pdfTemplates}
                   onGenerateDocument={handleGeneratePDFDocument}
                 />
+              </TabsContent>
+
+              <TabsContent value="sales">
+                <SalesManager />
               </TabsContent>
 
               <TabsContent value="dashboard" className="space-y-4 sm:space-y-6">
