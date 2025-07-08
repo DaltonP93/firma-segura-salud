@@ -186,15 +186,35 @@ export class SignatureService {
     const signatureRequest = await this.getSignatureRequestWithDetails(signatureRequestId);
     if (!signatureRequest) throw new Error('Signature request not found');
 
-    // TODO: Implement actual notification sending via edge functions
-    // For now, we'll create the notification logs
+    // Send email invitations to all signers
     for (const signer of signatureRequest.signers) {
-      await this.createNotificationLog(
-        signatureRequestId,
-        signer.id,
-        'email',
-        `Signature request: ${signatureRequest.title}`
-      );
+      try {
+        const { error: inviteError } = await supabase.functions.invoke('send-signature-invitation', {
+          body: {
+            signatureRequestId,
+            signerEmail: signer.email,
+            signerName: signer.name,
+            documentTitle: signatureRequest.title,
+            accessToken: signer.access_token,
+            message: signatureRequest.message,
+            expiresAt: signatureRequest.expires_at,
+          },
+        });
+
+        if (inviteError) {
+          console.error('Error sending invitation to', signer.email, inviteError);
+          // Create failed notification log
+          await this.createNotificationLog(
+            signatureRequestId,
+            signer.id,
+            'email',
+            `Failed to send invitation: ${inviteError.message}`,
+            'failed'
+          );
+        }
+      } catch (error) {
+        console.error('Error sending invitation to', signer.email, error);
+      }
     }
   }
 
@@ -203,7 +223,8 @@ export class SignatureService {
     signatureRequestId: string,
     signerId: string,
     notificationType: 'email' | 'sms' | 'whatsapp' | 'push',
-    messageContent: string
+    messageContent: string,
+    status: 'pending' | 'sent' | 'delivered' | 'failed' | 'bounced' = 'sent'
   ): Promise<void> {
     const { error } = await supabase
       .from('notification_logs')
@@ -212,8 +233,8 @@ export class SignatureService {
         signer_id: signerId,
         notification_type: notificationType,
         message_content: messageContent,
-        status: 'sent',
-        sent_at: new Date().toISOString(),
+        status,
+        sent_at: status === 'sent' ? new Date().toISOString() : null,
       });
 
     if (error) throw error;
@@ -290,7 +311,7 @@ export class SignatureService {
         })
         .eq('id', signatureRequestId);
 
-      await this.createDocumentEvent(signatureRequestId, undefined, 'completed');
+      await this.createDocumentEvent(signatureRequestId, 'completed', undefined);
     }
   }
 }

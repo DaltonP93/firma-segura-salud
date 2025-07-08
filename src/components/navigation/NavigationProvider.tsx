@@ -53,12 +53,20 @@ const defaultNavigationItems: NavigationItem[] = [
     sortOrder: 2,
   },
   {
+    id: 'signatures',
+    label: 'Firmas Electrónicas',
+    path: '/signatures',
+    icon: 'pen-tool',
+    isVisible: true,
+    sortOrder: 3,
+  },
+  {
     id: 'profile',
     label: 'Mi Perfil',
     path: '/profile',
     icon: 'user',
     isVisible: true,
-    sortOrder: 3,
+    sortOrder: 4,
   },
   {
     id: 'admin',
@@ -67,7 +75,7 @@ const defaultNavigationItems: NavigationItem[] = [
     icon: 'settings',
     roles: ['admin', 'super_admin'],
     isVisible: true,
-    sortOrder: 4,
+    sortOrder: 5,
   },
 ];
 

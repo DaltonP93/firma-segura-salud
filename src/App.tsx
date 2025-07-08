@@ -18,6 +18,8 @@ import Index from "./pages/Index";
 import NotFound from "./pages/NotFound";
 import AdminPanel from "./components/admin/AdminPanel";
 import PersonalizationPanel from "./components/personalization/PersonalizationPanel";
+import SignatureManager from "./components/signature/SignatureManager";
+import SigningInterface from "./components/signature/SigningInterface";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -122,6 +124,12 @@ const App = () => {
                 } 
               />
               
+              {/* Public signing interface */}
+              <Route 
+                path="/sign/:token" 
+                element={<SigningInterface />} 
+              />
+              
               {/* Protected routes with layout */}
               <Route 
                 path="/dashboard" 
@@ -152,6 +160,19 @@ const App = () => {
                     <AppLayout>
                       <div className="p-6">
                         <AdminPanel />
+                      </div>
+                    </AppLayout>
+                  </ProtectedRoute>
+                } 
+              />
+
+              <Route 
+                path="/signatures" 
+                element={
+                  <ProtectedRoute>
+                    <AppLayout>
+                      <div className="p-6">
+                        <SignatureManager />
                       </div>
                     </AppLayout>
                   </ProtectedRoute>
