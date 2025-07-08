@@ -1,12 +1,11 @@
-
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
-import { Calendar, CalendarIcon, User, Phone, Mail, MapPin, CreditCard } from 'lucide-react';
+import { User, Users, FileText } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import BeneficiariesForm from './BeneficiariesForm';
 
@@ -46,13 +45,26 @@ interface SalesRequestFormProps {
 
 const policyTypes = [
   'Seguro de Vida Individual',
-  'Seguro de Vida Familiar',
+  'Seguro de Vida Familiar', 
   'Seguro de Accidentes Personales',
   'Seguro de Salud',
   'Seguro de Incapacidad',
   'Seguro Temporal',
   'Seguro Permanente'
 ];
+
+const calculateAge = (birthDate: string): number => {
+  const today = new Date();
+  const birth = new Date(birthDate);
+  let age = today.getFullYear() - birth.getFullYear();
+  const monthDiff = today.getMonth() - birth.getMonth();
+  
+  if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birth.getDate())) {
+    age--;
+  }
+  
+  return age;
+};
 
 const SalesRequestForm: React.FC<SalesRequestFormProps> = ({
   onSubmit,
@@ -63,6 +75,8 @@ const SalesRequestForm: React.FC<SalesRequestFormProps> = ({
   const { toast } = useToast();
   const [loading, setLoading] = useState(false);
   const [beneficiaries, setBeneficiaries] = useState<Beneficiary[]>([]);
+  const [clientAge, setClientAge] = useState<number | null>(null);
+  
   const [formData, setFormData] = useState<SalesRequest>({
     client_name: '',
     client_email: '',
@@ -77,18 +91,40 @@ const SalesRequestForm: React.FC<SalesRequestFormProps> = ({
     ...initialData
   });
 
+  useEffect(() => {
+    if (formData.client_birth_date) {
+      const age = calculateAge(formData.client_birth_date);
+      setClientAge(age);
+    } else {
+      setClientAge(null);
+    }
+  }, [formData.client_birth_date]);
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
+    // Basic validation
     if (!formData.client_name || !formData.client_email || !formData.policy_type) {
       toast({
         title: "Error",
-        description: "Por favor complete los campos obligatorios",
+        description: "Por favor complete los campos obligatorios (Nombre, Email, Tipo de Póliza)",
         variant: "destructive",
       });
       return;
     }
 
+    // Email validation
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(formData.client_email)) {
+      toast({
+        title: "Error",
+        description: "Por favor ingrese un email válido",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    // Beneficiaries validation
     if (beneficiaries.length === 0) {
       toast({
         title: "Error",
@@ -98,11 +134,23 @@ const SalesRequestForm: React.FC<SalesRequestFormProps> = ({
       return;
     }
 
+    // Percentage validation
     const totalPercentage = beneficiaries.reduce((sum, b) => sum + b.percentage, 0);
-    if (totalPercentage !== 100) {
+    if (Math.abs(totalPercentage - 100) > 0.01) {
       toast({
         title: "Error",
-        description: `El porcentaje total de beneficiarios debe ser 100% (actual: ${totalPercentage}%)`,
+        description: `El porcentaje total de beneficiarios debe ser 100% (actual: ${totalPercentage.toFixed(2)}%)`,
+        variant: "destructive",
+      });
+      return;
+    }
+
+    // Primary beneficiary validation
+    const primaryBeneficiaries = beneficiaries.filter(b => b.is_primary);
+    if (primaryBeneficiaries.length !== 1) {
+      toast({
+        title: "Error",
+        description: "Debe haber exactamente un beneficiario principal",
         variant: "destructive",
       });
       return;
@@ -111,15 +159,11 @@ const SalesRequestForm: React.FC<SalesRequestFormProps> = ({
     setLoading(true);
     try {
       await onSubmit(formData, beneficiaries);
-      toast({
-        title: "Éxito",
-        description: isEditing ? "Solicitud actualizada correctamente" : "Solicitud de venta creada correctamente",
-      });
     } catch (error) {
       console.error('Error submitting sales request:', error);
       toast({
         title: "Error",
-        description: "Error al procesar la solicitud",
+        description: "Error al procesar la solicitud. Por favor intente nuevamente.",
         variant: "destructive",
       });
     } finally {
@@ -132,7 +176,7 @@ const SalesRequestForm: React.FC<SalesRequestFormProps> = ({
   };
 
   return (
-    <div className="max-w-4xl mx-auto space-y-6">
+    <div className="max-w-6xl mx-auto space-y-6">
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
@@ -143,142 +187,176 @@ const SalesRequestForm: React.FC<SalesRequestFormProps> = ({
             Complete la información del cliente y los detalles de la póliza
           </CardDescription>
         </CardHeader>
+        
         <CardContent>
-          <form onSubmit={handleSubmit} className="space-y-6">
-            {/* Información del Cliente */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="client_name">Nombre Completo *</Label>
-                <Input
-                  id="client_name"
-                  value={formData.client_name}
-                  onChange={(e) => handleInputChange('client_name', e.target.value)}
-                  placeholder="Nombre completo del cliente"
-                  required
-                />
+          <form onSubmit={handleSubmit} className="space-y-8">
+            {/* Información Personal del Cliente */}
+            <div className="space-y-4">
+              <div className="flex items-center gap-2 mb-4">
+                <User className="w-4 h-4" />
+                <h3 className="text-lg font-semibold">Información Personal</h3>
               </div>
               
-              <div className="space-y-2">
-                <Label htmlFor="client_dni">DNI/Cédula</Label>
-                <Input
-                  id="client_dni"
-                  value={formData.client_dni || ''}
-                  onChange={(e) => handleInputChange('client_dni', e.target.value)}
-                  placeholder="Documento de identidad"
-                />
-              </div>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="client_name">Nombre Completo *</Label>
+                  <Input
+                    id="client_name"
+                    value={formData.client_name}
+                    onChange={(e) => handleInputChange('client_name', e.target.value)}
+                    placeholder="Nombre completo del cliente"
+                    required
+                  />
+                </div>
+                
+                <div className="space-y-2">
+                  <Label htmlFor="client_dni">DNI/Cédula *</Label>
+                  <Input
+                    id="client_dni"
+                    value={formData.client_dni || ''}
+                    onChange={(e) => handleInputChange('client_dni', e.target.value)}
+                    placeholder="Número de documento"
+                    required
+                  />
+                </div>
 
-              <div className="space-y-2">
-                <Label htmlFor="client_email">Email *</Label>
-                <Input
-                  id="client_email"
-                  type="email"
-                  value={formData.client_email}
-                  onChange={(e) => handleInputChange('client_email', e.target.value)}
-                  placeholder="correo@ejemplo.com"
-                  required
-                />
-              </div>
+                <div className="space-y-2">
+                  <Label htmlFor="client_birth_date">
+                    Fecha de Nacimiento *
+                    {clientAge !== null && (
+                      <span className="text-sm text-gray-500 ml-2">
+                        ({clientAge} años)
+                      </span>
+                    )}
+                  </Label>
+                  <Input
+                    id="client_birth_date"
+                    type="date"
+                    value={formData.client_birth_date || ''}
+                    onChange={(e) => handleInputChange('client_birth_date', e.target.value)}
+                    max={new Date().toISOString().split('T')[0]}
+                    required
+                  />
+                </div>
 
-              <div className="space-y-2">
-                <Label htmlFor="client_phone">Teléfono</Label>
-                <Input
-                  id="client_phone"
-                  value={formData.client_phone || ''}
-                  onChange={(e) => handleInputChange('client_phone', e.target.value)}
-                  placeholder="Número de teléfono"
-                />
-              </div>
+                <div className="space-y-2">
+                  <Label htmlFor="client_phone">Teléfono *</Label>
+                  <Input
+                    id="client_phone"
+                    value={formData.client_phone || ''}
+                    onChange={(e) => handleInputChange('client_phone', e.target.value)}
+                    placeholder="Número de teléfono"
+                    required
+                  />
+                </div>
 
-              <div className="space-y-2">
-                <Label htmlFor="client_birth_date">Fecha de Nacimiento</Label>
-                <Input
-                  id="client_birth_date"
-                  type="date"
-                  value={formData.client_birth_date || ''}
-                  onChange={(e) => handleInputChange('client_birth_date', e.target.value)}
-                />
-              </div>
+                <div className="space-y-2 md:col-span-2">
+                  <Label htmlFor="client_email">Email *</Label>
+                  <Input
+                    id="client_email"
+                    type="email"
+                    value={formData.client_email}
+                    onChange={(e) => handleInputChange('client_email', e.target.value)}
+                    placeholder="correo@ejemplo.com"
+                    required
+                  />
+                </div>
 
-              <div className="space-y-2">
-                <Label htmlFor="policy_type">Tipo de Póliza *</Label>
-                <Select
-                  value={formData.policy_type}
-                  onValueChange={(value) => handleInputChange('policy_type', value)}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Seleccione tipo de póliza" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {policyTypes.map((type) => (
-                      <SelectItem key={type} value={type}>
-                        {type}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                <div className="space-y-2 md:col-span-2">
+                  <Label htmlFor="client_address">Dirección Completa *</Label>
+                  <Textarea
+                    id="client_address"
+                    value={formData.client_address || ''}
+                    onChange={(e) => handleInputChange('client_address', e.target.value)}
+                    placeholder="Dirección completa del cliente"
+                    rows={2}
+                    required
+                  />
+                </div>
               </div>
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="client_address">Dirección</Label>
-              <Textarea
-                id="client_address"
-                value={formData.client_address || ''}
-                onChange={(e) => handleInputChange('client_address', e.target.value)}
-                placeholder="Dirección completa del cliente"
-                rows={2}
-              />
             </div>
 
             {/* Información de la Póliza */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="coverage_amount">Monto de Cobertura</Label>
-                <Input
-                  id="coverage_amount"
-                  type="number"
-                  value={formData.coverage_amount || ''}
-                  onChange={(e) => handleInputChange('coverage_amount', parseFloat(e.target.value) || 0)}
-                  placeholder="0.00"
-                  min="0"
-                  step="0.01"
-                />
+            <div className="space-y-4">
+              <div className="flex items-center gap-2 mb-4">
+                <FileText className="w-4 h-4" />
+                <h3 className="text-lg font-semibold">Información de la Póliza</h3>
+              </div>
+              
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="policy_type">Tipo de Póliza *</Label>
+                  <Select
+                    value={formData.policy_type}
+                    onValueChange={(value) => handleInputChange('policy_type', value)}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Seleccione tipo de póliza" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {policyTypes.map((type) => (
+                        <SelectItem key={type} value={type}>
+                          {type}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="coverage_amount">Monto de Cobertura</Label>
+                  <Input
+                    id="coverage_amount"
+                    type="number"
+                    value={formData.coverage_amount || ''}
+                    onChange={(e) => handleInputChange('coverage_amount', parseFloat(e.target.value) || 0)}
+                    placeholder="0.00"
+                    min="0"
+                    step="0.01"
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="monthly_premium">Prima Mensual</Label>
+                  <Input
+                    id="monthly_premium"
+                    type="number"
+                    value={formData.monthly_premium || ''}
+                    onChange={(e) => handleInputChange('monthly_premium', parseFloat(e.target.value) || 0)}
+                    placeholder="0.00"
+                    min="0"
+                    step="0.01"
+                  />
+                </div>
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="monthly_premium">Prima Mensual</Label>
-                <Input
-                  id="monthly_premium"
-                  type="number"
-                  value={formData.monthly_premium || ''}
-                  onChange={(e) => handleInputChange('monthly_premium', parseFloat(e.target.value) || 0)}
-                  placeholder="0.00"
-                  min="0"
-                  step="0.01"
+                <Label htmlFor="notes">Observaciones</Label>
+                <Textarea
+                  id="notes"
+                  value={formData.notes || ''}
+                  onChange={(e) => handleInputChange('notes', e.target.value)}
+                  placeholder="Observaciones adicionales sobre la solicitud"
+                  rows={3}
                 />
               </div>
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="notes">Observaciones</Label>
-              <Textarea
-                id="notes"
-                value={formData.notes || ''}
-                onChange={(e) => handleInputChange('notes', e.target.value)}
-                placeholder="Observaciones adicionales sobre la solicitud"
-                rows={3}
-              />
             </div>
 
             {/* Beneficiarios */}
-            <BeneficiariesForm
-              beneficiaries={beneficiaries}
-              onBeneficiariesChange={setBeneficiaries}
-            />
+            <div className="space-y-4">
+              <div className="flex items-center gap-2 mb-4">
+                <Users className="w-4 h-4" />
+                <h3 className="text-lg font-semibold">Beneficiarios</h3>
+              </div>
+              
+              <BeneficiariesForm
+                beneficiaries={beneficiaries}
+                onBeneficiariesChange={setBeneficiaries}
+              />
+            </div>
 
             {/* Botones de Acción */}
-            <div className="flex gap-4 pt-4">
+            <div className="flex gap-4 pt-6 border-t">
               <Button type="submit" disabled={loading} className="flex-1">
                 {loading ? 'Procesando...' : (isEditing ? 'Actualizar Solicitud' : 'Crear Solicitud')}
               </Button>

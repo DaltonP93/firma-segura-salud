@@ -97,6 +97,56 @@ export type Database = {
           },
         ]
       }
+      beneficiaries: {
+        Row: {
+          birth_date: string | null
+          created_at: string
+          dni: string | null
+          email: string | null
+          id: string
+          is_primary: boolean | null
+          name: string
+          percentage: number | null
+          phone: string | null
+          relationship: string
+          sales_request_id: string
+        }
+        Insert: {
+          birth_date?: string | null
+          created_at?: string
+          dni?: string | null
+          email?: string | null
+          id?: string
+          is_primary?: boolean | null
+          name: string
+          percentage?: number | null
+          phone?: string | null
+          relationship: string
+          sales_request_id: string
+        }
+        Update: {
+          birth_date?: string | null
+          created_at?: string
+          dni?: string | null
+          email?: string | null
+          id?: string
+          is_primary?: boolean | null
+          name?: string
+          percentage?: number | null
+          phone?: string | null
+          relationship?: string
+          sales_request_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "beneficiaries_sales_request_id_fkey"
+            columns: ["sales_request_id"]
+            isOneToOne: false
+            referencedRelation: "sales_requests"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       company_types: {
         Row: {
           created_at: string | null
@@ -316,6 +366,92 @@ export type Database = {
           },
         ]
       }
+      health_declarations: {
+        Row: {
+          answers: Json
+          created_at: string
+          id: string
+          ip_address: string | null
+          is_complete: boolean | null
+          sales_request_id: string
+          signature_data: string | null
+          signature_type: string | null
+          signed_at: string | null
+          updated_at: string
+          user_agent: string | null
+        }
+        Insert: {
+          answers?: Json
+          created_at?: string
+          id?: string
+          ip_address?: string | null
+          is_complete?: boolean | null
+          sales_request_id: string
+          signature_data?: string | null
+          signature_type?: string | null
+          signed_at?: string | null
+          updated_at?: string
+          user_agent?: string | null
+        }
+        Update: {
+          answers?: Json
+          created_at?: string
+          id?: string
+          ip_address?: string | null
+          is_complete?: boolean | null
+          sales_request_id?: string
+          signature_data?: string | null
+          signature_type?: string | null
+          signed_at?: string | null
+          updated_at?: string
+          user_agent?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "health_declarations_sales_request_id_fkey"
+            columns: ["sales_request_id"]
+            isOneToOne: false
+            referencedRelation: "sales_requests"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      health_questions: {
+        Row: {
+          created_at: string
+          id: string
+          is_active: boolean | null
+          is_required: boolean | null
+          options: Json | null
+          question_text: string
+          question_type: string
+          sort_order: number | null
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          is_active?: boolean | null
+          is_required?: boolean | null
+          options?: Json | null
+          question_text: string
+          question_type?: string
+          sort_order?: number | null
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          is_active?: boolean | null
+          is_required?: boolean | null
+          options?: Json | null
+          question_text?: string
+          question_type?: string
+          sort_order?: number | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
       pdf_templates: {
         Row: {
           created_at: string | null
@@ -393,6 +529,125 @@ export type Database = {
           username?: string | null
         }
         Relationships: []
+      }
+      sales_documents: {
+        Row: {
+          document_type: string
+          file_name: string
+          file_size: number | null
+          file_url: string
+          id: string
+          mime_type: string | null
+          sales_request_id: string
+          uploaded_at: string
+          uploaded_by: string
+        }
+        Insert: {
+          document_type: string
+          file_name: string
+          file_size?: number | null
+          file_url: string
+          id?: string
+          mime_type?: string | null
+          sales_request_id: string
+          uploaded_at?: string
+          uploaded_by: string
+        }
+        Update: {
+          document_type?: string
+          file_name?: string
+          file_size?: number | null
+          file_url?: string
+          id?: string
+          mime_type?: string | null
+          sales_request_id?: string
+          uploaded_at?: string
+          uploaded_by?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "sales_documents_sales_request_id_fkey"
+            columns: ["sales_request_id"]
+            isOneToOne: false
+            referencedRelation: "sales_requests"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "sales_documents_uploaded_by_fkey"
+            columns: ["uploaded_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      sales_requests: {
+        Row: {
+          client_address: string | null
+          client_birth_date: string | null
+          client_dni: string | null
+          client_email: string
+          client_name: string
+          client_phone: string | null
+          completed_at: string | null
+          coverage_amount: number | null
+          created_at: string
+          created_by: string
+          id: string
+          monthly_premium: number | null
+          notes: string | null
+          policy_type: string
+          request_number: string
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          client_address?: string | null
+          client_birth_date?: string | null
+          client_dni?: string | null
+          client_email: string
+          client_name: string
+          client_phone?: string | null
+          completed_at?: string | null
+          coverage_amount?: number | null
+          created_at?: string
+          created_by: string
+          id?: string
+          monthly_premium?: number | null
+          notes?: string | null
+          policy_type: string
+          request_number?: string
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          client_address?: string | null
+          client_birth_date?: string | null
+          client_dni?: string | null
+          client_email?: string
+          client_name?: string
+          client_phone?: string | null
+          completed_at?: string | null
+          coverage_amount?: number | null
+          created_at?: string
+          created_by?: string
+          id?: string
+          monthly_premium?: number | null
+          notes?: string | null
+          policy_type?: string
+          request_number?: string
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "sales_requests_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       section_customization: {
         Row: {

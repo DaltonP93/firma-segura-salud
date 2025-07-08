@@ -15,8 +15,8 @@ import type { SalesRequestWithDetails } from './SalesRequestsList';
 interface HealthQuestion {
   id: string;
   question_text: string;
-  question_type: 'yes_no' | 'text' | 'number' | 'date' | 'select';
-  options?: string[];
+  question_type: string;
+  options?: any;
   is_required: boolean;
   sort_order: number;
 }

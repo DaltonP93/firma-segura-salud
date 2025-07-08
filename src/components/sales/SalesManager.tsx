@@ -7,10 +7,9 @@ import { Plus, FileText, Users, BarChart3 } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { useToast } from '@/hooks/use-toast';
 import { salesService } from '@/services/salesService';
-import SalesRequestForm from './SalesRequestForm';
+import SalesRequestForm, { SalesRequest, Beneficiary } from './SalesRequestForm';
 import SalesRequestsList from './SalesRequestsList';
 import HealthDeclarationForm from './HealthDeclarationForm';
-import type { SalesRequest, Beneficiary } from './SalesRequestForm';
 import type { SalesRequestWithDetails } from './SalesRequestsList';
 
 const SalesManager = () => {
