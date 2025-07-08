@@ -256,6 +256,54 @@ export type Database = {
           },
         ]
       }
+      document_events: {
+        Row: {
+          document_id: string
+          event_data: Json | null
+          event_type: string
+          id: string
+          ip_address: string | null
+          signer_id: string | null
+          timestamp: string
+          user_agent: string | null
+        }
+        Insert: {
+          document_id: string
+          event_data?: Json | null
+          event_type: string
+          id?: string
+          ip_address?: string | null
+          signer_id?: string | null
+          timestamp?: string
+          user_agent?: string | null
+        }
+        Update: {
+          document_id?: string
+          event_data?: Json | null
+          event_type?: string
+          id?: string
+          ip_address?: string | null
+          signer_id?: string | null
+          timestamp?: string
+          user_agent?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "document_events_document_id_fkey"
+            columns: ["document_id"]
+            isOneToOne: false
+            referencedRelation: "documents"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "document_events_signer_id_fkey"
+            columns: ["signer_id"]
+            isOneToOne: false
+            referencedRelation: "signers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       document_templates: {
         Row: {
           content: string
@@ -298,6 +346,7 @@ export type Database = {
           client_name: string
           client_phone: string | null
           completed_at: string | null
+          completed_signers: number | null
           created_at: string | null
           created_by: string | null
           document_number: string
@@ -308,17 +357,20 @@ export type Database = {
           policy_type: string | null
           sent_at: string | null
           shareable_link: string | null
+          signature_request_id: string | null
           signature_url: string | null
           signed_at: string | null
           status: string | null
           template_id: string | null
           template_type: string | null
+          total_signers: number | null
         }
         Insert: {
           client_email: string
           client_name: string
           client_phone?: string | null
           completed_at?: string | null
+          completed_signers?: number | null
           created_at?: string | null
           created_by?: string | null
           document_number: string
@@ -329,17 +381,20 @@ export type Database = {
           policy_type?: string | null
           sent_at?: string | null
           shareable_link?: string | null
+          signature_request_id?: string | null
           signature_url?: string | null
           signed_at?: string | null
           status?: string | null
           template_id?: string | null
           template_type?: string | null
+          total_signers?: number | null
         }
         Update: {
           client_email?: string
           client_name?: string
           client_phone?: string | null
           completed_at?: string | null
+          completed_signers?: number | null
           created_at?: string | null
           created_by?: string | null
           document_number?: string
@@ -350,13 +405,22 @@ export type Database = {
           policy_type?: string | null
           sent_at?: string | null
           shareable_link?: string | null
+          signature_request_id?: string | null
           signature_url?: string | null
           signed_at?: string | null
           status?: string | null
           template_id?: string | null
           template_type?: string | null
+          total_signers?: number | null
         }
         Relationships: [
+          {
+            foreignKeyName: "documents_signature_request_id_fkey"
+            columns: ["signature_request_id"]
+            isOneToOne: false
+            referencedRelation: "signature_requests"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "documents_template_id_fkey"
             columns: ["template_id"]
@@ -451,6 +515,63 @@ export type Database = {
           updated_at?: string
         }
         Relationships: []
+      }
+      notification_logs: {
+        Row: {
+          created_at: string
+          delivered_at: string | null
+          error_message: string | null
+          external_id: string | null
+          id: string
+          message_content: string | null
+          notification_type: string
+          sent_at: string | null
+          signature_request_id: string
+          signer_id: string | null
+          status: string
+        }
+        Insert: {
+          created_at?: string
+          delivered_at?: string | null
+          error_message?: string | null
+          external_id?: string | null
+          id?: string
+          message_content?: string | null
+          notification_type: string
+          sent_at?: string | null
+          signature_request_id: string
+          signer_id?: string | null
+          status?: string
+        }
+        Update: {
+          created_at?: string
+          delivered_at?: string | null
+          error_message?: string | null
+          external_id?: string | null
+          id?: string
+          message_content?: string | null
+          notification_type?: string
+          sent_at?: string | null
+          signature_request_id?: string
+          signer_id?: string | null
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "notification_logs_signature_request_id_fkey"
+            columns: ["signature_request_id"]
+            isOneToOne: false
+            referencedRelation: "signature_requests"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "notification_logs_signer_id_fkey"
+            columns: ["signer_id"]
+            isOneToOne: false
+            referencedRelation: "signers"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       pdf_templates: {
         Row: {
@@ -701,6 +822,197 @@ export type Database = {
             columns: ["app_customization_id"]
             isOneToOne: false
             referencedRelation: "app_customization"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      signature_fields: {
+        Row: {
+          created_at: string
+          document_id: string
+          field_type: string
+          field_value: string | null
+          height: number
+          id: string
+          is_required: boolean | null
+          page_number: number
+          placeholder_text: string | null
+          signer_id: string | null
+          updated_at: string
+          width: number
+          x_position: number
+          y_position: number
+        }
+        Insert: {
+          created_at?: string
+          document_id: string
+          field_type?: string
+          field_value?: string | null
+          height?: number
+          id?: string
+          is_required?: boolean | null
+          page_number?: number
+          placeholder_text?: string | null
+          signer_id?: string | null
+          updated_at?: string
+          width?: number
+          x_position: number
+          y_position: number
+        }
+        Update: {
+          created_at?: string
+          document_id?: string
+          field_type?: string
+          field_value?: string | null
+          height?: number
+          id?: string
+          is_required?: boolean | null
+          page_number?: number
+          placeholder_text?: string | null
+          signer_id?: string | null
+          updated_at?: string
+          width?: number
+          x_position?: number
+          y_position?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "signature_fields_document_id_fkey"
+            columns: ["document_id"]
+            isOneToOne: false
+            referencedRelation: "documents"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "signature_fields_signer_id_fkey"
+            columns: ["signer_id"]
+            isOneToOne: false
+            referencedRelation: "signers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      signature_requests: {
+        Row: {
+          completed_at: string | null
+          created_at: string
+          created_by: string
+          document_id: string
+          expires_at: string | null
+          id: string
+          message: string | null
+          metadata: Json | null
+          status: string
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          completed_at?: string | null
+          created_at?: string
+          created_by: string
+          document_id: string
+          expires_at?: string | null
+          id?: string
+          message?: string | null
+          metadata?: Json | null
+          status?: string
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          completed_at?: string | null
+          created_at?: string
+          created_by?: string
+          document_id?: string
+          expires_at?: string | null
+          id?: string
+          message?: string | null
+          metadata?: Json | null
+          status?: string
+          title?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "signature_requests_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "signature_requests_document_id_fkey"
+            columns: ["document_id"]
+            isOneToOne: false
+            referencedRelation: "documents"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      signers: {
+        Row: {
+          access_token: string | null
+          created_at: string
+          device_info: Json | null
+          email: string
+          id: string
+          ip_address: string | null
+          name: string
+          phone: string | null
+          role: string
+          signature_data: string | null
+          signature_request_id: string
+          signature_type: string | null
+          signed_at: string | null
+          signing_order: number | null
+          status: string
+          updated_at: string
+          user_agent: string | null
+        }
+        Insert: {
+          access_token?: string | null
+          created_at?: string
+          device_info?: Json | null
+          email: string
+          id?: string
+          ip_address?: string | null
+          name: string
+          phone?: string | null
+          role?: string
+          signature_data?: string | null
+          signature_request_id: string
+          signature_type?: string | null
+          signed_at?: string | null
+          signing_order?: number | null
+          status?: string
+          updated_at?: string
+          user_agent?: string | null
+        }
+        Update: {
+          access_token?: string | null
+          created_at?: string
+          device_info?: Json | null
+          email?: string
+          id?: string
+          ip_address?: string | null
+          name?: string
+          phone?: string | null
+          role?: string
+          signature_data?: string | null
+          signature_request_id?: string
+          signature_type?: string | null
+          signed_at?: string | null
+          signing_order?: number | null
+          status?: string
+          updated_at?: string
+          user_agent?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "signers_signature_request_id_fkey"
+            columns: ["signature_request_id"]
+            isOneToOne: false
+            referencedRelation: "signature_requests"
             referencedColumns: ["id"]
           },
         ]

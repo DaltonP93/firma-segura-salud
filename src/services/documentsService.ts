@@ -3,7 +3,7 @@ import { supabase } from '@/integrations/supabase/client';
 import type { Contract } from '@/pages/Index';
 
 export const documentsService = {
-  async fetchDocuments(): Promise<Contract[]> {
+  async fetchDocuments(): Promise<any[]> {
     const { data, error } = await supabase
       .from('documents')
       .select('*')
@@ -55,6 +55,17 @@ export const documentsService = {
     }
 
     return data;
+  },
+
+  async updateDocument(documentId: string, updates: any) {
+    const { error } = await supabase
+      .from('documents')
+      .update(updates)
+      .eq('id', documentId);
+
+    if (error) {
+      throw error;
+    }
   },
 
   async updateDocumentStatus(contractId: string, status: Contract['status']) {
