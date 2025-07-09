@@ -61,12 +61,20 @@ const defaultNavigationItems: NavigationItem[] = [
     sortOrder: 3,
   },
   {
+    id: 'sales',
+    label: 'Ventas',
+    path: '/sales',
+    icon: 'shopping-cart',
+    isVisible: true,
+    sortOrder: 4,
+  },
+  {
     id: 'profile',
     label: 'Mi Perfil',
     path: '/profile',
     icon: 'user',
     isVisible: true,
-    sortOrder: 4,
+    sortOrder: 5,
   },
   {
     id: 'admin',
@@ -75,7 +83,7 @@ const defaultNavigationItems: NavigationItem[] = [
     icon: 'settings',
     roles: ['admin', 'super_admin'],
     isVisible: true,
-    sortOrder: 5,
+    sortOrder: 6,
   },
 ];
 

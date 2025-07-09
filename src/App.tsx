@@ -14,6 +14,7 @@ import AppSidebar from "@/components/navigation/AppSidebar";
 import Login from "./pages/Login";
 import Dashboard from "./pages/Dashboard";
 import Profile from "./pages/Profile";
+import Sales from "./pages/Sales";
 import Index from "./pages/Index";
 import NotFound from "./pages/NotFound";
 import AdminPanel from "./components/admin/AdminPanel";
@@ -173,6 +174,19 @@ const App = () => {
                     <AppLayout>
                       <div className="p-6">
                         <SignatureManager />
+                      </div>
+                    </AppLayout>
+                  </ProtectedRoute>
+                } 
+              />
+
+              <Route 
+                path="/sales" 
+                element={
+                  <ProtectedRoute>
+                    <AppLayout>
+                      <div className="p-6">
+                        <Sales />
                       </div>
                     </AppLayout>
                   </ProtectedRoute>
