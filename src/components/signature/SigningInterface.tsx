@@ -71,17 +71,19 @@ const SigningInterface = () => {
     try {
       setLoading(true);
       
-      // Get signer by access token
-      const signerData = await SignatureService.getSignerByToken(token!);
-      if (!signerData) {
+      // Validate access token with new security system
+      const validationResult = await SignatureService.validateAccessToken(token!);
+      
+      if (!validationResult.valid) {
         toast({
-          title: "Token Inválido",
-          description: "El enlace de firma no es válido o ha expirado",
+          title: "Acceso Denegado",
+          description: validationResult.error || "El enlace de firma no es válido o ha expirado",
           variant: "destructive",
         });
         return;
       }
       
+      const signerData = validationResult.signer!;
       setSigner(signerData);
       
       // Get signature request details

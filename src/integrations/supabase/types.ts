@@ -525,10 +525,14 @@ export type Database = {
           id: string
           message_content: string | null
           notification_type: string
+          phone_number: string | null
           sent_at: string | null
           signature_request_id: string
           signer_id: string | null
           status: string
+          template_name: string | null
+          whatsapp_message_id: string | null
+          whatsapp_status: string | null
         }
         Insert: {
           created_at?: string
@@ -538,10 +542,14 @@ export type Database = {
           id?: string
           message_content?: string | null
           notification_type: string
+          phone_number?: string | null
           sent_at?: string | null
           signature_request_id: string
           signer_id?: string | null
           status?: string
+          template_name?: string | null
+          whatsapp_message_id?: string | null
+          whatsapp_status?: string | null
         }
         Update: {
           created_at?: string
@@ -551,10 +559,14 @@ export type Database = {
           id?: string
           message_content?: string | null
           notification_type?: string
+          phone_number?: string | null
           sent_at?: string | null
           signature_request_id?: string
           signer_id?: string | null
           status?: string
+          template_name?: string | null
+          whatsapp_message_id?: string | null
+          whatsapp_status?: string | null
         }
         Relationships: [
           {
@@ -894,40 +906,52 @@ export type Database = {
       }
       signature_requests: {
         Row: {
+          allowed_domains: string[] | null
           completed_at: string | null
           created_at: string
           created_by: string
           document_id: string
           expires_at: string | null
           id: string
+          ip_restrictions: string[] | null
           message: string | null
           metadata: Json | null
+          requires_otp: boolean | null
+          security_level: string | null
           status: string
           title: string
           updated_at: string
         }
         Insert: {
+          allowed_domains?: string[] | null
           completed_at?: string | null
           created_at?: string
           created_by: string
           document_id: string
           expires_at?: string | null
           id?: string
+          ip_restrictions?: string[] | null
           message?: string | null
           metadata?: Json | null
+          requires_otp?: boolean | null
+          security_level?: string | null
           status?: string
           title: string
           updated_at?: string
         }
         Update: {
+          allowed_domains?: string[] | null
           completed_at?: string | null
           created_at?: string
           created_by?: string
           document_id?: string
           expires_at?: string | null
           id?: string
+          ip_restrictions?: string[] | null
           message?: string | null
           metadata?: Json | null
+          requires_otp?: boolean | null
+          security_level?: string | null
           status?: string
           title?: string
           updated_at?: string
@@ -951,12 +975,17 @@ export type Database = {
       }
       signers: {
         Row: {
+          access_attempts: number | null
           access_token: string | null
           created_at: string
           device_info: Json | null
           email: string
+          expires_at: string | null
           id: string
           ip_address: string | null
+          is_expired: boolean | null
+          last_accessed_at: string | null
+          max_attempts: number | null
           name: string
           phone: string | null
           role: string
@@ -970,12 +999,17 @@ export type Database = {
           user_agent: string | null
         }
         Insert: {
+          access_attempts?: number | null
           access_token?: string | null
           created_at?: string
           device_info?: Json | null
           email: string
+          expires_at?: string | null
           id?: string
           ip_address?: string | null
+          is_expired?: boolean | null
+          last_accessed_at?: string | null
+          max_attempts?: number | null
           name: string
           phone?: string | null
           role?: string
@@ -989,12 +1023,17 @@ export type Database = {
           user_agent?: string | null
         }
         Update: {
+          access_attempts?: number | null
           access_token?: string | null
           created_at?: string
           device_info?: Json | null
           email?: string
+          expires_at?: string | null
           id?: string
           ip_address?: string | null
+          is_expired?: boolean | null
+          last_accessed_at?: string | null
+          max_attempts?: number | null
           name?: string
           phone?: string | null
           role?: string
@@ -1039,6 +1078,14 @@ export type Database = {
           full_name: string
           role: string
         }[]
+      }
+      increment_access_attempts: {
+        Args: { token_value: string }
+        Returns: undefined
+      }
+      is_token_valid: {
+        Args: { token_value: string }
+        Returns: boolean
       }
     }
     Enums: {

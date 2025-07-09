@@ -40,7 +40,7 @@ export class SignatureService {
     return data;
   }
 
-  // Add signers to a signature request
+  // Add signers to a signature request with secure tokens
   static async addSigners(
     signatureRequestId: string,
     signers: Omit<SignerInsert, 'signature_request_id'>[]
@@ -49,6 +49,10 @@ export class SignatureService {
       ...signer,
       signature_request_id: signatureRequestId,
       signing_order: signer.signing_order || index + 1,
+      access_token: crypto.randomUUID(),
+      expires_at: new Date(Date.now() + 72 * 60 * 60 * 1000).toISOString(), // 72 hours
+      access_attempts: 0,
+      max_attempts: 5,
     }));
 
     const { data, error } = await supabase
@@ -313,5 +317,173 @@ export class SignatureService {
 
       await this.createDocumentEvent(signatureRequestId, 'completed', undefined);
     }
+  }
+
+  // Validate access token
+  static async validateAccessToken(accessToken: string): Promise<{
+    valid: boolean;
+    signer?: Signer;
+    error?: string;
+  }> {
+    try {
+      // Check token validity using database function
+      const { data: isValid, error: validationError } = await supabase
+        .rpc('is_token_valid', { token_value: accessToken });
+
+      if (validationError) throw validationError;
+
+      if (!isValid) {
+        return { valid: false, error: 'Token is invalid, expired, or exceeded maximum attempts' };
+      }
+
+      // Get signer details
+      const signer = await this.getSignerByToken(accessToken);
+      if (!signer) {
+        return { valid: false, error: 'Signer not found' };
+      }
+
+      // Increment access attempts
+      await supabase.rpc('increment_access_attempts', { token_value: accessToken });
+
+      return { valid: true, signer };
+    } catch (error) {
+      console.error('Token validation error:', error);
+      return { valid: false, error: 'Token validation failed' };
+    }
+  }
+
+  // Send WhatsApp notification
+  static async sendWhatsAppNotification(
+    signatureRequestId: string,
+    signer: Signer,
+    message: string,
+    templateName?: string
+  ): Promise<void> {
+    try {
+      const { error } = await supabase.functions.invoke('send-whatsapp-notification', {
+        body: {
+          signatureRequestId,
+          signerPhone: signer.phone,
+          signerName: signer.name,
+          message,
+          templateName,
+          accessToken: signer.access_token,
+        },
+      });
+
+      if (error) {
+        console.error('WhatsApp notification error:', error);
+        await this.createNotificationLog(
+          signatureRequestId,
+          signer.id,
+          'whatsapp',
+          `Failed to send WhatsApp: ${error.message}`,
+          'failed'
+        );
+        throw error;
+      }
+
+      await this.createNotificationLog(
+        signatureRequestId,
+        signer.id,
+        'whatsapp',
+        message,
+        'sent'
+      );
+    } catch (error) {
+      console.error('WhatsApp notification error:', error);
+      throw error;
+    }
+  }
+
+  // Send signature request with multi-channel notifications
+  static async sendSignatureRequestWithNotifications(
+    signatureRequestId: string,
+    channels: ('email' | 'whatsapp')[] = ['email']
+  ): Promise<void> {
+    await this.sendSignatureRequest(signatureRequestId);
+
+    // Get signature request details for WhatsApp
+    const signatureRequest = await this.getSignatureRequestWithDetails(signatureRequestId);
+    if (!signatureRequest) throw new Error('Signature request not found');
+
+    // Send WhatsApp notifications if requested
+    if (channels.includes('whatsapp')) {
+      for (const signer of signatureRequest.signers) {
+        if (signer.phone) {
+          const message = `Hola ${signer.name}, tienes un documento para firmar: ${signatureRequest.title}. Haz clic aquí para firmar: ${window.location.origin}/sign/${signer.access_token}`;
+          
+          try {
+            await this.sendWhatsAppNotification(
+              signatureRequestId,
+              signer,
+              message,
+              'signature_request'
+            );
+          } catch (error) {
+            console.error('WhatsApp notification failed for', signer.phone, error);
+          }
+        }
+      }
+    }
+  }
+
+  // Clean up expired tokens
+  static async cleanupExpiredTokens(): Promise<number> {
+    const { data, error } = await supabase
+      .from('signers')
+      .update({ is_expired: true })
+      .lt('expires_at', new Date().toISOString())
+      .eq('is_expired', false)
+      .select('id');
+    
+    if (error) {
+      console.error('Error cleaning up expired tokens:', error);
+      return 0;
+    }
+    
+    return data?.length || 0;
+  }
+
+  // Get signing statistics
+  static async getSigningStatistics(): Promise<{
+    totalRequests: number;
+    pendingRequests: number;
+    completedRequests: number;
+    expiredTokens: number;
+    averageSigningTime: number;
+  }> {
+    const { data: requests, error } = await supabase
+      .from('signature_requests')
+      .select('status, created_at, completed_at');
+
+    if (error) throw error;
+
+    const totalRequests = requests.length;
+    const pendingRequests = requests.filter(r => r.status === 'sent').length;
+    const completedRequests = requests.filter(r => r.status === 'completed').length;
+
+    // Get expired tokens count
+    const { data: expiredTokens } = await supabase
+      .from('signers')
+      .select('id')
+      .eq('is_expired', true);
+
+    // Calculate average signing time
+    const completedWithTimes = requests.filter(r => r.completed_at && r.created_at);
+    const averageSigningTime = completedWithTimes.length > 0
+      ? completedWithTimes.reduce((acc, req) => {
+          const diffMs = new Date(req.completed_at!).getTime() - new Date(req.created_at!).getTime();
+          return acc + diffMs;
+        }, 0) / completedWithTimes.length
+      : 0;
+
+    return {
+      totalRequests,
+      pendingRequests,
+      completedRequests,
+      expiredTokens: expiredTokens?.length || 0,
+      averageSigningTime: averageSigningTime / (1000 * 60 * 60), // Convert to hours
+    };
   }
 }

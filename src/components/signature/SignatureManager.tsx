@@ -10,6 +10,7 @@ import { documentsService } from '@/services/documentsService';
 import SignatureRequestForm from './SignatureRequestForm';
 import SignatureRequestsList from './SignatureRequestsList';
 import SignatureViewer from './SignatureViewer';
+import { Switch } from "@/components/ui/switch";
 
 interface Document {
   id: string;
@@ -57,10 +58,27 @@ const SignatureManager = () => {
   const [signatureRequests, setSignatureRequests] = useState<any[]>([]);
   const [selectedDocument, setSelectedDocument] = useState<Document | null>(null);
   const [viewingDocument, setViewingDocument] = useState<Document | null>(null);
+  const [enableWhatsApp, setEnableWhatsApp] = useState(false);
+  const [statistics, setStatistics] = useState<any>(null);
 
   useEffect(() => {
     if (user) {
       fetchData();
+      loadStatistics();
+      
+      // Set up periodic cleanup of expired tokens (every 30 minutes)
+      const cleanupInterval = setInterval(async () => {
+        try {
+          const expiredCount = await SignatureService.cleanupExpiredTokens();
+          if (expiredCount > 0) {
+            console.log(`Cleaned up ${expiredCount} expired tokens`);
+          }
+        } catch (error) {
+          console.error('Error cleaning expired tokens:', error);
+        }
+      }, 30 * 60 * 1000); // 30 minutes
+
+      return () => clearInterval(cleanupInterval);
     }
   }, [user]);
 
@@ -86,6 +104,17 @@ const SignatureManager = () => {
       });
     } finally {
       setLoading(false);
+    }
+  };
+
+  const loadStatistics = async () => {
+    if (!user) return;
+    
+    try {
+      const stats = await SignatureService.getSigningStatistics();
+      setStatistics(stats);
+    } catch (error) {
+      console.error('Error loading statistics:', error);
     }
   };
 
@@ -143,12 +172,20 @@ const SignatureManager = () => {
 
   const handleSendSignatureRequest = async (signatureRequestId: string) => {
     try {
-      await SignatureService.sendSignatureRequest(signatureRequestId);
+      // Determine notification channels
+      const channels: ('email' | 'whatsapp')[] = ['email'];
+      if (enableWhatsApp) {
+        channels.push('whatsapp');
+      }
+
+      // Send with multi-channel notifications
+      await SignatureService.sendSignatureRequestWithNotifications(signatureRequestId, channels);
       await fetchData();
       
+      const channelText = channels.length > 1 ? 'email y WhatsApp' : 'email';
       toast({
         title: "Solicitud Enviada",
-        description: "La solicitud de firma ha sido enviada a todos los firmantes",
+        description: `La solicitud de firma ha sido enviada por ${channelText} a todos los firmantes`,
       });
     } catch (error) {
       console.error('Error sending signature request:', error);
@@ -193,13 +230,25 @@ const SignatureManager = () => {
             Gestione documentos y firmas digitales con seguimiento en tiempo real
           </p>
         </div>
-        <Button 
-          onClick={() => setActiveTab('create')}
-          className="flex items-center gap-2"
-        >
-          <Plus className="w-4 h-4" />
-          Nueva Solicitud de Firma
-        </Button>
+        <div className="flex items-center gap-4">
+          <div className="flex items-center space-x-2">
+            <Switch 
+              id="whatsapp-notifications" 
+              checked={enableWhatsApp}
+              onCheckedChange={setEnableWhatsApp}
+            />
+            <label htmlFor="whatsapp-notifications" className="text-sm font-medium">
+              Notificaciones WhatsApp
+            </label>
+          </div>
+          <Button 
+            onClick={() => setActiveTab('create')}
+            className="flex items-center gap-2"
+          >
+            <Plus className="w-4 h-4" />
+            Nueva Solicitud de Firma
+          </Button>
+        </div>
       </div>
 
       {/* Stats Cards */}
