@@ -249,7 +249,15 @@ const SalesRequestDetail: React.FC<SalesRequestDetailProps> = ({
           </Button>
         )}
         {request.status === 'pending_signature' && (
-          <Button size="sm" variant="outline">
+          <Button 
+            size="sm" 
+            onClick={() => {
+              import('./SalesSignatureIntegration').then(({ default: SalesSignatureIntegration }) => {
+                // This would open a modal with the signature integration
+                console.log('Open signature integration modal');
+              });
+            }}
+          >
             <Send className="w-4 h-4 mr-2" />
             Enviar para Firma
           </Button>

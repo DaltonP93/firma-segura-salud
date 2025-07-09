@@ -10,6 +10,7 @@ export interface PDFField {
   required: boolean;
   placeholder?: string;
   value?: string;
+  page?: number;
 }
 
 export interface PDFTemplate {
