@@ -121,7 +121,7 @@ const SignatureTrackingDashboard: React.FC = () => {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm font-medium text-gray-600">Tasa de Finalización</p>
-                <p className="text-3xl font-bold text-blue-600">{metrics?.completion_rate || 0}%</p>
+                <p className="text-3xl font-bold text-blue-600">{metrics ? Math.round((metrics.completedRequests / metrics.totalRequests) * 100) : 0}%</p>
               </div>
               <TrendingUp className="w-8 h-8 text-blue-600" />
             </div>
@@ -139,22 +139,22 @@ const SignatureTrackingDashboard: React.FC = () => {
             <div>
               <div className="flex justify-between text-sm mb-2">
                 <span>Solicitudes Completadas</span>
-                <span>{metrics?.completed_requests || 0} / {metrics?.total_requests || 0}</span>
+                <span>{metrics?.completedRequests || 0} / {metrics?.totalRequests || 0}</span>
               </div>
-              <Progress value={metrics?.completion_rate || 0} className="h-2" />
+              <Progress value={metrics ? (metrics.completedRequests / metrics.totalRequests) * 100 : 0} className="h-2" />
             </div>
             
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-6">
               <div className="text-center">
-                <div className="text-2xl font-bold text-blue-600">{metrics?.total_signers || 0}</div>
-                <div className="text-sm text-gray-600">Total Firmantes</div>
+                <div className="text-2xl font-bold text-blue-600">{metrics?.totalRequests || 0}</div>
+                <div className="text-sm text-gray-600">Total Solicitudes</div>
               </div>
               <div className="text-center">
-                <div className="text-2xl font-bold text-green-600">{metrics?.active_signers || 0}</div>
-                <div className="text-sm text-gray-600">Firmantes Activos</div>
+                <div className="text-2xl font-bold text-green-600">{metrics?.completedRequests || 0}</div>
+                <div className="text-sm text-gray-600">Completadas</div>
               </div>
               <div className="text-center">
-                <div className="text-2xl font-bold text-purple-600">{metrics?.avg_completion_time || 0}h</div>
+                <div className="text-2xl font-bold text-purple-600">{metrics ? Math.round(metrics.averageSigningTime) : 0}h</div>
                 <div className="text-sm text-gray-600">Tiempo Promedio</div>
               </div>
             </div>
