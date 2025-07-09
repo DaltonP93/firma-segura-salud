@@ -1,0 +1,569 @@
+import React, { useState, useEffect } from 'react';
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Progress } from "@/components/ui/progress";
+import { Separator } from "@/components/ui/separator";
+import { 
+  ArrowLeft, 
+  User, 
+  Users, 
+  FileText, 
+  Paperclip, 
+  PenTool,
+  CheckCircle,
+  Clock,
+  AlertCircle,
+  Phone,
+  Mail,
+  MapPin,
+  CreditCard,
+  Calendar,
+  Edit,
+  Send,
+  Download,
+  Eye,
+  MessageSquare,
+  Share2
+} from 'lucide-react';
+import { useToast } from '@/hooks/use-toast';
+import { salesService } from '@/services/salesService';
+import type { SalesRequestWithDetails } from './SalesRequestsList';
+
+interface SalesRequestDetailProps {
+  requestId: string;
+  onBack: () => void;
+  onEdit: (request: SalesRequestWithDetails) => void;
+  onProcessHealthDeclaration: (request: SalesRequestWithDetails) => void;
+}
+
+interface DetailedSalesRequest extends SalesRequestWithDetails {
+  beneficiaries: any[];
+  health_declaration?: any;
+  documents?: any[];
+  contracts?: any[];
+  signature_status?: 'pending' | 'signed' | 'completed';
+  completed_at?: string;
+}
+
+const statusConfig = {
+  draft: {
+    label: 'Borrador',
+    color: 'bg-gray-100 text-gray-800',
+    icon: Edit,
+    progress: 25
+  },
+  pending_health_declaration: {
+    label: 'Pendiente Declaración',
+    color: 'bg-yellow-100 text-yellow-800',
+    icon: AlertCircle,
+    progress: 50
+  },
+  pending_signature: {
+    label: 'Pendiente Firma',
+    color: 'bg-blue-100 text-blue-800',
+    icon: Clock,
+    progress: 75
+  },
+  completed: {
+    label: 'Completado',
+    color: 'bg-green-100 text-green-800',
+    icon: CheckCircle,
+    progress: 100
+  },
+  rejected: {
+    label: 'Rechazado',
+    color: 'bg-red-100 text-red-800',
+    icon: AlertCircle,
+    progress: 0
+  }
+};
+
+const SalesRequestDetail: React.FC<SalesRequestDetailProps> = ({
+  requestId,
+  onBack,
+  onEdit,
+  onProcessHealthDeclaration
+}) => {
+  const { toast } = useToast();
+  const [loading, setLoading] = useState(true);
+  const [request, setRequest] = useState<DetailedSalesRequest | null>(null);
+  const [activeTab, setActiveTab] = useState('overview');
+
+  useEffect(() => {
+    fetchRequestDetails();
+  }, [requestId]);
+
+  const fetchRequestDetails = async () => {
+    try {
+      setLoading(true);
+      const data = await salesService.getSalesRequestById(requestId);
+      
+      // Transform the data to match our interface
+      const detailedRequest: DetailedSalesRequest = {
+        id: data.id,
+        request_number: data.request_number,
+        client_name: data.client_name,
+        client_email: data.client_email,
+        client_phone: data.client_phone,
+        client_dni: data.client_dni,
+        client_birth_date: data.client_birth_date,
+        client_address: data.client_address,
+        policy_type: data.policy_type,
+        coverage_amount: data.coverage_amount,
+        monthly_premium: data.monthly_premium,
+        status: data.status as 'draft' | 'pending_health_declaration' | 'pending_signature' | 'completed' | 'rejected',
+        notes: data.notes,
+        created_at: data.created_at,
+        updated_at: data.updated_at,
+        completed_at: data.completed_at,
+        beneficiaries: data.beneficiaries || [],
+        beneficiaries_count: data.beneficiaries?.length || 0,
+        health_declaration: (data as any).health_declaration,
+        documents: [], // TODO: Implement documents fetching
+        contracts: [], // TODO: Implement contracts fetching
+        signature_status: data.status === 'completed' ? 'completed' : 
+                         data.status === 'pending_signature' ? 'pending' : undefined
+      };
+      
+      setRequest(detailedRequest);
+    } catch (error) {
+      console.error('Error fetching request details:', error);
+      toast({
+        title: "Error",
+        description: "Error al cargar los detalles de la solicitud",
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const formatCurrency = (amount?: number) => {
+    return amount ? new Intl.NumberFormat('es-ES', {
+      style: 'currency',
+      currency: 'EUR'
+    }).format(amount) : 'N/A';
+  };
+
+  const formatDate = (date: string) => {
+    return new Date(date).toLocaleDateString('es-ES', {
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric'
+    });
+  };
+
+  const calculateAge = (birthDate: string) => {
+    const today = new Date();
+    const birth = new Date(birthDate);
+    let age = today.getFullYear() - birth.getFullYear();
+    const monthDiff = today.getMonth() - birth.getMonth();
+    
+    if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birth.getDate())) {
+      age--;
+    }
+    
+    return age;
+  };
+
+  if (loading) {
+    return (
+      <div className="flex justify-center items-center py-12">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
+        <span className="ml-4 text-gray-600">Cargando detalles...</span>
+      </div>
+    );
+  }
+
+  if (!request) {
+    return (
+      <div className="text-center py-12">
+        <AlertCircle className="mx-auto h-12 w-12 text-gray-400 mb-4" />
+        <h3 className="text-lg font-medium text-gray-900 mb-2">
+          No se pudo cargar la solicitud
+        </h3>
+        <Button onClick={onBack} variant="outline">
+          <ArrowLeft className="w-4 h-4 mr-2" />
+          Volver
+        </Button>
+      </div>
+    );
+  }
+
+  const StatusIcon = statusConfig[request.status || 'draft'].icon;
+  const statusInfo = statusConfig[request.status || 'draft'];
+
+  return (
+    <div className="space-y-6">
+      {/* Header */}
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+        <div className="flex items-center gap-4">
+          <Button onClick={onBack} variant="outline" size="sm">
+            <ArrowLeft className="w-4 h-4 mr-2" />
+            Volver
+          </Button>
+          <div>
+            <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">
+              {request.client_name}
+            </h1>
+            <p className="text-gray-600 mt-1">
+              Solicitud {request.request_number} • {formatDate(request.created_at)}
+            </p>
+          </div>
+        </div>
+        <div className="flex items-center gap-2">
+          <Badge className={statusInfo.color}>
+            <StatusIcon className="w-3 h-3 mr-1" />
+            {statusInfo.label}
+          </Badge>
+        </div>
+      </div>
+
+      {/* Progress Bar */}
+      <Card>
+        <CardContent className="p-4">
+          <div className="space-y-2">
+            <div className="flex justify-between items-center">
+              <span className="text-sm font-medium">Progreso de la Solicitud</span>
+              <span className="text-sm text-gray-600">{statusInfo.progress}%</span>
+            </div>
+            <Progress value={statusInfo.progress} className="h-2" />
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Quick Actions */}
+      <div className="flex flex-wrap gap-2">
+        {request.status === 'draft' && (
+          <Button onClick={() => onEdit(request)} size="sm" variant="outline">
+            <Edit className="w-4 h-4 mr-2" />
+            Editar
+          </Button>
+        )}
+        {request.status === 'pending_health_declaration' && (
+          <Button onClick={() => onProcessHealthDeclaration(request)} size="sm">
+            <FileText className="w-4 h-4 mr-2" />
+            Procesar Declaración
+          </Button>
+        )}
+        {request.status === 'pending_signature' && (
+          <Button size="sm" variant="outline">
+            <Send className="w-4 h-4 mr-2" />
+            Enviar para Firma
+          </Button>
+        )}
+        {request.status === 'completed' && (
+          <Button size="sm" variant="outline">
+            <Download className="w-4 h-4 mr-2" />
+            Descargar Contrato
+          </Button>
+        )}
+        <Button size="sm" variant="outline">
+          <Share2 className="w-4 h-4 mr-2" />
+          Compartir
+        </Button>
+      </div>
+
+      {/* Main Content */}
+      <Tabs value={activeTab} onValueChange={setActiveTab}>
+        <TabsList className="grid w-full grid-cols-3 lg:grid-cols-6">
+          <TabsTrigger value="overview">Vista General</TabsTrigger>
+          <TabsTrigger value="titular">Titular</TabsTrigger>
+          <TabsTrigger value="beneficiarios">Beneficiarios</TabsTrigger>
+          <TabsTrigger value="salud">Declaración</TabsTrigger>
+          <TabsTrigger value="documentos">Documentos</TabsTrigger>
+          <TabsTrigger value="contratos">Contratos</TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="overview" className="mt-6">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            {/* Información General */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <FileText className="w-5 h-5" />
+                  Información General
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="text-sm font-medium text-gray-600">Número de Solicitud</label>
+                    <p className="text-sm font-mono">{request.request_number}</p>
+                  </div>
+                  <div>
+                    <label className="text-sm font-medium text-gray-600">Tipo de Póliza</label>
+                    <p className="text-sm">{request.policy_type}</p>
+                  </div>
+                  <div>
+                    <label className="text-sm font-medium text-gray-600">Cobertura</label>
+                    <p className="text-sm font-semibold">{formatCurrency(request.coverage_amount)}</p>
+                  </div>
+                  <div>
+                    <label className="text-sm font-medium text-gray-600">Prima Mensual</label>
+                    <p className="text-sm font-semibold">{formatCurrency(request.monthly_premium)}</p>
+                  </div>
+                </div>
+                {request.notes && (
+                  <div>
+                    <label className="text-sm font-medium text-gray-600">Observaciones</label>
+                    <p className="text-sm mt-1">{request.notes}</p>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+
+            {/* Resumen del Titular */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <User className="w-5 h-5" />
+                  Datos del Titular
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-3">
+                <div className="flex items-center gap-2">
+                  <Mail className="w-4 h-4 text-gray-400" />
+                  <span className="text-sm">{request.client_email}</span>
+                </div>
+                {request.client_phone && (
+                  <div className="flex items-center gap-2">
+                    <Phone className="w-4 h-4 text-gray-400" />
+                    <span className="text-sm">{request.client_phone}</span>
+                  </div>
+                )}
+                {request.client_birth_date && (
+                  <div className="flex items-center gap-2">
+                    <Calendar className="w-4 h-4 text-gray-400" />
+                    <span className="text-sm">
+                      {formatDate(request.client_birth_date)} 
+                      ({calculateAge(request.client_birth_date)} años)
+                    </span>
+                  </div>
+                )}
+                {request.client_address && (
+                  <div className="flex items-center gap-2">
+                    <MapPin className="w-4 h-4 text-gray-400" />
+                    <span className="text-sm">{request.client_address}</span>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          </div>
+        </TabsContent>
+
+        <TabsContent value="titular" className="mt-6">
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <User className="w-5 h-5" />
+                Datos del Titular
+              </CardTitle>
+              <CardDescription>
+                Información personal del titular de la póliza
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                  <label className="text-sm font-medium text-gray-600">Nombre Completo</label>
+                  <p className="text-lg font-semibold">{request.client_name}</p>
+                </div>
+                <div>
+                  <label className="text-sm font-medium text-gray-600">DNI/Cédula</label>
+                  <p className="text-lg">{request.client_dni || 'No especificado'}</p>
+                </div>
+                <div>
+                  <label className="text-sm font-medium text-gray-600">Email</label>
+                  <p className="text-lg">{request.client_email}</p>
+                </div>
+                <div>
+                  <label className="text-sm font-medium text-gray-600">Teléfono</label>
+                  <p className="text-lg">{request.client_phone || 'No especificado'}</p>
+                </div>
+                {request.client_birth_date && (
+                  <div>
+                    <label className="text-sm font-medium text-gray-600">Fecha de Nacimiento</label>
+                    <p className="text-lg">
+                      {formatDate(request.client_birth_date)} 
+                      <span className="text-gray-600 ml-2">({calculateAge(request.client_birth_date)} años)</span>
+                    </p>
+                  </div>
+                )}
+              </div>
+              {request.client_address && (
+                <div>
+                  <label className="text-sm font-medium text-gray-600">Dirección Completa</label>
+                  <p className="text-lg">{request.client_address}</p>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="beneficiarios" className="mt-6">
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Users className="w-5 h-5" />
+                Beneficiarios ({request.beneficiaries.length})
+              </CardTitle>
+              <CardDescription>
+                Listado de beneficiarios de la póliza
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              {request.beneficiaries.length === 0 ? (
+                <div className="text-center py-8">
+                  <Users className="mx-auto h-12 w-12 text-gray-400 mb-4" />
+                  <p className="text-gray-500">No hay beneficiarios registrados</p>
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  {request.beneficiaries.map((beneficiary, index) => (
+                    <div key={beneficiary.id} className="border rounded-lg p-4">
+                      <div className="flex justify-between items-start mb-3">
+                        <div>
+                          <h3 className="font-semibold text-lg">{beneficiary.name}</h3>
+                          <p className="text-gray-600">{beneficiary.relationship}</p>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <Badge variant={beneficiary.is_primary ? "default" : "secondary"}>
+                            {beneficiary.is_primary ? "Principal" : "Secundario"}
+                          </Badge>
+                          <Badge variant="outline">
+                            {beneficiary.percentage || 0}%
+                          </Badge>
+                        </div>
+                      </div>
+                      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
+                        <div>
+                          <label className="font-medium text-gray-600">DNI</label>
+                          <p>{beneficiary.dni || 'No especificado'}</p>
+                        </div>
+                        <div>
+                          <label className="font-medium text-gray-600">Teléfono</label>
+                          <p>{beneficiary.phone || 'No especificado'}</p>
+                        </div>
+                        <div>
+                          <label className="font-medium text-gray-600">Email</label>
+                          <p>{beneficiary.email || 'No especificado'}</p>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="salud" className="mt-6">
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <FileText className="w-5 h-5" />
+                Declaración Jurada de Salud
+              </CardTitle>
+              <CardDescription>
+                Estado de la declaración de salud del titular
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              {request.health_declaration ? (
+                <div className="space-y-4">
+                  <div className="flex items-center gap-2">
+                    <CheckCircle className="w-5 h-5 text-green-500" />
+                    <span className="text-green-600 font-medium">Declaración completada</span>
+                  </div>
+                  <div className="bg-gray-50 p-4 rounded-lg">
+                    <p className="text-sm text-gray-600">
+                      Declaración procesada el {formatDate(request.health_declaration.created_at)}
+                    </p>
+                  </div>
+                </div>
+              ) : (
+                <div className="text-center py-8">
+                  <AlertCircle className="mx-auto h-12 w-12 text-yellow-400 mb-4" />
+                  <p className="text-gray-500 mb-4">Declaración de salud pendiente</p>
+                  {request.status === 'pending_health_declaration' && (
+                    <Button onClick={() => onProcessHealthDeclaration(request)}>
+                      <FileText className="w-4 h-4 mr-2" />
+                      Procesar Declaración
+                    </Button>
+                  )}
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="documentos" className="mt-6">
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Paperclip className="w-5 h-5" />
+                Documentos Adjuntos
+              </CardTitle>
+              <CardDescription>
+                Archivos y documentos relacionados con la solicitud
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="text-center py-8">
+                <Paperclip className="mx-auto h-12 w-12 text-gray-400 mb-4" />
+                <p className="text-gray-500 mb-4">No hay documentos adjuntos</p>
+                <Button variant="outline">
+                  <Paperclip className="w-4 h-4 mr-2" />
+                  Adjuntar Documento
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="contratos" className="mt-6">
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <PenTool className="w-5 h-5" />
+                Contratos y Firma
+              </CardTitle>
+              <CardDescription>
+                Estado de los contratos y proceso de firma
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-4">
+                {request.signature_status === 'completed' ? (
+                  <div className="flex items-center gap-2">
+                    <CheckCircle className="w-5 h-5 text-green-500" />
+                    <span className="text-green-600 font-medium">Contrato firmado y completado</span>
+                  </div>
+                ) : request.signature_status === 'pending' ? (
+                  <div className="flex items-center gap-2">
+                    <Clock className="w-5 h-5 text-yellow-500" />
+                    <span className="text-yellow-600 font-medium">Esperando firma</span>
+                  </div>
+                ) : (
+                  <div className="text-center py-8">
+                    <PenTool className="mx-auto h-12 w-12 text-gray-400 mb-4" />
+                    <p className="text-gray-500 mb-4">Contrato no generado</p>
+                    <Button variant="outline">
+                      <FileText className="w-4 h-4 mr-2" />
+                      Generar Contrato
+                    </Button>
+                  </div>
+                )}
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
+      </Tabs>
+    </div>
+  );
+};
+
+export default SalesRequestDetail;

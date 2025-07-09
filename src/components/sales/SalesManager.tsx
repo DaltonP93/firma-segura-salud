@@ -9,6 +9,7 @@ import { useToast } from '@/hooks/use-toast';
 import { salesService } from '@/services/salesService';
 import SalesRequestForm, { SalesRequest, Beneficiary } from './SalesRequestForm';
 import SalesRequestsList from './SalesRequestsList';
+import SalesRequestDetail from './SalesRequestDetail';
 import HealthDeclarationForm from './HealthDeclarationForm';
 import type { SalesRequestWithDetails } from './SalesRequestsList';
 
@@ -19,6 +20,7 @@ const SalesManager = () => {
   const [loading, setLoading] = useState(true);
   const [requests, setRequests] = useState<SalesRequestWithDetails[]>([]);
   const [editingRequest, setEditingRequest] = useState<SalesRequestWithDetails | null>(null);
+  const [viewingRequest, setViewingRequest] = useState<SalesRequestWithDetails | null>(null);
   const [healthDeclarationRequest, setHealthDeclarationRequest] = useState<SalesRequestWithDetails | null>(null);
 
   useEffect(() => {
@@ -88,8 +90,8 @@ const SalesManager = () => {
   };
 
   const handleViewRequest = (request: SalesRequestWithDetails) => {
-    console.log('Viewing request:', request);
-    // TODO: Implement request detail view
+    setViewingRequest(request);
+    setActiveTab('view');
   };
 
   const handleProcessHealthDeclaration = (request: SalesRequestWithDetails) => {
@@ -205,9 +207,10 @@ const SalesManager = () => {
 
       {/* Main Content */}
       <Tabs value={activeTab} onValueChange={setActiveTab}>
-        <TabsList className="grid w-full grid-cols-2 sm:grid-cols-4">
+        <TabsList className="grid w-full grid-cols-2 sm:grid-cols-5">
           <TabsTrigger value="list">Lista</TabsTrigger>
           <TabsTrigger value="create">Crear</TabsTrigger>
+          <TabsTrigger value="view" disabled={!viewingRequest}>Ver Detalles</TabsTrigger>
           <TabsTrigger value="edit" disabled={!editingRequest}>Editar</TabsTrigger>
           <TabsTrigger value="health-declaration" disabled={!healthDeclarationRequest}>
             Declaración
@@ -229,6 +232,28 @@ const SalesManager = () => {
             onSubmit={handleCreateRequest}
             onCancel={() => setActiveTab('list')}
           />
+        </TabsContent>
+
+        <TabsContent value="view" className="mt-6">
+          {viewingRequest && (
+            <SalesRequestDetail
+              requestId={viewingRequest.id}
+              onBack={() => {
+                setViewingRequest(null);
+                setActiveTab('list');
+              }}
+              onEdit={(request) => {
+                setEditingRequest(request);
+                setViewingRequest(null);
+                setActiveTab('edit');
+              }}
+              onProcessHealthDeclaration={(request) => {
+                setHealthDeclarationRequest(request);
+                setViewingRequest(null);
+                setActiveTab('health-declaration');
+              }}
+            />
+          )}
         </TabsContent>
 
         <TabsContent value="edit" className="mt-6">
