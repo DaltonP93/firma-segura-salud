@@ -36,6 +36,7 @@ interface SalesRequestDetailProps {
   onBack: () => void;
   onEdit: (request: SalesRequestWithDetails) => void;
   onProcessHealthDeclaration: (request: SalesRequestWithDetails) => void;
+  onSendForSignature: (request: SalesRequestWithDetails) => void;
 }
 
 interface DetailedSalesRequest extends SalesRequestWithDetails {
@@ -84,7 +85,8 @@ const SalesRequestDetail: React.FC<SalesRequestDetailProps> = ({
   requestId,
   onBack,
   onEdit,
-  onProcessHealthDeclaration
+  onProcessHealthDeclaration,
+  onSendForSignature
 }) => {
   const { toast } = useToast();
   const [loading, setLoading] = useState(true);
@@ -251,12 +253,7 @@ const SalesRequestDetail: React.FC<SalesRequestDetailProps> = ({
         {request.status === 'pending_signature' && (
           <Button 
             size="sm" 
-            onClick={() => {
-              import('./SalesSignatureIntegration').then(({ default: SalesSignatureIntegration }) => {
-                // This would open a modal with the signature integration
-                console.log('Open signature integration modal');
-              });
-            }}
+            onClick={() => onSendForSignature(request)}
           >
             <Send className="w-4 h-4 mr-2" />
             Enviar para Firma

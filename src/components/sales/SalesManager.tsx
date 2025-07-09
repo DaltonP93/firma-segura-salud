@@ -3,6 +3,7 @@ import React, { useState, useEffect } from 'react';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Plus, FileText, Users, BarChart3 } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { useToast } from '@/hooks/use-toast';
@@ -11,6 +12,7 @@ import SalesRequestForm, { SalesRequest, Beneficiary } from './SalesRequestForm'
 import SalesRequestsList from './SalesRequestsList';
 import SalesRequestDetail from './SalesRequestDetail';
 import HealthDeclarationForm from './HealthDeclarationForm';
+import SalesSignatureIntegration from './SalesSignatureIntegration';
 import type { SalesRequestWithDetails } from './SalesRequestsList';
 
 const SalesManager = () => {
@@ -22,6 +24,8 @@ const SalesManager = () => {
   const [editingRequest, setEditingRequest] = useState<SalesRequestWithDetails | null>(null);
   const [viewingRequest, setViewingRequest] = useState<SalesRequestWithDetails | null>(null);
   const [healthDeclarationRequest, setHealthDeclarationRequest] = useState<SalesRequestWithDetails | null>(null);
+  const [signatureModalOpen, setSignatureModalOpen] = useState(false);
+  const [signatureRequest, setSignatureRequest] = useState<SalesRequestWithDetails | null>(null);
 
   useEffect(() => {
     if (user) {
@@ -97,6 +101,26 @@ const SalesManager = () => {
   const handleProcessHealthDeclaration = (request: SalesRequestWithDetails) => {
     setHealthDeclarationRequest(request);
     setActiveTab('health-declaration');
+  };
+
+  const handleSendForSignature = (request: SalesRequestWithDetails) => {
+    setSignatureRequest(request);
+    setSignatureModalOpen(true);
+  };
+
+  const handleSignatureSuccess = async () => {
+    setSignatureModalOpen(false);
+    setSignatureRequest(null);
+    await fetchSalesRequests();
+    toast({
+      title: "Documento Enviado",
+      description: "El documento ha sido enviado para firma exitosamente",
+    });
+  };
+
+  const handleSignatureCancel = () => {
+    setSignatureModalOpen(false);
+    setSignatureRequest(null);
   };
 
   const handleHealthDeclarationSubmit = async (answers: Record<string, any>) => {
@@ -223,6 +247,7 @@ const SalesManager = () => {
             onViewRequest={handleViewRequest}
             onEditRequest={handleEditRequest}
             onProcessHealthDeclaration={handleProcessHealthDeclaration}
+            onSendForSignature={handleSendForSignature}
             loading={loading}
           />
         </TabsContent>
@@ -252,6 +277,7 @@ const SalesManager = () => {
                 setViewingRequest(null);
                 setActiveTab('health-declaration');
               }}
+              onSendForSignature={handleSendForSignature}
             />
           )}
         </TabsContent>
@@ -283,6 +309,22 @@ const SalesManager = () => {
           )}
         </TabsContent>
       </Tabs>
+
+      {/* Signature Integration Modal */}
+      <Dialog open={signatureModalOpen} onOpenChange={setSignatureModalOpen}>
+        <DialogContent className="max-w-5xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Enviar para Firma Digital</DialogTitle>
+          </DialogHeader>
+          {signatureRequest && (
+            <SalesSignatureIntegration
+              salesRequest={signatureRequest}
+              onSuccess={handleSignatureSuccess}
+              onCancel={handleSignatureCancel}
+            />
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };

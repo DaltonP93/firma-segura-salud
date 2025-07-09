@@ -34,6 +34,7 @@ interface SalesRequestsListProps {
   onViewRequest: (request: SalesRequestWithDetails) => void;
   onEditRequest: (request: SalesRequestWithDetails) => void;
   onProcessHealthDeclaration: (request: SalesRequestWithDetails) => void;
+  onSendForSignature: (request: SalesRequestWithDetails) => void;
   loading?: boolean;
 }
 
@@ -70,6 +71,7 @@ const SalesRequestsList: React.FC<SalesRequestsListProps> = ({
   onViewRequest,
   onEditRequest,
   onProcessHealthDeclaration,
+  onSendForSignature,
   loading = false
 }) => {
   const [searchTerm, setSearchTerm] = useState('');
@@ -280,6 +282,17 @@ const SalesRequestsList: React.FC<SalesRequestsListProps> = ({
                         >
                           <CheckCircle className="w-4 h-4" />
                           Declaración Salud
+                        </Button>
+                      )}
+                      
+                      {request.status === 'pending_signature' && (
+                        <Button
+                          size="sm"
+                          onClick={() => onSendForSignature(request)}
+                          className="flex items-center gap-2"
+                        >
+                          <CheckCircle className="w-4 h-4" />
+                          Enviar para Firma
                         </Button>
                       )}
                     </div>
