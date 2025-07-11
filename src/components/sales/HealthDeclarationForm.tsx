@@ -19,6 +19,7 @@ interface HealthQuestion {
   options?: any;
   is_required: boolean;
   sort_order: number;
+  show_description_when?: string;
 }
 
 interface HealthDeclarationFormProps {
@@ -235,6 +236,22 @@ const HealthDeclarationForm: React.FC<HealthDeclarationFormProps> = ({
                 </Label>
                 
                 {renderQuestion(question)}
+                
+                {/* Show description field when needed */}
+                {question.show_description_when && answers[question.id] === question.show_description_when && (
+                  <div className="mt-3">
+                    <Label className="text-sm font-medium">
+                      Por favor proporcione detalles:
+                    </Label>
+                    <Textarea
+                      value={answers[`${question.id}_description`] || ''}
+                      onChange={(e) => handleAnswerChange(`${question.id}_description`, e.target.value)}
+                      placeholder="Describa con detalle..."
+                      rows={3}
+                      className="mt-1"
+                    />
+                  </div>
+                )}
                 
                 {/* Show warning for risky answers */}
                 {question.question_type === 'yes_no' && answers[question.id] === 'yes' && (

@@ -101,41 +101,47 @@ export type Database = {
         Row: {
           birth_date: string | null
           created_at: string
+          description: string
           dni: string | null
           email: string | null
+          height: number | null
           id: string
           is_primary: boolean | null
-          name: string
           percentage: number | null
           phone: string | null
           relationship: string
           sales_request_id: string
+          weight: number | null
         }
         Insert: {
           birth_date?: string | null
           created_at?: string
+          description: string
           dni?: string | null
           email?: string | null
+          height?: number | null
           id?: string
           is_primary?: boolean | null
-          name: string
           percentage?: number | null
           phone?: string | null
           relationship: string
           sales_request_id: string
+          weight?: number | null
         }
         Update: {
           birth_date?: string | null
           created_at?: string
+          description?: string
           dni?: string | null
           email?: string | null
+          height?: number | null
           id?: string
           is_primary?: boolean | null
-          name?: string
           percentage?: number | null
           phone?: string | null
           relationship?: string
           sales_request_id?: string
+          weight?: number | null
         }
         Relationships: [
           {
@@ -489,6 +495,7 @@ export type Database = {
           options: Json | null
           question_text: string
           question_type: string
+          show_description_when: string | null
           sort_order: number | null
           updated_at: string
         }
@@ -500,6 +507,7 @@ export type Database = {
           options?: Json | null
           question_text: string
           question_type?: string
+          show_description_when?: string | null
           sort_order?: number | null
           updated_at?: string
         }
@@ -511,10 +519,73 @@ export type Database = {
           options?: Json | null
           question_text?: string
           question_type?: string
+          show_description_when?: string | null
           sort_order?: number | null
           updated_at?: string
         }
         Relationships: []
+      }
+      insurance_plans: {
+        Row: {
+          age_restrictions: Json | null
+          coverage_details: Json | null
+          created_at: string | null
+          created_by: string | null
+          description: string | null
+          id: string
+          is_active: boolean | null
+          max_coverage_amount: number | null
+          max_premium: number | null
+          min_coverage_amount: number | null
+          min_premium: number | null
+          name: string
+          policy_type: string
+          requirements: Json | null
+          updated_at: string | null
+        }
+        Insert: {
+          age_restrictions?: Json | null
+          coverage_details?: Json | null
+          created_at?: string | null
+          created_by?: string | null
+          description?: string | null
+          id?: string
+          is_active?: boolean | null
+          max_coverage_amount?: number | null
+          max_premium?: number | null
+          min_coverage_amount?: number | null
+          min_premium?: number | null
+          name: string
+          policy_type: string
+          requirements?: Json | null
+          updated_at?: string | null
+        }
+        Update: {
+          age_restrictions?: Json | null
+          coverage_details?: Json | null
+          created_at?: string | null
+          created_by?: string | null
+          description?: string | null
+          id?: string
+          is_active?: boolean | null
+          max_coverage_amount?: number | null
+          max_premium?: number | null
+          min_coverage_amount?: number | null
+          min_premium?: number | null
+          name?: string
+          policy_type?: string
+          requirements?: Json | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "insurance_plans_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       notification_logs: {
         Row: {
@@ -716,59 +787,80 @@ export type Database = {
       }
       sales_requests: {
         Row: {
+          agent_notes: string | null
           client_address: string | null
           client_birth_date: string | null
           client_dni: string | null
           client_email: string
+          client_income: number | null
+          client_marital_status: string | null
           client_name: string
+          client_occupation: string | null
           client_phone: string | null
           completed_at: string | null
           coverage_amount: number | null
           created_at: string
           created_by: string
           id: string
+          medical_exams_required: boolean | null
           monthly_premium: number | null
           notes: string | null
           policy_type: string
+          priority_level: string | null
           request_number: string
+          source: string | null
           status: string
           updated_at: string
         }
         Insert: {
+          agent_notes?: string | null
           client_address?: string | null
           client_birth_date?: string | null
           client_dni?: string | null
           client_email: string
+          client_income?: number | null
+          client_marital_status?: string | null
           client_name: string
+          client_occupation?: string | null
           client_phone?: string | null
           completed_at?: string | null
           coverage_amount?: number | null
           created_at?: string
           created_by: string
           id?: string
+          medical_exams_required?: boolean | null
           monthly_premium?: number | null
           notes?: string | null
           policy_type: string
+          priority_level?: string | null
           request_number?: string
+          source?: string | null
           status?: string
           updated_at?: string
         }
         Update: {
+          agent_notes?: string | null
           client_address?: string | null
           client_birth_date?: string | null
           client_dni?: string | null
           client_email?: string
+          client_income?: number | null
+          client_marital_status?: string | null
           client_name?: string
+          client_occupation?: string | null
           client_phone?: string | null
           completed_at?: string | null
           coverage_amount?: number | null
           created_at?: string
           created_by?: string
           id?: string
+          medical_exams_required?: boolean | null
           monthly_premium?: number | null
           notes?: string | null
           policy_type?: string
+          priority_level?: string | null
           request_number?: string
+          source?: string | null
           status?: string
           updated_at?: string
         }

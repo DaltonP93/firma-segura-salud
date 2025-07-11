@@ -22,11 +22,18 @@ export interface SalesRequest {
   monthly_premium?: number;
   status?: 'draft' | 'pending_health_declaration' | 'pending_signature' | 'completed' | 'rejected';
   notes?: string;
+  client_occupation?: string;
+  client_income?: number;
+  client_marital_status?: string;
+  medical_exams_required?: boolean;
+  agent_notes?: string;
+  priority_level?: string;
+  source?: string;
 }
 
 export interface Beneficiary {
   id?: string;
-  name: string;
+  description: string;
   relationship: string;
   dni?: string;
   birth_date?: string;
@@ -34,6 +41,8 @@ export interface Beneficiary {
   email?: string;
   percentage: number;
   is_primary: boolean;
+  weight?: number;
+  height?: number;
 }
 
 interface SalesRequestFormProps {
@@ -88,6 +97,13 @@ const SalesRequestForm: React.FC<SalesRequestFormProps> = ({
     coverage_amount: 0,
     monthly_premium: 0,
     notes: '',
+    client_occupation: '',
+    client_income: 0,
+    client_marital_status: '',
+    medical_exams_required: false,
+    agent_notes: '',
+    priority_level: 'normal',
+    source: 'direct',
     ...initialData
   });
 
@@ -171,7 +187,7 @@ const SalesRequestForm: React.FC<SalesRequestFormProps> = ({
     }
   };
 
-  const handleInputChange = (field: keyof SalesRequest, value: string | number) => {
+  const handleInputChange = (field: keyof SalesRequest, value: string | number | boolean) => {
     setFormData(prev => ({ ...prev, [field]: value }));
   };
 
@@ -273,6 +289,68 @@ const SalesRequestForm: React.FC<SalesRequestFormProps> = ({
                     required
                   />
                 </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="client_occupation">Ocupación *</Label>
+                  <Input
+                    id="client_occupation"
+                    value={formData.client_occupation || ''}
+                    onChange={(e) => handleInputChange('client_occupation', e.target.value)}
+                    placeholder="Ocupación del cliente"
+                    required
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="client_income">Ingresos Mensuales</Label>
+                  <Input
+                    id="client_income"
+                    type="number"
+                    value={formData.client_income || ''}
+                    onChange={(e) => handleInputChange('client_income', parseFloat(e.target.value) || 0)}
+                    placeholder="0.00"
+                    min="0"
+                    step="0.01"
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="client_marital_status">Estado Civil</Label>
+                  <Select
+                    value={formData.client_marital_status || ''}
+                    onValueChange={(value) => handleInputChange('client_marital_status', value)}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Seleccione estado civil" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="soltero">Soltero(a)</SelectItem>
+                      <SelectItem value="casado">Casado(a)</SelectItem>
+                      <SelectItem value="divorciado">Divorciado(a)</SelectItem>
+                      <SelectItem value="viudo">Viudo(a)</SelectItem>
+                      <SelectItem value="union_libre">Unión Libre</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="source">Fuente</Label>
+                  <Select
+                    value={formData.source || 'direct'}
+                    onValueChange={(value) => handleInputChange('source', value)}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Seleccione fuente" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="direct">Directo</SelectItem>
+                      <SelectItem value="referral">Referido</SelectItem>
+                      <SelectItem value="online">En línea</SelectItem>
+                      <SelectItem value="phone">Teléfono</SelectItem>
+                      <SelectItem value="email">Email</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
               </div>
             </div>
 
@@ -339,6 +417,50 @@ const SalesRequestForm: React.FC<SalesRequestFormProps> = ({
                   placeholder="Observaciones adicionales sobre la solicitud"
                   rows={3}
                 />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="agent_notes">Notas del Agente</Label>
+                <Textarea
+                  id="agent_notes"
+                  value={formData.agent_notes || ''}
+                  onChange={(e) => handleInputChange('agent_notes', e.target.value)}
+                  placeholder="Notas internas del agente"
+                  rows={3}
+                />
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="priority_level">Nivel de Prioridad</Label>
+                  <Select
+                    value={formData.priority_level || 'normal'}
+                    onValueChange={(value) => handleInputChange('priority_level', value)}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Seleccione prioridad" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="low">Baja</SelectItem>
+                      <SelectItem value="normal">Normal</SelectItem>
+                      <SelectItem value="high">Alta</SelectItem>
+                      <SelectItem value="urgent">Urgente</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div className="space-y-2">
+                  <div className="flex items-center gap-2">
+                    <input
+                      type="checkbox"
+                      id="medical_exams_required"
+                      checked={formData.medical_exams_required || false}
+                      onChange={(e) => handleInputChange('medical_exams_required', e.target.checked)}
+                      className="rounded border-gray-300"
+                    />
+                    <Label htmlFor="medical_exams_required">Exámenes Médicos Requeridos</Label>
+                  </div>
+                </div>
               </div>
             </div>
 

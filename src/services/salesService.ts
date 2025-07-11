@@ -33,14 +33,16 @@ export const salesService = {
     if (beneficiaries.length > 0) {
       const beneficiariesData = beneficiaries.map(b => ({
         sales_request_id: request.id,
-        name: b.name,
+        description: b.description,
         relationship: b.relationship,
         dni: b.dni,
         birth_date: b.birth_date,
         phone: b.phone,
         email: b.email,
         percentage: b.percentage,
-        is_primary: b.is_primary
+        is_primary: b.is_primary,
+        weight: b.weight,
+        height: b.height
       }));
 
       const { error: beneficiariesError } = await supabase
@@ -168,7 +170,7 @@ export const salesService = {
     return data || [];
   },
 
-  async saveHealthDeclaration(salesRequestId: string, answers: Record<string, any>) {
+  async createHealthDeclaration(salesRequestId: string, answers: Record<string, any>) {
     const { data, error } = await supabase
       .from('health_declarations')
       .upsert({

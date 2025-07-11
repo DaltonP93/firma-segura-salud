@@ -127,7 +127,7 @@ const SalesManager = () => {
     if (!healthDeclarationRequest) return;
 
     try {
-      await salesService.saveHealthDeclaration(healthDeclarationRequest.id, answers);
+      await salesService.createHealthDeclaration(healthDeclarationRequest.id, answers);
       await fetchSalesRequests();
       setHealthDeclarationRequest(null);
       setActiveTab('list');

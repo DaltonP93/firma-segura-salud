@@ -33,20 +33,22 @@ const BeneficiariesForm: React.FC<BeneficiariesFormProps> = ({
   onBeneficiariesChange
 }) => {
   const [newBeneficiary, setNewBeneficiary] = useState<Beneficiary>({
-    name: '',
+    description: '',
     relationship: '',
     dni: '',
     birth_date: '',
     phone: '',
     email: '',
     percentage: 0,
-    is_primary: false
+    is_primary: false,
+    weight: 0,
+    height: 0
   });
 
   const [isAdding, setIsAdding] = useState(false);
 
   const addBeneficiary = () => {
-    if (!newBeneficiary.name || !newBeneficiary.relationship || newBeneficiary.percentage <= 0) {
+    if (!newBeneficiary.description || !newBeneficiary.relationship || newBeneficiary.percentage <= 0) {
       return;
     }
 
@@ -64,14 +66,16 @@ const BeneficiariesForm: React.FC<BeneficiariesFormProps> = ({
     onBeneficiariesChange([...beneficiaries, beneficiary]);
     
     setNewBeneficiary({
-      name: '',
+      description: '',
       relationship: '',
       dni: '',
       birth_date: '',
       phone: '',
       email: '',
       percentage: 0,
-      is_primary: false
+      is_primary: false,
+      weight: 0,
+      height: 0
     });
     setIsAdding(false);
   };
@@ -114,11 +118,11 @@ const BeneficiariesForm: React.FC<BeneficiariesFormProps> = ({
             <div className="flex justify-between items-start">
               <div className="flex-1 grid grid-cols-1 md:grid-cols-3 gap-3">
                 <div>
-                  <Label className="text-sm font-medium">Nombre</Label>
+                  <Label className="text-sm font-medium">Descripción</Label>
                   <Input
-                    value={beneficiary.name}
-                    onChange={(e) => updateBeneficiary(index, 'name', e.target.value)}
-                    placeholder="Nombre completo"
+                    value={beneficiary.description}
+                    onChange={(e) => updateBeneficiary(index, 'description', e.target.value)}
+                    placeholder="Descripción del beneficiario"
                   />
                 </div>
                 <div>
@@ -162,7 +166,7 @@ const BeneficiariesForm: React.FC<BeneficiariesFormProps> = ({
               </Button>
             </div>
             
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+            <div className="grid grid-cols-1 md:grid-cols-5 gap-3">
               <div>
                 <Label className="text-sm font-medium">DNI</Label>
                 <Input
@@ -187,6 +191,28 @@ const BeneficiariesForm: React.FC<BeneficiariesFormProps> = ({
                   placeholder="Número de teléfono"
                 />
               </div>
+              <div>
+                <Label className="text-sm font-medium">Peso (kg)</Label>
+                <Input
+                  type="number"
+                  value={beneficiary.weight || ''}
+                  onChange={(e) => updateBeneficiary(index, 'weight', parseFloat(e.target.value) || 0)}
+                  placeholder="0"
+                  min="0"
+                  step="0.1"
+                />
+              </div>
+              <div>
+                <Label className="text-sm font-medium">Altura (cm)</Label>
+                <Input
+                  type="number"
+                  value={beneficiary.height || ''}
+                  onChange={(e) => updateBeneficiary(index, 'height', parseFloat(e.target.value) || 0)}
+                  placeholder="0"
+                  min="0"
+                  step="0.1"
+                />
+              </div>
             </div>
           </div>
         ))}
@@ -196,11 +222,11 @@ const BeneficiariesForm: React.FC<BeneficiariesFormProps> = ({
           <div className="border-2 border-dashed border-primary rounded-lg p-4 space-y-3">
             <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
               <div>
-                <Label className="text-sm font-medium">Nombre *</Label>
+                <Label className="text-sm font-medium">Descripción *</Label>
                 <Input
-                  value={newBeneficiary.name}
-                  onChange={(e) => setNewBeneficiary({...newBeneficiary, name: e.target.value})}
-                  placeholder="Nombre completo"
+                  value={newBeneficiary.description}
+                  onChange={(e) => setNewBeneficiary({...newBeneficiary, description: e.target.value})}
+                  placeholder="Descripción del beneficiario"
                 />
               </div>
               <div>
@@ -236,7 +262,7 @@ const BeneficiariesForm: React.FC<BeneficiariesFormProps> = ({
               </div>
             </div>
             
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+            <div className="grid grid-cols-1 md:grid-cols-5 gap-3">
               <div>
                 <Label className="text-sm font-medium">DNI</Label>
                 <Input
@@ -259,6 +285,28 @@ const BeneficiariesForm: React.FC<BeneficiariesFormProps> = ({
                   value={newBeneficiary.phone || ''}
                   onChange={(e) => setNewBeneficiary({...newBeneficiary, phone: e.target.value})}
                   placeholder="Número de teléfono"
+                />
+              </div>
+              <div>
+                <Label className="text-sm font-medium">Peso (kg)</Label>
+                <Input
+                  type="number"
+                  value={newBeneficiary.weight || ''}
+                  onChange={(e) => setNewBeneficiary({...newBeneficiary, weight: parseFloat(e.target.value) || 0})}
+                  placeholder="0"
+                  min="0"
+                  step="0.1"
+                />
+              </div>
+              <div>
+                <Label className="text-sm font-medium">Altura (cm)</Label>
+                <Input
+                  type="number"
+                  value={newBeneficiary.height || ''}
+                  onChange={(e) => setNewBeneficiary({...newBeneficiary, height: parseFloat(e.target.value) || 0})}
+                  placeholder="0"
+                  min="0"
+                  step="0.1"
                 />
               </div>
             </div>
