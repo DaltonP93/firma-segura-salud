@@ -3,7 +3,7 @@ import React, { useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
-import { Palette, Building, FileText, Users, Settings, AlertTriangle } from 'lucide-react';
+import { Palette, Building, FileText, Users, Settings, AlertTriangle, Key } from 'lucide-react';
 import { useUserProfile } from '@/hooks/useUserProfile';
 import { useSupabaseData } from '@/hooks/useSupabaseData';
 import CustomizationManager from './CustomizationManager';
@@ -13,6 +13,7 @@ import UserManagement from './UserManagement';
 import AdminOverviewStats from './AdminOverviewStats';
 import AdminQuickActions from './AdminQuickActions';
 import AdminRecentDocuments from './AdminRecentDocuments';
+import ApiConfigurationManager from './ApiConfigurationManager';
 
 const AdminPanel = () => {
   const { isAdmin, isSuperAdmin, isLoading, profile, error } = useUserProfile();
@@ -104,7 +105,7 @@ const AdminPanel = () => {
       </div>
 
       <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-        <TabsList className="grid w-full grid-cols-5">
+        <TabsList className="grid w-full grid-cols-6">
           <TabsTrigger value="overview" className="flex items-center gap-2">
             <FileText className="w-4 h-4" />
             Resumen
@@ -112,6 +113,10 @@ const AdminPanel = () => {
           <TabsTrigger value="users" className="flex items-center gap-2">
             <Users className="w-4 h-4" />
             Usuarios
+          </TabsTrigger>
+          <TabsTrigger value="api-config" className="flex items-center gap-2">
+            <Key className="w-4 h-4" />
+            APIs
           </TabsTrigger>
           <TabsTrigger value="customization" className="flex items-center gap-2">
             <Palette className="w-4 h-4" />
@@ -139,6 +144,10 @@ const AdminPanel = () => {
 
         <TabsContent value="users">
           <UserManagement />
+        </TabsContent>
+
+        <TabsContent value="api-config">
+          <ApiConfigurationManager />
         </TabsContent>
 
         <TabsContent value="customization">

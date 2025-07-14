@@ -14,6 +14,42 @@ export type Database = {
   }
   public: {
     Tables: {
+      api_configurations: {
+        Row: {
+          additional_config: Json | null
+          api_key: string | null
+          created_at: string | null
+          created_by: string | null
+          id: string
+          is_active: boolean | null
+          service_name: string
+          service_type: string
+          updated_at: string | null
+        }
+        Insert: {
+          additional_config?: Json | null
+          api_key?: string | null
+          created_at?: string | null
+          created_by?: string | null
+          id?: string
+          is_active?: boolean | null
+          service_name: string
+          service_type: string
+          updated_at?: string | null
+        }
+        Update: {
+          additional_config?: Json | null
+          api_key?: string | null
+          created_at?: string | null
+          created_by?: string | null
+          id?: string
+          is_active?: boolean | null
+          service_name?: string
+          service_type?: string
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       app_customization: {
         Row: {
           accent_color: string | null
@@ -1156,6 +1192,14 @@ export type Database = {
       generate_document_number: {
         Args: Record<PropertyKey, never>
         Returns: string
+      }
+      get_api_config: {
+        Args: { service_name: string }
+        Returns: {
+          api_key: string
+          additional_config: Json
+          is_active: boolean
+        }[]
       }
       get_current_user_role: {
         Args: Record<PropertyKey, never>

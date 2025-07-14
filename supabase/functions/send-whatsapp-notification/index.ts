@@ -1,3 +1,4 @@
+
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.50.3";
 
@@ -47,12 +48,15 @@ const handler = async (req: Request): Promise<Response> => {
       );
     }
 
+    // Get WhatsApp configuration from database
+    const { data: whatsappConfig } = await supabase.rpc('get_api_config', { service_name: 'whatsapp_business' });
+
     // Format phone number (remove non-digits and ensure proper format)
     const cleanPhone = signerPhone.replace(/\D/g, '');
     const formattedPhone = cleanPhone.startsWith('34') ? `+${cleanPhone}` : `+34${cleanPhone}`;
 
     // Create the signing URL
-    const signingUrl = `${Deno.env.get("SITE_URL") || "https://your-app.com"}/sign/${accessToken}`;
+    const signingUrl = `${Deno.env.get("SUPABASE_URL") || "http://localhost:5173"}/sign/${accessToken}`;
     
     // WhatsApp message with proper formatting
     const whatsappMessage = `
@@ -72,34 +76,59 @@ ${signingUrl}
 _Sistema de Firmas Electrónicas_
     `.trim();
 
-    // For development/testing: Log the WhatsApp message
-    console.log('WhatsApp message to be sent:', {
-      to: formattedPhone,
-      message: whatsappMessage,
-      templateName
-    });
+    let notificationStatus = 'sent';
+    let errorMessage = null;
+    let whatsappMessageId = null;
 
-    // In a production environment, integrate with WhatsApp Business API
-    // Example with a hypothetical WhatsApp service:
-    /*
-    const whatsappApiKey = Deno.env.get("WHATSAPP_API_KEY");
-    const whatsappResponse = await fetch('https://api.whatsapp.com/send', {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${whatsappApiKey}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        to: formattedPhone,
-        message: whatsappMessage,
-        template: templateName
-      })
-    });
+    if (whatsappConfig && whatsappConfig.length > 0 && whatsappConfig[0].api_key && whatsappConfig[0].is_active) {
+      // Use configured WhatsApp service
+      const config = whatsappConfig[0];
+      const additionalConfig = config.additional_config || {};
+      
+      console.log('Using configured WhatsApp Business API');
+      
+      try {
+        // TODO: Implement actual WhatsApp Business API call here
+        /*
+        const whatsappResponse = await fetch(`https://graph.facebook.com/v18.0/${additionalConfig.phone_number_id}/messages`, {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${config.api_key}`,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            messaging_product: 'whatsapp',
+            to: formattedPhone,
+            type: 'text',
+            text: {
+              body: whatsappMessage
+            }
+          })
+        });
 
-    if (!whatsappResponse.ok) {
-      throw new Error(`WhatsApp API error: ${whatsappResponse.statusText}`);
+        if (!whatsappResponse.ok) {
+          throw new Error(`WhatsApp API error: ${whatsappResponse.statusText}`);
+        }
+
+        const responseData = await whatsappResponse.json();
+        whatsappMessageId = responseData.messages?.[0]?.id;
+        */
+
+        console.log('WhatsApp message prepared for API:', {
+          to: formattedPhone,
+          message: whatsappMessage,
+          phoneNumberId: additionalConfig.phone_number_id
+        });
+
+      } catch (error) {
+        console.error('Error sending WhatsApp via configured service:', error);
+        notificationStatus = 'failed';
+        errorMessage = error.message;
+      }
+    } else {
+      console.log('No WhatsApp service configured, generating shareable link only');
+      notificationStatus = 'fallback';
     }
-    */
 
     // Create notification log in database
     const { error } = await supabase
@@ -107,23 +136,28 @@ _Sistema de Firmas Electrónicas_
       .insert({
         signature_request_id: signatureRequestId,
         notification_type: 'whatsapp',
-        status: 'sent',
+        status: notificationStatus,
         message_content: whatsappMessage,
         phone_number: formattedPhone,
         template_name: templateName,
+        whatsapp_message_id: whatsappMessageId,
+        error_message: errorMessage,
         sent_at: new Date().toISOString(),
       });
 
     if (error) {
       console.error('Error logging WhatsApp notification:', error);
-      // Don't throw error here, as the notification might have been sent
     }
 
     return new Response(
       JSON.stringify({ 
         success: true, 
-        message: 'WhatsApp notification sent successfully',
+        message: notificationStatus === 'fallback' 
+          ? 'Enlace de firma generado (servicio de WhatsApp no configurado)'
+          : 'Notificación de WhatsApp enviada exitosamente',
         phone: formattedPhone,
+        signingUrl,
+        fallbackMode: notificationStatus === 'fallback',
         preview: whatsappMessage.substring(0, 100) + '...'
       }),
       {

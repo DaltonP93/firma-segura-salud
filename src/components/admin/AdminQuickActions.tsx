@@ -2,56 +2,87 @@
 import React from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Users, Palette, Building, FileText } from 'lucide-react';
-import { useNavigate } from 'react-router-dom';
+import { Users, Palette, Building, Settings, Key, Zap } from 'lucide-react';
 
 interface AdminQuickActionsProps {
   setActiveTab: (tab: string) => void;
 }
 
-const AdminQuickActions = ({ setActiveTab }: AdminQuickActionsProps) => {
-  const navigate = useNavigate();
+const AdminQuickActions: React.FC<AdminQuickActionsProps> = ({ setActiveTab }) => {
+  const quickActions = [
+    {
+      title: "Gestionar Usuarios",
+      description: "Crear, editar y administrar usuarios del sistema",
+      icon: Users,
+      action: () => setActiveTab('users'),
+      color: "text-blue-600",
+      bgColor: "bg-blue-50",
+    },
+    {
+      title: "Configurar APIs",
+      description: "Configurar servicios de email y WhatsApp",
+      icon: Key,
+      action: () => setActiveTab('api-config'),
+      color: "text-green-600",
+      bgColor: "bg-green-50",
+    },
+    {
+      title: "Personalización",
+      description: "Configurar tema, colores y apariencia",
+      icon: Palette,
+      action: () => setActiveTab('customization'),
+      color: "text-purple-600",
+      bgColor: "bg-purple-50",
+    },
+    {
+      title: "Tipos de Empresa",
+      description: "Administrar categorías de empresas",
+      icon: Building,
+      action: () => setActiveTab('company-types'),
+      color: "text-orange-600",
+      bgColor: "bg-orange-50",
+    },
+    {
+      title: "Secciones",
+      description: "Personalizar secciones de la aplicación",
+      icon: Settings,
+      action: () => setActiveTab('sections'),
+      color: "text-gray-600",
+      bgColor: "bg-gray-50",
+    },
+  ];
 
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Acciones Rápidas</CardTitle>
-        <CardDescription>Acciones comunes de administración</CardDescription>
+        <CardTitle className="flex items-center gap-2">
+          <Zap className="w-5 h-5" />
+          Acciones Rápidas
+        </CardTitle>
+        <CardDescription>
+          Accede rápidamente a las funciones de administración más utilizadas
+        </CardDescription>
       </CardHeader>
-      <CardContent className="space-y-4">
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-          <Button 
-            onClick={() => setActiveTab('users')}
-            className="justify-start"
-            variant="outline"
-          >
-            <Users className="w-4 h-4 mr-2" />
-            Gestionar Usuarios
-          </Button>
-          <Button 
-            onClick={() => setActiveTab('customization')}
-            className="justify-start"
-            variant="outline"
-          >
-            <Palette className="w-4 h-4 mr-2" />
-            Personalizar Aplicación
-          </Button>
-          <Button 
-            onClick={() => setActiveTab('company-types')}
-            className="justify-start"
-            variant="outline"
-          >
-            <Building className="w-4 h-4 mr-2" />
-            Gestionar Tipos de Empresa
-          </Button>
-          <Button 
-            onClick={() => navigate('/')}
-            className="justify-start"
-            variant="outline"
-          >
-            <FileText className="w-4 h-4 mr-2" />
-            Ir a Gestión de Documentos
-          </Button>
+      <CardContent>
+        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+          {quickActions.map((action, index) => (
+            <Button
+              key={index}
+              variant="outline"
+              className="h-auto p-4 justify-start"
+              onClick={action.action}
+            >
+              <div className="flex items-start gap-3 w-full">
+                <div className={`p-2 rounded-lg ${action.bgColor}`}>
+                  <action.icon className={`w-5 h-5 ${action.color}`} />
+                </div>
+                <div className="text-left">
+                  <p className="font-medium">{action.title}</p>
+                  <p className="text-sm text-gray-500 mt-1">{action.description}</p>
+                </div>
+              </div>
+            </Button>
+          ))}
         </div>
       </CardContent>
     </Card>
