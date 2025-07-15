@@ -2,7 +2,7 @@
 import React from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Users, Palette, Building, Settings, Key, Zap } from 'lucide-react';
+import { Users, Palette, Building, Settings, Key, Zap, Wrench } from 'lucide-react';
 
 interface AdminQuickActionsProps {
   setActiveTab: (tab: string) => void;
@@ -10,6 +10,14 @@ interface AdminQuickActionsProps {
 
 const AdminQuickActions: React.FC<AdminQuickActionsProps> = ({ setActiveTab }) => {
   const quickActions = [
+    {
+      title: "Configurar Sistema",
+      description: "Configurar datos maestros y APIs necesarias",
+      icon: Wrench,
+      action: () => setActiveTab('setup'),
+      color: "text-red-600",
+      bgColor: "bg-red-50",
+    },
     {
       title: "Gestionar Usuarios",
       description: "Crear, editar y administrar usuarios del sistema",

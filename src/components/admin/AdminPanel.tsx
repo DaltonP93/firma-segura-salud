@@ -3,7 +3,7 @@ import React, { useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
-import { Palette, Building, FileText, Users, Settings, AlertTriangle, Key } from 'lucide-react';
+import { Palette, Building, FileText, Users, Settings, AlertTriangle, Key, Wrench } from 'lucide-react';
 import { useUserProfile } from '@/hooks/useUserProfile';
 import { useSupabaseData } from '@/hooks/useSupabaseData';
 import CustomizationManager from './CustomizationManager';
@@ -14,10 +14,11 @@ import AdminOverviewStats from './AdminOverviewStats';
 import AdminQuickActions from './AdminQuickActions';
 import AdminRecentDocuments from './AdminRecentDocuments';
 import ApiConfigurationManager from './ApiConfigurationManager';
+import SystemSetupDashboard from './SystemSetupDashboard';
 
 const AdminPanel = () => {
   const { isAdmin, isSuperAdmin, isLoading, profile, error } = useUserProfile();
-  const [activeTab, setActiveTab] = useState('overview');
+  const [activeTab, setActiveTab] = useState('setup');
   const { contracts, templates, pdfTemplates } = useSupabaseData();
 
   console.log('AdminPanel rendering - isLoading:', isLoading, 'isAdmin:', isAdmin, 'profile:', profile?.role, 'error:', error);
@@ -105,7 +106,11 @@ const AdminPanel = () => {
       </div>
 
       <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-        <TabsList className="grid w-full grid-cols-6">
+        <TabsList className="grid w-full grid-cols-7">
+          <TabsTrigger value="setup" className="flex items-center gap-2">
+            <Wrench className="w-4 h-4" />
+            Configuración
+          </TabsTrigger>
           <TabsTrigger value="overview" className="flex items-center gap-2">
             <FileText className="w-4 h-4" />
             Resumen
@@ -131,6 +136,10 @@ const AdminPanel = () => {
             Secciones
           </TabsTrigger>
         </TabsList>
+
+        <TabsContent value="setup" className="space-y-6">
+          <SystemSetupDashboard />
+        </TabsContent>
 
         <TabsContent value="overview" className="space-y-6">
           <AdminOverviewStats 
