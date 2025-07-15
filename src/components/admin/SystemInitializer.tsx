@@ -48,6 +48,17 @@ const SystemInitializer = () => {
   ]);
 
   const createHealthQuestions = async () => {
+    // First check if questions already exist
+    const { data: existingQuestions } = await supabase
+      .from('health_questions')
+      .select('id')
+      .limit(1);
+
+    if (existingQuestions && existingQuestions.length > 0) {
+      console.log('Health questions already exist, skipping creation');
+      return;
+    }
+
     const questions = [
       {
         question_text: '¿Ha sido hospitalizado en los últimos 5 años?',
@@ -93,6 +104,17 @@ const SystemInitializer = () => {
   };
 
   const createInsurancePlans = async () => {
+    // First check if plans already exist
+    const { data: existingPlans } = await supabase
+      .from('insurance_plans')
+      .select('id')
+      .limit(1);
+
+    if (existingPlans && existingPlans.length > 0) {
+      console.log('Insurance plans already exist, skipping creation');
+      return;
+    }
+
     const plans = [
       {
         name: 'Seguro Básico',
@@ -155,6 +177,17 @@ const SystemInitializer = () => {
   };
 
   const createCompanyTypes = async () => {
+    // First check if company types already exist
+    const { data: existingTypes } = await supabase
+      .from('company_types')
+      .select('id')
+      .limit(1);
+
+    if (existingTypes && existingTypes.length > 0) {
+      console.log('Company types already exist, skipping creation');
+      return;
+    }
+
     const companyTypes = [
       {
         name: 'insurance',
@@ -191,6 +224,17 @@ const SystemInitializer = () => {
   };
 
   const createDefaultCustomization = async () => {
+    // First check if customization already exists
+    const { data: existingCustomization } = await supabase
+      .from('app_customization')
+      .select('id')
+      .limit(1);
+
+    if (existingCustomization && existingCustomization.length > 0) {
+      console.log('App customization already exists, skipping creation');
+      return;
+    }
+
     const customization = {
       theme_name: 'default',
       app_title: 'Sistema de Gestión Documental Digital',
@@ -234,9 +278,10 @@ const SystemInitializer = () => {
       ));
     } catch (error) {
       console.error(`Error in step ${stepId}:`, error);
+      const errorMessage = error instanceof Error ? error.message : 'Error desconocido';
       setSteps(prev => prev.map(step => 
         step.id === stepId 
-          ? { ...step, error: error.message, completed: false }
+          ? { ...step, error: errorMessage, completed: false }
           : step
       ));
       throw error;

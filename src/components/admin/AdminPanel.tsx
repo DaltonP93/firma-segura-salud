@@ -3,7 +3,7 @@ import React, { useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
-import { Palette, Building, FileText, Users, Settings, AlertTriangle, Key, Wrench } from 'lucide-react';
+import { Palette, Building, FileText, Users, Settings, AlertTriangle, Key, Wrench, Heart, Shield } from 'lucide-react';
 import { useUserProfile } from '@/hooks/useUserProfile';
 import { useSupabaseData } from '@/hooks/useSupabaseData';
 import CustomizationManager from './CustomizationManager';
@@ -15,6 +15,8 @@ import AdminQuickActions from './AdminQuickActions';
 import AdminRecentDocuments from './AdminRecentDocuments';
 import ApiConfigurationManager from './ApiConfigurationManager';
 import SystemSetupDashboard from './SystemSetupDashboard';
+import HealthQuestionsManager from './HealthQuestionsManager';
+import InsurancePlansManager from './InsurancePlansManager';
 
 const AdminPanel = () => {
   const { isAdmin, isSuperAdmin, isLoading, profile, error } = useUserProfile();
@@ -106,7 +108,7 @@ const AdminPanel = () => {
       </div>
 
       <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-        <TabsList className="grid w-full grid-cols-7">
+        <TabsList className="grid w-full grid-cols-9">
           <TabsTrigger value="setup" className="flex items-center gap-2">
             <Wrench className="w-4 h-4" />
             Configuración
@@ -122,6 +124,14 @@ const AdminPanel = () => {
           <TabsTrigger value="api-config" className="flex items-center gap-2">
             <Key className="w-4 h-4" />
             APIs
+          </TabsTrigger>
+          <TabsTrigger value="health-questions" className="flex items-center gap-2">
+            <Heart className="w-4 h-4" />
+            Preguntas Salud
+          </TabsTrigger>
+          <TabsTrigger value="insurance-plans" className="flex items-center gap-2">
+            <Shield className="w-4 h-4" />
+            Planes
           </TabsTrigger>
           <TabsTrigger value="customization" className="flex items-center gap-2">
             <Palette className="w-4 h-4" />
@@ -157,6 +167,14 @@ const AdminPanel = () => {
 
         <TabsContent value="api-config">
           <ApiConfigurationManager />
+        </TabsContent>
+
+        <TabsContent value="health-questions">
+          <HealthQuestionsManager />
+        </TabsContent>
+
+        <TabsContent value="insurance-plans">
+          <InsurancePlansManager />
         </TabsContent>
 
         <TabsContent value="customization">
