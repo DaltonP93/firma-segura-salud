@@ -113,8 +113,7 @@ const SalesRequestDetail: React.FC<SalesRequestDetailProps> = ({
         client_birth_date: data.client_birth_date,
         client_address: data.client_address,
         policy_type: data.policy_type,
-        coverage_amount: data.coverage_amount,
-        monthly_premium: data.monthly_premium,
+        insurance_plan_id: data.insurance_plan_id,
         status: data.status as 'draft' | 'pending_health_declaration' | 'pending_signature' | 'completed' | 'rejected',
         notes: data.notes,
         created_at: data.created_at,
@@ -301,14 +300,6 @@ const SalesRequestDetail: React.FC<SalesRequestDetailProps> = ({
                   <div>
                     <label className="text-sm font-medium text-gray-600">Tipo de Póliza</label>
                     <p className="text-sm">{request.policy_type}</p>
-                  </div>
-                  <div>
-                    <label className="text-sm font-medium text-gray-600">Cobertura</label>
-                    <p className="text-sm font-semibold">{formatCurrency(request.coverage_amount)}</p>
-                  </div>
-                  <div>
-                    <label className="text-sm font-medium text-gray-600">Prima Mensual</label>
-                    <p className="text-sm font-semibold">{formatCurrency(request.monthly_premium)}</p>
                   </div>
                 </div>
                 {request.notes && (

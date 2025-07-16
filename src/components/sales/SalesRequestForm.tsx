@@ -7,6 +7,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Textarea } from "@/components/ui/textarea";
 import { User, Users, FileText } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+import { supabase } from '@/integrations/supabase/client';
 import BeneficiariesForm from './BeneficiariesForm';
 
 export interface SalesRequest {
@@ -18,8 +19,7 @@ export interface SalesRequest {
   client_birth_date?: string;
   client_address?: string;
   policy_type: string;
-  coverage_amount?: number;
-  monthly_premium?: number;
+  insurance_plan_id?: string;
   status?: 'draft' | 'pending_health_declaration' | 'pending_signature' | 'completed' | 'rejected';
   notes?: string;
   client_occupation?: string;
@@ -39,7 +39,7 @@ export interface Beneficiary {
   birth_date?: string;
   phone?: string;
   email?: string;
-  percentage: number;
+  price?: number;
   is_primary: boolean;
   weight?: number;
   height?: number;
@@ -85,6 +85,7 @@ const SalesRequestForm: React.FC<SalesRequestFormProps> = ({
   const [loading, setLoading] = useState(false);
   const [beneficiaries, setBeneficiaries] = useState<Beneficiary[]>([]);
   const [clientAge, setClientAge] = useState<number | null>(null);
+  const [insurancePlans, setInsurancePlans] = useState<any[]>([]);
   
   const [formData, setFormData] = useState<SalesRequest>({
     client_name: '',
@@ -94,8 +95,7 @@ const SalesRequestForm: React.FC<SalesRequestFormProps> = ({
     client_birth_date: '',
     client_address: '',
     policy_type: '',
-    coverage_amount: 0,
-    monthly_premium: 0,
+    insurance_plan_id: '',
     notes: '',
     client_occupation: '',
     client_income: 0,
@@ -116,6 +116,29 @@ const SalesRequestForm: React.FC<SalesRequestFormProps> = ({
     }
   }, [formData.client_birth_date]);
 
+  useEffect(() => {
+    fetchInsurancePlans();
+  }, []);
+
+  const fetchInsurancePlans = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('insurance_plans')
+        .select('*')
+        .eq('is_active', true)
+        .order('name');
+
+      if (error) {
+        console.error('Error fetching insurance plans:', error);
+        return;
+      }
+
+      setInsurancePlans(data || []);
+    } catch (error) {
+      console.error('Error fetching insurance plans:', error);
+    }
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
@@ -135,38 +158,6 @@ const SalesRequestForm: React.FC<SalesRequestFormProps> = ({
       toast({
         title: "Error",
         description: "Por favor ingrese un email válido",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    // Beneficiaries validation
-    if (beneficiaries.length === 0) {
-      toast({
-        title: "Error",
-        description: "Debe agregar al menos un beneficiario",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    // Percentage validation
-    const totalPercentage = beneficiaries.reduce((sum, b) => sum + b.percentage, 0);
-    if (Math.abs(totalPercentage - 100) > 0.01) {
-      toast({
-        title: "Error",
-        description: `El porcentaje total de beneficiarios debe ser 100% (actual: ${totalPercentage.toFixed(2)}%)`,
-        variant: "destructive",
-      });
-      return;
-    }
-
-    // Primary beneficiary validation
-    const primaryBeneficiaries = beneficiaries.filter(b => b.is_primary);
-    if (primaryBeneficiaries.length !== 1) {
-      toast({
-        title: "Error",
-        description: "Debe haber exactamente un beneficiario principal",
         variant: "destructive",
       });
       return;
@@ -354,11 +345,11 @@ const SalesRequestForm: React.FC<SalesRequestFormProps> = ({
               </div>
             </div>
 
-            {/* Información de la Póliza */}
+            {/* Información del Plan */}
             <div className="space-y-4">
               <div className="flex items-center gap-2 mb-4">
                 <FileText className="w-4 h-4" />
-                <h3 className="text-lg font-semibold">Información de la Póliza</h3>
+                <h3 className="text-lg font-semibold">Información del Plan</h3>
               </div>
               
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -382,29 +373,22 @@ const SalesRequestForm: React.FC<SalesRequestFormProps> = ({
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="coverage_amount">Monto de Cobertura</Label>
-                  <Input
-                    id="coverage_amount"
-                    type="number"
-                    value={formData.coverage_amount || ''}
-                    onChange={(e) => handleInputChange('coverage_amount', parseFloat(e.target.value) || 0)}
-                    placeholder="0.00"
-                    min="0"
-                    step="0.01"
-                  />
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="monthly_premium">Prima Mensual</Label>
-                  <Input
-                    id="monthly_premium"
-                    type="number"
-                    value={formData.monthly_premium || ''}
-                    onChange={(e) => handleInputChange('monthly_premium', parseFloat(e.target.value) || 0)}
-                    placeholder="0.00"
-                    min="0"
-                    step="0.01"
-                  />
+                  <Label htmlFor="insurance_plan_id">Plan de Seguro</Label>
+                  <Select
+                    value={formData.insurance_plan_id || ''}
+                    onValueChange={(value) => handleInputChange('insurance_plan_id', value)}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Seleccione un plan" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {insurancePlans.map((plan) => (
+                        <SelectItem key={plan.id} value={plan.id}>
+                          {plan.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                 </div>
               </div>
 
@@ -464,11 +448,11 @@ const SalesRequestForm: React.FC<SalesRequestFormProps> = ({
               </div>
             </div>
 
-            {/* Beneficiarios */}
+            {/* Beneficiarios (Opcional) */}
             <div className="space-y-4">
               <div className="flex items-center gap-2 mb-4">
                 <Users className="w-4 h-4" />
-                <h3 className="text-lg font-semibold">Beneficiarios</h3>
+                <h3 className="text-lg font-semibold">Beneficiarios (Opcional)</h3>
               </div>
               
               <BeneficiariesForm

@@ -90,14 +90,6 @@ const HealthDeclarationPDFGenerator: React.FC<HealthDeclarationPDFGeneratorProps
             <span class="field-label">Tipo de Póliza:</span>
             <span class="field-value">${salesRequest.policy_type}</span>
         </div>
-        <div class="field">
-            <span class="field-label">Monto de Cobertura:</span>
-            <span class="field-value">$${salesRequest.coverage_amount?.toLocaleString() || 'N/A'}</span>
-        </div>
-        <div class="field">
-            <span class="field-label">Prima Mensual:</span>
-            <span class="field-value">$${salesRequest.monthly_premium?.toLocaleString() || 'N/A'}</span>
-        </div>
     </div>
 
     <div class="questions">

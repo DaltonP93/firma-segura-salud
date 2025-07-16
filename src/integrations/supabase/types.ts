@@ -145,6 +145,7 @@ export type Database = {
           is_primary: boolean | null
           percentage: number | null
           phone: string | null
+          price: number | null
           relationship: string
           sales_request_id: string
           weight: number | null
@@ -160,6 +161,7 @@ export type Database = {
           is_primary?: boolean | null
           percentage?: number | null
           phone?: string | null
+          price?: number | null
           relationship: string
           sales_request_id: string
           weight?: number | null
@@ -175,6 +177,7 @@ export type Database = {
           is_primary?: boolean | null
           percentage?: number | null
           phone?: string | null
+          price?: number | null
           relationship?: string
           sales_request_id?: string
           weight?: number | null
@@ -838,6 +841,7 @@ export type Database = {
           created_at: string
           created_by: string
           id: string
+          insurance_plan_id: string | null
           medical_exams_required: boolean | null
           monthly_premium: number | null
           notes: string | null
@@ -864,6 +868,7 @@ export type Database = {
           created_at?: string
           created_by: string
           id?: string
+          insurance_plan_id?: string | null
           medical_exams_required?: boolean | null
           monthly_premium?: number | null
           notes?: string | null
@@ -890,6 +895,7 @@ export type Database = {
           created_at?: string
           created_by?: string
           id?: string
+          insurance_plan_id?: string | null
           medical_exams_required?: boolean | null
           monthly_premium?: number | null
           notes?: string | null
@@ -906,6 +912,13 @@ export type Database = {
             columns: ["created_by"]
             isOneToOne: false
             referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "sales_requests_insurance_plan_id_fkey"
+            columns: ["insurance_plan_id"]
+            isOneToOne: false
+            referencedRelation: "insurance_plans"
             referencedColumns: ["id"]
           },
         ]

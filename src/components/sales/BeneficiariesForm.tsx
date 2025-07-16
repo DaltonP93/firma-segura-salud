@@ -39,7 +39,7 @@ const BeneficiariesForm: React.FC<BeneficiariesFormProps> = ({
     birth_date: '',
     phone: '',
     email: '',
-    percentage: 0,
+    price: 0,
     is_primary: false,
     weight: 0,
     height: 0
@@ -48,19 +48,14 @@ const BeneficiariesForm: React.FC<BeneficiariesFormProps> = ({
   const [isAdding, setIsAdding] = useState(false);
 
   const addBeneficiary = () => {
-    if (!newBeneficiary.description || !newBeneficiary.relationship || newBeneficiary.percentage <= 0) {
-      return;
-    }
-
-    const totalCurrentPercentage = beneficiaries.reduce((sum, b) => sum + b.percentage, 0);
-    if (totalCurrentPercentage + newBeneficiary.percentage > 100) {
+    if (!newBeneficiary.description || !newBeneficiary.relationship) {
       return;
     }
 
     const beneficiary: Beneficiary = {
       ...newBeneficiary,
       id: `temp-${Date.now()}`,
-      is_primary: beneficiaries.length === 0 && newBeneficiary.percentage === 100
+      is_primary: beneficiaries.length === 0
     };
 
     onBeneficiariesChange([...beneficiaries, beneficiary]);
@@ -72,7 +67,7 @@ const BeneficiariesForm: React.FC<BeneficiariesFormProps> = ({
       birth_date: '',
       phone: '',
       email: '',
-      percentage: 0,
+      price: 0,
       is_primary: false,
       weight: 0,
       height: 0
@@ -92,8 +87,6 @@ const BeneficiariesForm: React.FC<BeneficiariesFormProps> = ({
     onBeneficiariesChange(updated);
   };
 
-  const totalPercentage = beneficiaries.reduce((sum, b) => sum + b.percentage, 0);
-  const remainingPercentage = 100 - totalPercentage;
 
   return (
     <Card>
@@ -103,12 +96,7 @@ const BeneficiariesForm: React.FC<BeneficiariesFormProps> = ({
           Beneficiarios ({beneficiaries.length})
         </CardTitle>
         <CardDescription>
-          Agregue los beneficiarios de la póliza. El porcentaje total debe sumar 100%.
-          <div className="mt-2">
-            <Badge variant={remainingPercentage === 0 ? "default" : "secondary"}>
-              Porcentaje asignado: {totalPercentage}% de 100%
-            </Badge>
-          </div>
+          Agregue los beneficiarios de la póliza (opcional).
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
@@ -144,14 +132,14 @@ const BeneficiariesForm: React.FC<BeneficiariesFormProps> = ({
                   </Select>
                 </div>
                 <div>
-                  <Label className="text-sm font-medium">Porcentaje (%)</Label>
+                  <Label className="text-sm font-medium">Precio</Label>
                   <Input
                     type="number"
-                    value={beneficiary.percentage}
-                    onChange={(e) => updateBeneficiary(index, 'percentage', parseFloat(e.target.value) || 0)}
+                    value={beneficiary.price || ''}
+                    onChange={(e) => updateBeneficiary(index, 'price', parseFloat(e.target.value) || 0)}
                     min="0"
-                    max="100"
                     step="0.01"
+                    placeholder="0.00"
                   />
                 </div>
               </div>
@@ -248,16 +236,14 @@ const BeneficiariesForm: React.FC<BeneficiariesFormProps> = ({
                 </Select>
               </div>
               <div>
-                <Label className="text-sm font-medium">
-                  Porcentaje * (Disponible: {remainingPercentage}%)
-                </Label>
+                <Label className="text-sm font-medium">Precio</Label>
                 <Input
                   type="number"
-                  value={newBeneficiary.percentage}
-                  onChange={(e) => setNewBeneficiary({...newBeneficiary, percentage: parseFloat(e.target.value) || 0})}
+                  value={newBeneficiary.price || ''}
+                  onChange={(e) => setNewBeneficiary({...newBeneficiary, price: parseFloat(e.target.value) || 0})}
                   min="0"
-                  max={remainingPercentage}
                   step="0.01"
+                  placeholder="0.00"
                 />
               </div>
             </div>
@@ -328,7 +314,7 @@ const BeneficiariesForm: React.FC<BeneficiariesFormProps> = ({
         )}
 
         {/* Botón para Agregar Beneficiario */}
-        {!isAdding && remainingPercentage > 0 && (
+        {!isAdding && (
           <Button
             type="button"
             variant="outline"
@@ -338,14 +324,6 @@ const BeneficiariesForm: React.FC<BeneficiariesFormProps> = ({
             <UserPlus className="w-4 h-4 mr-2" />
             Agregar Beneficiario
           </Button>
-        )}
-
-        {remainingPercentage === 0 && beneficiaries.length > 0 && (
-          <div className="text-center p-4 bg-green-50 border border-green-200 rounded-lg">
-            <p className="text-green-800 font-medium">
-              ✓ Beneficiarios completos (100% asignado)
-            </p>
-          </div>
         )}
       </CardContent>
     </Card>

@@ -235,16 +235,6 @@ const SalesRequestsList: React.FC<SalesRequestsListProps> = ({
                       </div>
 
                       <div className="mt-3 flex flex-wrap gap-4 text-sm">
-                        {request.coverage_amount && (
-                          <span>
-                            <strong>Cobertura:</strong> {formatCurrency(request.coverage_amount)}
-                          </span>
-                        )}
-                        {request.monthly_premium && (
-                          <span>
-                            <strong>Prima:</strong> {formatCurrency(request.monthly_premium)}
-                          </span>
-                        )}
                         <span>
                           <strong>Creado:</strong> {formatDate(request.created_at)}
                         </span>
