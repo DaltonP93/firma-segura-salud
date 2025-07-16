@@ -39,10 +39,19 @@ const SignatureRequestsList = ({
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('all');
 
+  // Helper function to safely check string inclusion
+  const safeStringIncludes = (str: string | null | undefined, searchTerm: string): boolean => {
+    if (!str) {
+      console.warn('SignatureRequestsList: Found null/undefined string value:', str);
+      return false;
+    }
+    return str.toLowerCase().includes(searchTerm.toLowerCase());
+  };
+
   const filteredDocuments = documents.filter(document => {
-    const matchesSearch = document.client_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         document.client_email.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         document.document_number.toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesSearch = safeStringIncludes(document.client_name, searchTerm) ||
+                         safeStringIncludes(document.client_email, searchTerm) ||
+                         safeStringIncludes(document.document_number, searchTerm);
     const matchesStatus = statusFilter === 'all' || document.status === statusFilter;
     return matchesSearch && matchesStatus;
   });
