@@ -324,24 +324,6 @@ const SalesRequestForm: React.FC<SalesRequestFormProps> = ({
                   </Select>
                 </div>
 
-                <div className="space-y-2">
-                  <Label htmlFor="source">Fuente</Label>
-                  <Select
-                    value={formData.source || 'direct'}
-                    onValueChange={(value) => handleInputChange('source', value)}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Seleccione fuente" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="direct">Directo</SelectItem>
-                      <SelectItem value="referral">Referido</SelectItem>
-                      <SelectItem value="online">En línea</SelectItem>
-                      <SelectItem value="phone">Teléfono</SelectItem>
-                      <SelectItem value="email">Email</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
               </div>
             </div>
 
@@ -414,36 +396,16 @@ const SalesRequestForm: React.FC<SalesRequestFormProps> = ({
                 />
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="priority_level">Nivel de Prioridad</Label>
-                  <Select
-                    value={formData.priority_level || 'normal'}
-                    onValueChange={(value) => handleInputChange('priority_level', value)}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Seleccione prioridad" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="low">Baja</SelectItem>
-                      <SelectItem value="normal">Normal</SelectItem>
-                      <SelectItem value="high">Alta</SelectItem>
-                      <SelectItem value="urgent">Urgente</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-
-                <div className="space-y-2">
-                  <div className="flex items-center gap-2">
-                    <input
-                      type="checkbox"
-                      id="medical_exams_required"
-                      checked={formData.medical_exams_required || false}
-                      onChange={(e) => handleInputChange('medical_exams_required', e.target.checked)}
-                      className="rounded border-gray-300"
-                    />
-                    <Label htmlFor="medical_exams_required">Exámenes Médicos Requeridos</Label>
-                  </div>
+              <div className="space-y-2">
+                <div className="flex items-center gap-2">
+                  <input
+                    type="checkbox"
+                    id="medical_exams_required"
+                    checked={formData.medical_exams_required || false}
+                    onChange={(e) => handleInputChange('medical_exams_required', e.target.checked)}
+                    className="rounded border-gray-300"
+                  />
+                  <Label htmlFor="medical_exams_required">Exámenes Médicos Requeridos</Label>
                 </div>
               </div>
             </div>

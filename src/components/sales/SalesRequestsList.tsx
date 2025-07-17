@@ -17,7 +17,8 @@ import {
   User,
   Phone,
   Mail,
-  CreditCard
+  CreditCard,
+  Trash2
 } from 'lucide-react';
 import type { SalesRequest } from './SalesRequestForm';
 
@@ -35,6 +36,7 @@ interface SalesRequestsListProps {
   onEditRequest: (request: SalesRequestWithDetails) => void;
   onProcessHealthDeclaration: (request: SalesRequestWithDetails) => void;
   onSendForSignature: (request: SalesRequestWithDetails) => void;
+  onDeleteRequest: (request: SalesRequestWithDetails) => void;
   loading?: boolean;
 }
 
@@ -72,6 +74,7 @@ const SalesRequestsList: React.FC<SalesRequestsListProps> = ({
   onEditRequest,
   onProcessHealthDeclaration,
   onSendForSignature,
+  onDeleteRequest,
   loading = false
 }) => {
   const [searchTerm, setSearchTerm] = useState('');
@@ -225,10 +228,6 @@ const SalesRequestsList: React.FC<SalesRequestsListProps> = ({
                           </div>
                         )}
                         <div className="flex items-center gap-2">
-                          <CreditCard className="w-4 h-4" />
-                          {request.policy_type}
-                        </div>
-                        <div className="flex items-center gap-2">
                           <User className="w-4 h-4" />
                           {request.beneficiaries_count || 0} beneficiarios
                         </div>
@@ -285,6 +284,16 @@ const SalesRequestsList: React.FC<SalesRequestsListProps> = ({
                           Enviar para Firma
                         </Button>
                       )}
+                      
+                      <Button
+                        variant="destructive"
+                        size="sm"
+                        onClick={() => onDeleteRequest(request)}
+                        className="flex items-center gap-2"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                        Eliminar
+                      </Button>
                     </div>
                   </div>
                 </CardContent>

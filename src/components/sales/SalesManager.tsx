@@ -57,16 +57,32 @@ const SalesManager = () => {
     if (!user) return;
 
     try {
-      await salesService.createSalesRequest(requestData, beneficiaries, user.id);
-      await fetchSalesRequests();
-      setActiveTab('list');
+      setLoading(true);
+      const newRequest = await salesService.createSalesRequest(requestData, beneficiaries, user.id);
+      
+      // Update status to pending health declaration
+      await salesService.updateSalesRequestStatus(newRequest.id, 'pending_health_declaration');
+      
       toast({
-        title: "Solicitud Creada",
-        description: "La solicitud de venta ha sido creada exitosamente",
+        title: "Éxito",
+        description: "Solicitud creada. Completar declaración jurada.",
       });
+
+      // Refresh the list
+      await fetchSalesRequests();
+      
+      // Automatically redirect to health declaration
+      const requestWithDetails = {
+        ...newRequest,
+        beneficiaries_count: beneficiaries.length
+      } as SalesRequestWithDetails;
+      
+      handleProcessHealthDeclaration(requestWithDetails);
     } catch (error) {
       console.error('Error creating sales request:', error);
       throw error;
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -127,21 +143,64 @@ const SalesManager = () => {
     if (!healthDeclarationRequest) return;
 
     try {
+      setLoading(true);
       await salesService.createHealthDeclaration(healthDeclarationRequest.id, answers);
-      await fetchSalesRequests();
-      setHealthDeclarationRequest(null);
-      setActiveTab('list');
+      
       toast({
-        title: "Declaración Guardada",
-        description: "La declaración de salud ha sido procesada exitosamente",
+        title: "Éxito",
+        description: "Declaración guardada. Ahora puede gestionar documentos.",
       });
+
+      // Refresh requests
+      await fetchSalesRequests();
+      
+      // Redirect to documents section in detail view 
+      const updatedRequest = {
+        ...healthDeclarationRequest,
+        status: 'pending_signature' as const
+      };
+      
+      // Close health declaration and show request detail with documents tab
+      setHealthDeclarationRequest(null);
+      setViewingRequest(updatedRequest);
+      setActiveTab('view');
     } catch (error) {
       console.error('Error saving health declaration:', error);
       toast({
         title: "Error",
-        description: "Error al procesar la declaración de salud",
+        description: "Error al guardar la declaración de salud",
         variant: "destructive",
       });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleDeleteRequest = async (request: SalesRequestWithDetails) => {
+    if (!confirm('¿Está seguro de que desea eliminar esta solicitud? Esta acción no se puede deshacer.')) {
+      return;
+    }
+
+    try {
+      setLoading(true);  
+      await salesService.deleteSalesRequest(request.id);
+      
+      toast({
+        title: "Éxito",
+        description: "Solicitud eliminada correctamente",
+      });
+
+      // Refresh the list
+      await fetchSalesRequests();
+    } catch (error) {
+      console.error('Error deleting sales request:', error);
+      toast({
+        title: "Error",
+        description: "Error al eliminar la solicitud",
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -248,6 +307,7 @@ const SalesManager = () => {
             onEditRequest={handleEditRequest}
             onProcessHealthDeclaration={handleProcessHealthDeclaration}
             onSendForSignature={handleSendForSignature}
+            onDeleteRequest={handleDeleteRequest}
             loading={loading}
           />
         </TabsContent>

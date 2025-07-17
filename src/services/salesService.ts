@@ -197,5 +197,41 @@ export const salesService = {
     await this.updateSalesRequestStatus(salesRequestId, 'pending_signature');
 
     return data;
+  },
+
+  async deleteSalesRequest(requestId: string) {
+    // First delete beneficiaries
+    const { error: beneficiariesError } = await supabase
+      .from('beneficiaries')
+      .delete()
+      .eq('sales_request_id', requestId);
+
+    if (beneficiariesError) {
+      console.error('Error deleting beneficiaries:', beneficiariesError);
+      throw beneficiariesError;
+    }
+
+    // Delete health declarations
+    const { error: healthError } = await supabase
+      .from('health_declarations')
+      .delete()
+      .eq('sales_request_id', requestId);
+
+    if (healthError) {
+      console.error('Error deleting health declarations:', healthError);
+    }
+
+    // Finally delete the sales request
+    const { error } = await supabase
+      .from('sales_requests')
+      .delete()
+      .eq('id', requestId);
+
+    if (error) {
+      console.error('Error deleting sales request:', error);
+      throw error;
+    }
+
+    return true;
   }
 };

@@ -29,6 +29,8 @@ import {
 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { salesService } from '@/services/salesService';
+import DocumentUploader from './DocumentUploader';
+import ContractGenerator from './ContractGenerator';
 import type { SalesRequestWithDetails } from './SalesRequestsList';
 
 interface SalesRequestDetailProps {
@@ -292,15 +294,9 @@ const SalesRequestDetail: React.FC<SalesRequestDetailProps> = ({
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <label className="text-sm font-medium text-gray-600">Número de Solicitud</label>
-                    <p className="text-sm font-mono">{request.request_number}</p>
-                  </div>
-                  <div>
-                    <label className="text-sm font-medium text-gray-600">Tipo de Póliza</label>
-                    <p className="text-sm">{request.policy_type}</p>
-                  </div>
+                <div>
+                  <label className="text-sm font-medium text-gray-600">Número de Solicitud</label>
+                  <p className="text-sm font-mono">{request.request_number}</p>
                 </div>
                 {request.notes && (
                   <div>
@@ -497,65 +493,18 @@ const SalesRequestDetail: React.FC<SalesRequestDetailProps> = ({
         </TabsContent>
 
         <TabsContent value="documentos" className="mt-6">
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Paperclip className="w-5 h-5" />
-                Documentos Adjuntos
-              </CardTitle>
-              <CardDescription>
-                Archivos y documentos relacionados con la solicitud
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="text-center py-8">
-                <Paperclip className="mx-auto h-12 w-12 text-gray-400 mb-4" />
-                <p className="text-gray-500 mb-4">No hay documentos adjuntos</p>
-                <Button variant="outline">
-                  <Paperclip className="w-4 h-4 mr-2" />
-                  Adjuntar Documento
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
+          <DocumentUploader
+            salesRequest={request}
+            onDocumentUploaded={() => fetchRequestDetails()}
+          />
         </TabsContent>
 
         <TabsContent value="contratos" className="mt-6">
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <PenTool className="w-5 h-5" />
-                Contratos y Firma
-              </CardTitle>
-              <CardDescription>
-                Estado de los contratos y proceso de firma
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-4">
-                {request.signature_status === 'completed' ? (
-                  <div className="flex items-center gap-2">
-                    <CheckCircle className="w-5 h-5 text-green-500" />
-                    <span className="text-green-600 font-medium">Contrato firmado y completado</span>
-                  </div>
-                ) : request.signature_status === 'pending' ? (
-                  <div className="flex items-center gap-2">
-                    <Clock className="w-5 h-5 text-yellow-500" />
-                    <span className="text-yellow-600 font-medium">Esperando firma</span>
-                  </div>
-                ) : (
-                  <div className="text-center py-8">
-                    <PenTool className="mx-auto h-12 w-12 text-gray-400 mb-4" />
-                    <p className="text-gray-500 mb-4">Contrato no generado</p>
-                    <Button variant="outline">
-                      <FileText className="w-4 h-4 mr-2" />
-                      Generar Contrato
-                    </Button>
-                  </div>
-                )}
-              </div>
-            </CardContent>
-          </Card>
+          <ContractGenerator
+            salesRequest={request}
+            onContractGenerated={() => fetchRequestDetails()}
+            onSendForSignature={onSendForSignature}
+          />
         </TabsContent>
       </Tabs>
     </div>
