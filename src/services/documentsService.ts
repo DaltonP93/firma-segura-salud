@@ -35,26 +35,69 @@ export const documentsService = {
   },
 
   async createDocument(contractData: Omit<Contract, 'id' | 'status' | 'createdAt'>, userId: string) {
-    const { data, error } = await supabase
-      .from('documents')
-      .insert({
-        client_name: contractData.clientName,
-        client_email: contractData.clientEmail,
-        client_phone: contractData.clientPhone,
-        policy_type: contractData.policyType,
-        template_id: contractData.templateId || null,
-        template_type: contractData.templateType || 'contrato',
-        created_by: userId,
-        document_number: `DOC-${Date.now()}`,
-      })
-      .select()
-      .single();
-
-    if (error) {
-      throw error;
+    // Validate inputs
+    if (!userId) {
+      throw new Error('ID de usuario requerido para crear el documento');
     }
 
-    return data;
+    if (!contractData.clientName || !contractData.clientEmail) {
+      throw new Error('Nombre y email del cliente son requeridos');
+    }
+
+    console.log('Creating document with:', {
+      userId,
+      clientName: contractData.clientName,
+      clientEmail: contractData.clientEmail,
+      policyType: contractData.policyType
+    });
+
+    try {
+      const { data, error } = await supabase
+        .from('documents')
+        .insert({
+          client_name: contractData.clientName,
+          client_email: contractData.clientEmail,
+          client_phone: contractData.clientPhone,
+          policy_type: contractData.policyType,
+          template_id: contractData.templateId || null,
+          template_type: contractData.templateType || 'contrato',
+          created_by: userId,
+          document_number: `DOC-${Date.now()}`,
+        })
+        .select()
+        .single();
+
+      if (error) {
+        console.error('Database error creating document:', error);
+        
+        // Handle specific RLS errors
+        if (error.message.includes('row-level security policy')) {
+          throw new Error('Error de permisos: No tienes autorización para crear documentos. Por favor inicia sesión nuevamente.');
+        }
+        
+        // Handle other database errors
+        if (error.code === '23505') {
+          throw new Error('Ya existe un documento con este número');
+        }
+        
+        throw new Error(`Error de base de datos: ${error.message}`);
+      }
+
+      console.log('Document created successfully:', data);
+      return data;
+    } catch (error: any) {
+      console.error('Error in createDocument:', error);
+      
+      // Re-throw custom errors
+      if (error.message.startsWith('Error de permisos') || 
+          error.message.startsWith('Error de base de datos') ||
+          error.message.includes('requerido')) {
+        throw error;
+      }
+      
+      // Handle unexpected errors
+      throw new Error(`Error inesperado al crear el documento: ${error.message}`);
+    }
   },
 
   async updateDocument(documentId: string, updates: any) {

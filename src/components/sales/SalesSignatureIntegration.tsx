@@ -22,6 +22,7 @@ import {
 } from 'lucide-react';
 import { SignatureService } from '@/services/signatureService';
 import { documentsService } from '@/services/documentsService';
+import { supabase } from '@/integrations/supabase/client';
 
 interface SalesSignatureIntegrationProps {
   salesRequest: any;
@@ -104,6 +105,15 @@ const SalesSignatureIntegration: React.FC<SalesSignatureIntegrationProps> = ({
     try {
       setLoading(true);
       
+      // Get current user session to ensure we have valid auth
+      const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+      
+      if (sessionError || !session?.user) {
+        throw new Error('No hay una sesión válida. Por favor inicia sesión nuevamente.');
+      }
+
+      console.log('Creating document with user ID:', session.user.id);
+      
       // Generate PDF document based on sales request
       const documentData = {
         client_name: salesRequest.client_name,
@@ -118,15 +128,16 @@ const SalesSignatureIntegration: React.FC<SalesSignatureIntegrationProps> = ({
         template_type: 'insurance_contract'
       };
 
-      // Create document in database
+      // Create document in database with current user ID
       const document = await documentsService.createDocument({
         clientName: salesRequest.client_name,
         clientEmail: salesRequest.client_email,
         clientPhone: salesRequest.client_phone,
         policyType: salesRequest.policy_type,
         templateType: 'contrato'
-      }, salesRequest.created_by);
+      }, session.user.id);
 
+      console.log('Document created successfully:', document.id);
       return document;
     } catch (error) {
       console.error('Error generating document:', error);
@@ -141,6 +152,15 @@ const SalesSignatureIntegration: React.FC<SalesSignatureIntegrationProps> = ({
       setLoading(true);
       setStep('sending');
 
+      // Get current user session to ensure we have valid auth
+      const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+      
+      if (sessionError || !session?.user) {
+        throw new Error('No hay una sesión válida. Por favor inicia sesión nuevamente.');
+      }
+
+      console.log('Sending for signature with user ID:', session.user.id);
+
       // Generate document
       const document = await generateDocument();
 
@@ -151,7 +171,7 @@ const SalesSignatureIntegration: React.FC<SalesSignatureIntegrationProps> = ({
       const signatureRequest = await SignatureService.createSignatureRequest(
         document.id,
         documentTitle,
-        salesRequest.created_by,
+        session.user.id, // Use current session user ID
         message,
         expiresAt
       );
@@ -201,13 +221,20 @@ const SalesSignatureIntegration: React.FC<SalesSignatureIntegrationProps> = ({
       });
 
       onSuccess?.();
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error sending for signature:', error);
+      
+      // Show specific error message if available
+      const errorMessage = error?.message || "Error al enviar el documento para firma";
+      
       toast({
         title: "Error",
-        description: "Error al enviar el documento para firma",
+        description: errorMessage,
         variant: "destructive",
       });
+      
+      // Reset step on error so user can try again
+      setStep('preview');
     } finally {
       setLoading(false);
     }

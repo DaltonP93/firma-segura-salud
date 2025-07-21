@@ -1214,6 +1214,10 @@ export type Database = {
           is_active: boolean
         }[]
       }
+      get_auth_uid_safe: {
+        Args: Record<PropertyKey, never>
+        Returns: string
+      }
       get_current_user_role: {
         Args: Record<PropertyKey, never>
         Returns: string
