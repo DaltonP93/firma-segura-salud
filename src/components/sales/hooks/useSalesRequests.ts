@@ -3,12 +3,14 @@ import { useState, useEffect } from 'react';
 import { useAuth } from '@/hooks/useAuth';
 import { useToast } from '@/hooks/use-toast';
 import { salesService } from '@/services/salesService';
+import { useSalesNotifications } from '@/hooks/useSalesNotifications';
 import type { SalesRequestWithDetails } from '../SalesRequestsList';
 import type { SalesRequest, Beneficiary } from '../SalesRequestForm';
 
 export const useSalesRequests = () => {
   const { user } = useAuth();
   const { toast } = useToast();
+  const { notifyRequestCreated } = useSalesNotifications();
   const [loading, setLoading] = useState(true);
   const [requests, setRequests] = useState<SalesRequestWithDetails[]>([]);
 
@@ -56,10 +58,12 @@ export const useSalesRequests = () => {
       // Refresh the list
       await fetchSalesRequests();
       
-      return {
+      const requestWithDetails = {
         ...newRequest,
         beneficiaries_count: beneficiaries.length
       } as SalesRequestWithDetails;
+
+      return requestWithDetails;
     } catch (error) {
       console.error('Error creating sales request:', error);
       throw error;

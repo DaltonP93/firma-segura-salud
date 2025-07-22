@@ -18,6 +18,7 @@ import SalesSignatureIntegration from './SalesSignatureIntegration';
 // Hooks
 import { useSalesRequests } from './hooks/useSalesRequests';
 import { useSalesManagerState } from './hooks/useSalesManagerState';
+import { useSalesNotifications } from '@/hooks/useSalesNotifications';
 
 const SalesManager = () => {
   const { toast } = useToast();
@@ -50,9 +51,19 @@ const SalesManager = () => {
     resetHealthDeclarationState,
   } = useSalesManagerState();
 
+  const {
+    notifyRequestCreated,
+    notifyHealthDeclarationCompleted,
+    notifyDocumentGenerated,
+    notifyDocumentSentForSignature,
+    notifyStatusChanged,
+  } = useSalesNotifications();
+
   const handleCreateRequest = async (requestData: SalesRequest, beneficiaries: Beneficiary[]) => {
     const newRequest = await createRequest(requestData, beneficiaries);
     if (newRequest) {
+      // Send notification for new request
+      await notifyRequestCreated(newRequest);
       handleProcessHealthDeclaration(newRequest);
     }
   };
@@ -69,6 +80,9 @@ const SalesManager = () => {
     try {
       await salesService.createHealthDeclaration(healthDeclarationRequest.id, answers);
       
+      // Send notification for completed health declaration
+      await notifyHealthDeclarationCompleted(healthDeclarationRequest);
+      
       toast({
         title: "Éxito",
         description: "Declaración guardada. Ahora puede gestionar documentos.",
@@ -82,6 +96,9 @@ const SalesManager = () => {
         ...healthDeclarationRequest,
         status: 'pending_signature' as const
       };
+      
+      // Notify status change
+      await notifyStatusChanged(updatedRequest, 'pending_signature');
       
       // Close health declaration and show request detail with documents tab
       resetHealthDeclarationState();
@@ -97,6 +114,11 @@ const SalesManager = () => {
   };
 
   const handleSignatureSuccessWithRefresh = async () => {
+    if (signatureRequest) {
+      // Send notification for document sent for signature
+      await notifyDocumentSentForSignature(signatureRequest);
+    }
+    
     handleSignatureSuccess();
     await fetchSalesRequests();
     toast({
