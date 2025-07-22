@@ -1,18 +1,9 @@
+
 import React, { useState } from 'react';
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { Textarea } from "@/components/ui/textarea";
-import { 
-  FileText, 
-  Download, 
-  Send,
-  CheckCircle,
-  Clock,
-  AlertCircle,
-  PenTool
-} from 'lucide-react';
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useToast } from '@/hooks/use-toast';
+import ContractStatusCard from './components/ContractStatusCard';
+import ContractGenerationCard from './components/ContractGenerationCard';
 import type { SalesRequestWithDetails } from './SalesRequestsList';
 
 interface ContractGeneratorProps {
@@ -128,156 +119,28 @@ Fecha de generación: ${new Date().toLocaleDateString('es-ES')}
     onSendForSignature?.(salesRequest);
   };
 
-  const getStatusInfo = () => {
-    switch (salesRequest.status) {
-      case 'completed':
-        return {
-          icon: CheckCircle,
-          color: 'text-green-600',
-          bgColor: 'bg-green-100',
-          text: 'Contrato Completado'
-        };
-      case 'pending_signature':
-        return {
-          icon: Clock,
-          color: 'text-yellow-600', 
-          bgColor: 'bg-yellow-100',
-          text: 'Listo para Generar Contrato'
-        };
-      default:
-        return {
-          icon: AlertCircle,
-          color: 'text-gray-600',
-          bgColor: 'bg-gray-100',
-          text: 'Pendiente Proceso Previo'
-        };
-    }
+  const handleRegenerate = () => {
+    setContractGenerated(false);
+    setContractContent('');
   };
-
-  const statusInfo = getStatusInfo();
-  const StatusIcon = statusInfo.icon;
 
   return (
     <div className="space-y-6">
       {/* Status Card */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <PenTool className="w-5 h-5" />
-            Estado del Contrato
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="flex items-center gap-3">
-            <div className={`p-2 rounded-full ${statusInfo.bgColor}`}>
-              <StatusIcon className={`w-5 h-5 ${statusInfo.color}`} />
-            </div>
-            <div>
-              <p className="font-medium">{statusInfo.text}</p>
-              {salesRequest.status !== 'pending_signature' && (
-                <p className="text-sm text-gray-600">
-                  Complete la declaración de salud para generar el contrato
-                </p>
-              )}
-            </div>
-          </div>
-        </CardContent>
-      </Card>
+      <ContractStatusCard status={salesRequest.status} />
 
       {/* Contract Generation */}
       {salesRequest.status === 'pending_signature' && (
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <FileText className="w-5 h-5" />
-              Generador de Contratos
-            </CardTitle>
-            <CardDescription>
-              Genere el contrato basado en la información de la solicitud y documentos adjuntos
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            {!contractGenerated ? (
-              <div className="text-center py-8">
-                <FileText className="mx-auto h-12 w-12 text-gray-400 mb-4" />
-                <p className="text-gray-600 mb-4">
-                  El contrato se generará automáticamente basándose en:
-                </p>
-                <ul className="text-sm text-gray-500 mb-6 space-y-1">
-                  <li>• Información del titular</li>
-                  <li>• Datos de la póliza seleccionada</li>
-                  <li>• Beneficiarios registrados</li>
-                  <li>• Declaración de salud completada</li>
-                  <li>• Documentos adjuntos</li>
-                </ul>
-                <Button 
-                  onClick={generateContract}
-                  disabled={generating}
-                  className="flex items-center gap-2"
-                >
-                  {generating ? (
-                    <>
-                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
-                      Generando...
-                    </>
-                  ) : (
-                    <>
-                      <FileText className="w-4 h-4" />
-                      Generar Contrato
-                    </>
-                  )}
-                </Button>
-              </div>
-            ) : (
-              <div className="space-y-4">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <CheckCircle className="w-5 h-5 text-green-500" />
-                    <span className="font-medium text-green-600">Contrato Generado</span>
-                  </div>
-                  <Badge variant="outline">
-                    Editable
-                  </Badge>
-                </div>
-                
-                <Textarea
-                  value={contractContent}
-                  onChange={(e) => setContractContent(e.target.value)}
-                  placeholder="Contenido del contrato..."
-                  rows={20}
-                  className="font-mono text-sm"
-                />
-                
-                <div className="flex gap-2">
-                  <Button
-                    variant="outline"
-                    onClick={downloadContract}
-                    className="flex items-center gap-2"
-                  >
-                    <Download className="w-4 h-4" />
-                    Descargar
-                  </Button>
-                  <Button
-                    onClick={sendForSignature}
-                    className="flex items-center gap-2"
-                  >
-                    <Send className="w-4 h-4" />
-                    Enviar para Firma
-                  </Button>
-                  <Button
-                    variant="outline"
-                    onClick={() => {
-                      setContractGenerated(false);
-                      setContractContent('');
-                    }}
-                  >
-                    Regenerar
-                  </Button>
-                </div>
-              </div>
-            )}
-          </CardContent>
-        </Card>
+        <ContractGenerationCard
+          contractContent={contractContent}
+          contractGenerated={contractGenerated}
+          generating={generating}
+          onGenerate={generateContract}
+          onContentChange={setContractContent}
+          onDownload={downloadContract}
+          onSendForSignature={sendForSignature}
+          onRegenerate={handleRegenerate}
+        />
       )}
 
       {/* Instructions */}

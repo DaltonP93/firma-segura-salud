@@ -1,149 +1,72 @@
 
-import React, { useState, useEffect } from 'react';
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import React from 'react';
+import { Tabs, TabsContent } from "@/components/ui/tabs";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Plus, FileText, Users, BarChart3 } from 'lucide-react';
-import { useAuth } from '@/hooks/useAuth';
 import { useToast } from '@/hooks/use-toast';
 import { salesService } from '@/services/salesService';
+
+// Components
+import SalesHeader from './components/SalesHeader';
+import SalesStatsCards from './components/SalesStatsCards';
+import SalesTabsNavigation from './components/SalesTabsNavigation';
 import SalesRequestForm, { SalesRequest, Beneficiary } from './SalesRequestForm';
 import SalesRequestsList from './SalesRequestsList';
 import SalesRequestDetail from './SalesRequestDetail';
 import HealthDeclarationForm from './HealthDeclarationForm';
 import SalesSignatureIntegration from './SalesSignatureIntegration';
-import type { SalesRequestWithDetails } from './SalesRequestsList';
+
+// Hooks
+import { useSalesRequests } from './hooks/useSalesRequests';
+import { useSalesManagerState } from './hooks/useSalesManagerState';
 
 const SalesManager = () => {
-  const { user } = useAuth();
   const { toast } = useToast();
-  const [activeTab, setActiveTab] = useState('list');
-  const [loading, setLoading] = useState(true);
-  const [requests, setRequests] = useState<SalesRequestWithDetails[]>([]);
-  const [editingRequest, setEditingRequest] = useState<SalesRequestWithDetails | null>(null);
-  const [viewingRequest, setViewingRequest] = useState<SalesRequestWithDetails | null>(null);
-  const [healthDeclarationRequest, setHealthDeclarationRequest] = useState<SalesRequestWithDetails | null>(null);
-  const [signatureModalOpen, setSignatureModalOpen] = useState(false);
-  const [signatureRequest, setSignatureRequest] = useState<SalesRequestWithDetails | null>(null);
+  const {
+    requests,
+    loading,
+    fetchSalesRequests,
+    createRequest,
+    updateRequest,
+    deleteRequest,
+    getStats,
+  } = useSalesRequests();
 
-  useEffect(() => {
-    if (user) {
-      fetchSalesRequests();
-    }
-  }, [user]);
-
-  const fetchSalesRequests = async () => {
-    if (!user) return;
-    
-    try {
-      setLoading(true);
-      const data = await salesService.fetchSalesRequests();
-      console.log('Fetched sales requests:', data);
-      setRequests(data);
-    } catch (error) {
-      console.error('Error fetching sales requests:', error);
-      toast({
-        title: "Error",
-        description: "Error al cargar las solicitudes de venta",
-        variant: "destructive",
-      });
-    } finally {
-      setLoading(false);
-    }
-  };
+  const {
+    activeTab,
+    setActiveTab,
+    editingRequest,
+    viewingRequest,
+    healthDeclarationRequest,
+    signatureModalOpen,
+    signatureRequest,
+    handleEditRequest,
+    handleViewRequest,
+    handleProcessHealthDeclaration,
+    handleSendForSignature,
+    handleSignatureSuccess,
+    handleSignatureCancel,
+    resetEditingState,
+    resetViewingState,
+    resetHealthDeclarationState,
+  } = useSalesManagerState();
 
   const handleCreateRequest = async (requestData: SalesRequest, beneficiaries: Beneficiary[]) => {
-    if (!user) return;
-
-    try {
-      setLoading(true);
-      const newRequest = await salesService.createSalesRequest(requestData, beneficiaries, user.id);
-      
-      // Update status to pending health declaration
-      await salesService.updateSalesRequestStatus(newRequest.id, 'pending_health_declaration');
-      
-      toast({
-        title: "Éxito",
-        description: "Solicitud creada. Completar declaración jurada.",
-      });
-
-      // Refresh the list
-      await fetchSalesRequests();
-      
-      // Automatically redirect to health declaration
-      const requestWithDetails = {
-        ...newRequest,
-        beneficiaries_count: beneficiaries.length
-      } as SalesRequestWithDetails;
-      
-      handleProcessHealthDeclaration(requestWithDetails);
-    } catch (error) {
-      console.error('Error creating sales request:', error);
-      throw error;
-    } finally {
-      setLoading(false);
+    const newRequest = await createRequest(requestData, beneficiaries);
+    if (newRequest) {
+      handleProcessHealthDeclaration(newRequest);
     }
-  };
-
-  const handleEditRequest = (request: SalesRequestWithDetails) => {
-    setEditingRequest(request);
-    setActiveTab('edit');
   };
 
   const handleUpdateRequest = async (requestData: SalesRequest, beneficiaries: Beneficiary[]) => {
-    if (!user || !editingRequest) return;
-
-    try {
-      await salesService.updateSalesRequest(editingRequest.id, requestData);
-      await fetchSalesRequests();
-      setEditingRequest(null);
-      setActiveTab('list');
-      toast({
-        title: "Solicitud Actualizada",
-        description: "La solicitud ha sido actualizada exitosamente",
-      });
-    } catch (error) {
-      console.error('Error updating sales request:', error);
-      throw error;
-    }
-  };
-
-  const handleViewRequest = (request: SalesRequestWithDetails) => {
-    setViewingRequest(request);
-    setActiveTab('view');
-  };
-
-  const handleProcessHealthDeclaration = (request: SalesRequestWithDetails) => {
-    setHealthDeclarationRequest(request);
-    setActiveTab('health-declaration');
-  };
-
-  const handleSendForSignature = (request: SalesRequestWithDetails) => {
-    setSignatureRequest(request);
-    setSignatureModalOpen(true);
-  };
-
-  const handleSignatureSuccess = async () => {
-    setSignatureModalOpen(false);
-    setSignatureRequest(null);
-    await fetchSalesRequests();
-    toast({
-      title: "Documento Enviado",
-      description: "El documento ha sido enviado para firma exitosamente",
-    });
-  };
-
-  const handleSignatureCancel = () => {
-    setSignatureModalOpen(false);
-    setSignatureRequest(null);
+    if (!editingRequest) return;
+    await updateRequest(editingRequest.id, requestData, beneficiaries);
+    resetEditingState();
   };
 
   const handleHealthDeclarationSubmit = async (answers: Record<string, any>) => {
     if (!healthDeclarationRequest) return;
 
     try {
-      setLoading(true);
       await salesService.createHealthDeclaration(healthDeclarationRequest.id, answers);
       
       toast({
@@ -161,9 +84,8 @@ const SalesManager = () => {
       };
       
       // Close health declaration and show request detail with documents tab
-      setHealthDeclarationRequest(null);
-      setViewingRequest(updatedRequest);
-      setActiveTab('view');
+      resetHealthDeclarationState();
+      handleViewRequest(updatedRequest);
     } catch (error) {
       console.error('Error saving health declaration:', error);
       toast({
@@ -171,47 +93,16 @@ const SalesManager = () => {
         description: "Error al guardar la declaración de salud",
         variant: "destructive",
       });
-    } finally {
-      setLoading(false);
     }
   };
 
-  const handleDeleteRequest = async (request: SalesRequestWithDetails) => {
-    if (!confirm('¿Está seguro de que desea eliminar esta solicitud? Esta acción no se puede deshacer.')) {
-      return;
-    }
-
-    try {
-      setLoading(true);  
-      await salesService.deleteSalesRequest(request.id);
-      
-      toast({
-        title: "Éxito",
-        description: "Solicitud eliminada correctamente",
-      });
-
-      // Refresh the list
-      await fetchSalesRequests();
-    } catch (error) {
-      console.error('Error deleting sales request:', error);
-      toast({
-        title: "Error",
-        description: "Error al eliminar la solicitud",
-        variant: "destructive",
-      });
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const getStats = () => {
-    const stats = {
-      total: requests.length,
-      draft: requests.filter(r => r.status === 'draft').length,
-      pending: requests.filter(r => r.status === 'pending_health_declaration' || r.status === 'pending_signature').length,
-      completed: requests.filter(r => r.status === 'completed').length,
-    };
-    return stats;
+  const handleSignatureSuccessWithRefresh = async () => {
+    handleSignatureSuccess();
+    await fetchSalesRequests();
+    toast({
+      title: "Documento Enviado",
+      description: "El documento ha sido enviado para firma exitosamente",
+    });
   };
 
   const stats = getStats();
@@ -219,86 +110,18 @@ const SalesManager = () => {
   return (
     <div className="container mx-auto px-4 py-6 space-y-6">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-        <div>
-          <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">
-            Registro de Ventas
-          </h1>
-          <p className="text-gray-600 mt-1">
-            Gestione solicitudes de venta, beneficiarios y declaraciones de salud
-          </p>
-        </div>
-        <Button 
-          onClick={() => setActiveTab('create')}
-          className="flex items-center gap-2"
-        >
-          <Plus className="w-4 h-4" />
-          Nueva Solicitud
-        </Button>
-      </div>
+      <SalesHeader onCreateNew={() => setActiveTab('create')} />
 
       {/* Stats Cards */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-        <Card>
-          <CardContent className="p-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-gray-600">Total</p>
-                <p className="text-2xl font-bold text-primary">{stats.total}</p>
-              </div>
-              <FileText className="w-8 h-8 text-primary opacity-20" />
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardContent className="p-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-gray-600">Borradores</p>
-                <p className="text-2xl font-bold text-gray-600">{stats.draft}</p>
-              </div>
-              <FileText className="w-8 h-8 text-gray-400 opacity-20" />
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardContent className="p-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-gray-600">Pendientes</p>
-                <p className="text-2xl font-bold text-yellow-600">{stats.pending}</p>
-              </div>
-              <Users className="w-8 h-8 text-yellow-400 opacity-20" />
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardContent className="p-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-gray-600">Completadas</p>
-                <p className="text-2xl font-bold text-green-600">{stats.completed}</p>
-              </div>
-              <BarChart3 className="w-8 h-8 text-green-400 opacity-20" />
-            </div>
-          </CardContent>
-        </Card>
-      </div>
+      <SalesStatsCards stats={stats} />
 
       {/* Main Content */}
       <Tabs value={activeTab} onValueChange={setActiveTab}>
-        <TabsList className="grid w-full grid-cols-2 sm:grid-cols-5">
-          <TabsTrigger value="list">Lista</TabsTrigger>
-          <TabsTrigger value="create">Crear</TabsTrigger>
-          <TabsTrigger value="view" disabled={!viewingRequest}>Ver Detalles</TabsTrigger>
-          <TabsTrigger value="edit" disabled={!editingRequest}>Editar</TabsTrigger>
-          <TabsTrigger value="health-declaration" disabled={!healthDeclarationRequest}>
-            Declaración
-          </TabsTrigger>
-        </TabsList>
+        <SalesTabsNavigation
+          viewingRequest={!!viewingRequest}
+          editingRequest={!!editingRequest}
+          healthDeclarationRequest={!!healthDeclarationRequest}
+        />
 
         <TabsContent value="list" className="mt-6">
           <SalesRequestsList
@@ -307,7 +130,7 @@ const SalesManager = () => {
             onEditRequest={handleEditRequest}
             onProcessHealthDeclaration={handleProcessHealthDeclaration}
             onSendForSignature={handleSendForSignature}
-            onDeleteRequest={handleDeleteRequest}
+            onDeleteRequest={deleteRequest}
             loading={loading}
           />
         </TabsContent>
@@ -323,19 +146,14 @@ const SalesManager = () => {
           {viewingRequest && (
             <SalesRequestDetail
               requestId={viewingRequest.id}
-              onBack={() => {
-                setViewingRequest(null);
-                setActiveTab('list');
-              }}
+              onBack={resetViewingState}
               onEdit={(request) => {
-                setEditingRequest(request);
-                setViewingRequest(null);
-                setActiveTab('edit');
+                handleEditRequest(request);
+                resetViewingState();
               }}
               onProcessHealthDeclaration={(request) => {
-                setHealthDeclarationRequest(request);
-                setViewingRequest(null);
-                setActiveTab('health-declaration');
+                handleProcessHealthDeclaration(request);
+                resetViewingState();
               }}
               onSendForSignature={handleSendForSignature}
             />
@@ -346,10 +164,7 @@ const SalesManager = () => {
           {editingRequest && (
             <SalesRequestForm
               onSubmit={handleUpdateRequest}
-              onCancel={() => {
-                setEditingRequest(null);
-                setActiveTab('list');
-              }}
+              onCancel={resetEditingState}
               initialData={editingRequest}
               isEditing={true}
             />
@@ -361,10 +176,7 @@ const SalesManager = () => {
             <HealthDeclarationForm
               salesRequest={healthDeclarationRequest}
               onSubmit={handleHealthDeclarationSubmit}
-              onCancel={() => {
-                setHealthDeclarationRequest(null);
-                setActiveTab('list');
-              }}
+              onCancel={resetHealthDeclarationState}
             />
           )}
         </TabsContent>
@@ -379,7 +191,7 @@ const SalesManager = () => {
           {signatureRequest && (
             <SalesSignatureIntegration
               salesRequest={signatureRequest}
-              onSuccess={handleSignatureSuccess}
+              onSuccess={handleSignatureSuccessWithRefresh}
               onCancel={handleSignatureCancel}
             />
           )}

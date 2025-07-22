@@ -1,36 +1,27 @@
 import React, { useState, useEffect } from 'react';
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Progress } from "@/components/ui/progress";
 import { Separator } from "@/components/ui/separator";
 import { 
   ArrowLeft, 
   User, 
   Users, 
   FileText, 
-  Paperclip, 
-  PenTool,
-  CheckCircle,
-  Clock,
-  AlertCircle,
-  Phone,
-  Mail,
-  MapPin,
-  CreditCard,
-  Calendar,
   Edit,
   Send,
   Download,
-  Eye,
-  MessageSquare,
-  Share2
+  Share2,
+  AlertCircle
 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { salesService } from '@/services/salesService';
+
+// Components
+import RequestOverviewCard from './components/RequestOverviewCard';
+import RequestProgressCard from './components/RequestProgressCard';
 import DocumentUploader from './DocumentUploader';
 import ContractGenerator from './ContractGenerator';
+
 import type { SalesRequestWithDetails } from './SalesRequestsList';
 
 interface SalesRequestDetailProps {
@@ -49,39 +40,6 @@ interface DetailedSalesRequest extends SalesRequestWithDetails {
   signature_status?: 'pending' | 'signed' | 'completed';
   completed_at?: string;
 }
-
-const statusConfig = {
-  draft: {
-    label: 'Borrador',
-    color: 'bg-gray-100 text-gray-800',
-    icon: Edit,
-    progress: 25
-  },
-  pending_health_declaration: {
-    label: 'Pendiente Declaración',
-    color: 'bg-yellow-100 text-yellow-800',
-    icon: AlertCircle,
-    progress: 50
-  },
-  pending_signature: {
-    label: 'Pendiente Firma',
-    color: 'bg-blue-100 text-blue-800',
-    icon: Clock,
-    progress: 75
-  },
-  completed: {
-    label: 'Completado',
-    color: 'bg-green-100 text-green-800',
-    icon: CheckCircle,
-    progress: 100
-  },
-  rejected: {
-    label: 'Rechazado',
-    color: 'bg-red-100 text-red-800',
-    icon: AlertCircle,
-    progress: 0
-  }
-};
 
 const SalesRequestDetail: React.FC<SalesRequestDetailProps> = ({
   requestId,
@@ -195,8 +153,26 @@ const SalesRequestDetail: React.FC<SalesRequestDetailProps> = ({
     );
   }
 
-  const StatusIcon = statusConfig[request.status || 'draft'].icon;
-  const statusInfo = statusConfig[request.status || 'draft'];
+  const formatDate = (date: string) => {
+    return new Date(date).toLocaleDateString('es-ES', {
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric'
+    });
+  };
+
+  const calculateAge = (birthDate: string) => {
+    const today = new Date();
+    const birth = new Date(birthDate);
+    let age = today.getFullYear() - birth.getFullYear();
+    const monthDiff = today.getMonth() - birth.getMonth();
+    
+    if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birth.getDate())) {
+      age--;
+    }
+    
+    return age;
+  };
 
   return (
     <div className="space-y-6">
@@ -216,26 +192,10 @@ const SalesRequestDetail: React.FC<SalesRequestDetailProps> = ({
             </p>
           </div>
         </div>
-        <div className="flex items-center gap-2">
-          <Badge className={statusInfo.color}>
-            <StatusIcon className="w-3 h-3 mr-1" />
-            {statusInfo.label}
-          </Badge>
-        </div>
       </div>
 
       {/* Progress Bar */}
-      <Card>
-        <CardContent className="p-4">
-          <div className="space-y-2">
-            <div className="flex justify-between items-center">
-              <span className="text-sm font-medium">Progreso de la Solicitud</span>
-              <span className="text-sm text-gray-600">{statusInfo.progress}%</span>
-            </div>
-            <Progress value={statusInfo.progress} className="h-2" />
-          </div>
-        </CardContent>
-      </Card>
+      <RequestProgressCard status={request.status} />
 
       {/* Quick Actions */}
       <div className="flex flex-wrap gap-2">
@@ -284,66 +244,7 @@ const SalesRequestDetail: React.FC<SalesRequestDetailProps> = ({
         </TabsList>
 
         <TabsContent value="overview" className="mt-6">
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            {/* Información General */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <FileText className="w-5 h-5" />
-                  Información General
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div>
-                  <label className="text-sm font-medium text-gray-600">Número de Solicitud</label>
-                  <p className="text-sm font-mono">{request.request_number}</p>
-                </div>
-                {request.notes && (
-                  <div>
-                    <label className="text-sm font-medium text-gray-600">Observaciones</label>
-                    <p className="text-sm mt-1">{request.notes}</p>
-                  </div>
-                )}
-              </CardContent>
-            </Card>
-
-            {/* Resumen del Titular */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <User className="w-5 h-5" />
-                  Datos del Titular
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-3">
-                <div className="flex items-center gap-2">
-                  <Mail className="w-4 h-4 text-gray-400" />
-                  <span className="text-sm">{request.client_email}</span>
-                </div>
-                {request.client_phone && (
-                  <div className="flex items-center gap-2">
-                    <Phone className="w-4 h-4 text-gray-400" />
-                    <span className="text-sm">{request.client_phone}</span>
-                  </div>
-                )}
-                {request.client_birth_date && (
-                  <div className="flex items-center gap-2">
-                    <Calendar className="w-4 h-4 text-gray-400" />
-                    <span className="text-sm">
-                      {formatDate(request.client_birth_date)} 
-                      ({calculateAge(request.client_birth_date)} años)
-                    </span>
-                  </div>
-                )}
-                {request.client_address && (
-                  <div className="flex items-center gap-2">
-                    <MapPin className="w-4 h-4 text-gray-400" />
-                    <span className="text-sm">{request.client_address}</span>
-                  </div>
-                )}
-              </CardContent>
-            </Card>
-          </div>
+          <RequestOverviewCard request={request} />
         </TabsContent>
 
         <TabsContent value="titular" className="mt-6">
