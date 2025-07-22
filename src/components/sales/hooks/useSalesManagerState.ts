@@ -63,6 +63,7 @@ export const useSalesManagerState = () => {
     healthDeclarationRequest,
     signatureModalOpen,
     signatureRequest,
+    setSignatureModalOpen,
     handleEditRequest,
     handleViewRequest,
     handleProcessHealthDeclaration,

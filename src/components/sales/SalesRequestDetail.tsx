@@ -1,5 +1,8 @@
+
 import React, { useState, useEffect } from 'react';
 import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Separator } from "@/components/ui/separator";
 import { 
@@ -11,7 +14,8 @@ import {
   Send,
   Download,
   Share2,
-  AlertCircle
+  AlertCircle,
+  CheckCircle
 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { salesService } from '@/services/salesService';
@@ -108,7 +112,7 @@ const SalesRequestDetail: React.FC<SalesRequestDetailProps> = ({
     }).format(amount) : 'N/A';
   };
 
-  const formatDate = (date: string) => {
+  const formatRequestDate = (date: string) => {
     return new Date(date).toLocaleDateString('es-ES', {
       year: 'numeric',
       month: 'long',
@@ -116,7 +120,7 @@ const SalesRequestDetail: React.FC<SalesRequestDetailProps> = ({
     });
   };
 
-  const calculateAge = (birthDate: string) => {
+  const calculateClientAge = (birthDate: string) => {
     const today = new Date();
     const birth = new Date(birthDate);
     let age = today.getFullYear() - birth.getFullYear();
@@ -151,27 +155,6 @@ const SalesRequestDetail: React.FC<SalesRequestDetailProps> = ({
         </Button>
       </div>
     );
-  }
-
-  const formatDate = (date: string) => {
-    return new Date(date).toLocaleDateString('es-ES', {
-      year: 'numeric',
-      month: 'long',
-      day: 'numeric'
-    });
-  };
-
-  const calculateAge = (birthDate: string) => {
-    const today = new Date();
-    const birth = new Date(birthDate);
-    let age = today.getFullYear() - birth.getFullYear();
-    const monthDiff = today.getMonth() - birth.getMonth();
-    
-    if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birth.getDate())) {
-      age--;
-    }
-    
-    return age;
   };
 
   return (
@@ -188,7 +171,7 @@ const SalesRequestDetail: React.FC<SalesRequestDetailProps> = ({
               {request.client_name}
             </h1>
             <p className="text-gray-600 mt-1">
-              Solicitud {request.request_number} • {formatDate(request.created_at)}
+              Solicitud {request.request_number} • {formatRequestDate(request.created_at)}
             </p>
           </div>
         </div>
@@ -280,8 +263,8 @@ const SalesRequestDetail: React.FC<SalesRequestDetailProps> = ({
                   <div>
                     <label className="text-sm font-medium text-gray-600">Fecha de Nacimiento</label>
                     <p className="text-lg">
-                      {formatDate(request.client_birth_date)} 
-                      <span className="text-gray-600 ml-2">({calculateAge(request.client_birth_date)} años)</span>
+                      {formatRequestDate(request.client_birth_date)} 
+                      <span className="text-gray-600 ml-2">({calculateClientAge(request.client_birth_date)} años)</span>
                     </p>
                   </div>
                 )}
@@ -373,7 +356,7 @@ const SalesRequestDetail: React.FC<SalesRequestDetailProps> = ({
                   </div>
                   <div className="bg-gray-50 p-4 rounded-lg">
                     <p className="text-sm text-gray-600">
-                      Declaración procesada el {formatDate(request.health_declaration.created_at)}
+                      Declaración procesada el {formatRequestDate(request.health_declaration.created_at)}
                     </p>
                   </div>
                 </div>

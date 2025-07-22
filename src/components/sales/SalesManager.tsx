@@ -183,7 +183,11 @@ const SalesManager = () => {
       </Tabs>
 
       {/* Signature Integration Modal */}
-      <Dialog open={signatureModalOpen} onOpenChange={setSignatureModalOpen}>
+      <Dialog open={signatureModalOpen} onOpenChange={(open) => {
+        if (!open) {
+          handleSignatureCancel();
+        }
+      }}>
         <DialogContent className="max-w-5xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>Enviar para Firma Digital</DialogTitle>

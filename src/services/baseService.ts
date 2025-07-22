@@ -1,6 +1,7 @@
 
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import type { Database } from "@/integrations/supabase/types";
 
 export interface BaseEntity {
   id: string;
@@ -8,11 +9,13 @@ export interface BaseEntity {
   updated_at: string;
 }
 
+type TableName = keyof Database['public']['Tables'];
+
 export class BaseService {
-  protected tableName: string;
+  protected tableName: TableName;
   protected toast?: ReturnType<typeof useToast>['toast'];
 
-  constructor(tableName: string) {
+  constructor(tableName: TableName) {
     this.tableName = tableName;
   }
 
@@ -31,7 +34,7 @@ export class BaseService {
   async getById(id: string) {
     try {
       const { data, error } = await supabase
-        .from(this.tableName)
+        .from(this.tableName as any)
         .select('*')
         .eq('id', id)
         .single();
@@ -45,7 +48,7 @@ export class BaseService {
 
   async getAll(filters?: Record<string, any>) {
     try {
-      let query = supabase.from(this.tableName).select('*');
+      let query = supabase.from(this.tableName as any).select('*');
       
       if (filters) {
         Object.entries(filters).forEach(([key, value]) => {
@@ -64,7 +67,7 @@ export class BaseService {
   async create(data: Partial<BaseEntity>) {
     try {
       const { data: result, error } = await supabase
-        .from(this.tableName)
+        .from(this.tableName as any)
         .insert(data)
         .select()
         .single();
@@ -79,7 +82,7 @@ export class BaseService {
   async update(id: string, data: Partial<BaseEntity>) {
     try {
       const { data: result, error } = await supabase
-        .from(this.tableName)
+        .from(this.tableName as any)
         .update(data)
         .eq('id', id)
         .select()
@@ -95,7 +98,7 @@ export class BaseService {
   async delete(id: string) {
     try {
       const { error } = await supabase
-        .from(this.tableName)
+        .from(this.tableName as any)
         .delete()
         .eq('id', id);
 
