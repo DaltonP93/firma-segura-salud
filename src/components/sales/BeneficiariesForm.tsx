@@ -11,7 +11,9 @@ import type { Beneficiary } from './SalesRequestForm';
 
 interface BeneficiariesFormProps {
   beneficiaries: Beneficiary[];
-  onBeneficiariesChange: (beneficiaries: Beneficiary[]) => void;
+  addBeneficiary: (beneficiary: Beneficiary) => void;
+  removeBeneficiary: (id: string) => void;
+  updateBeneficiary: (id: string, beneficiary: Beneficiary) => void;
 }
 
 const relationshipTypes = [
@@ -30,7 +32,9 @@ const relationshipTypes = [
 
 const BeneficiariesForm: React.FC<BeneficiariesFormProps> = ({
   beneficiaries,
-  onBeneficiariesChange
+  addBeneficiary,
+  removeBeneficiary,
+  updateBeneficiary
 }) => {
   const [newBeneficiary, setNewBeneficiary] = useState<Beneficiary>({
     description: '',
@@ -47,7 +51,7 @@ const BeneficiariesForm: React.FC<BeneficiariesFormProps> = ({
 
   const [isAdding, setIsAdding] = useState(false);
 
-  const addBeneficiary = () => {
+  const handleAddBeneficiary = () => {
     if (!newBeneficiary.description || !newBeneficiary.relationship) {
       return;
     }
@@ -58,7 +62,7 @@ const BeneficiariesForm: React.FC<BeneficiariesFormProps> = ({
       is_primary: beneficiaries.length === 0
     };
 
-    onBeneficiariesChange([...beneficiaries, beneficiary]);
+    addBeneficiary(beneficiary);
     
     setNewBeneficiary({
       description: '',
@@ -75,18 +79,17 @@ const BeneficiariesForm: React.FC<BeneficiariesFormProps> = ({
     setIsAdding(false);
   };
 
-  const removeBeneficiary = (index: number) => {
-    const updated = beneficiaries.filter((_, i) => i !== index);
-    onBeneficiariesChange(updated);
+  const handleRemoveBeneficiary = (id: string) => {
+    removeBeneficiary(id);
   };
 
-  const updateBeneficiary = (index: number, field: keyof Beneficiary, value: string | number | boolean) => {
-    const updated = beneficiaries.map((beneficiary, i) => 
-      i === index ? { ...beneficiary, [field]: value } : beneficiary
-    );
-    onBeneficiariesChange(updated);
+  const handleUpdateBeneficiary = (index: number, field: keyof Beneficiary, value: string | number | boolean) => {
+    const beneficiary = beneficiaries[index];
+    if (beneficiary?.id) {
+      const updated = { ...beneficiary, [field]: value };
+      updateBeneficiary(beneficiary.id, updated);
+    }
   };
-
 
   return (
     <Card>
@@ -109,7 +112,7 @@ const BeneficiariesForm: React.FC<BeneficiariesFormProps> = ({
                   <Label className="text-sm font-medium">Descripción</Label>
                   <Input
                     value={beneficiary.description}
-                    onChange={(e) => updateBeneficiary(index, 'description', e.target.value)}
+                    onChange={(e) => handleUpdateBeneficiary(index, 'description', e.target.value)}
                     placeholder="Descripción del beneficiario"
                   />
                 </div>
@@ -117,7 +120,7 @@ const BeneficiariesForm: React.FC<BeneficiariesFormProps> = ({
                   <Label className="text-sm font-medium">Parentesco</Label>
                   <Select
                     value={beneficiary.relationship}
-                    onValueChange={(value) => updateBeneficiary(index, 'relationship', value)}
+                    onValueChange={(value) => handleUpdateBeneficiary(index, 'relationship', value)}
                   >
                     <SelectTrigger>
                       <SelectValue placeholder="Seleccionar" />
@@ -136,22 +139,24 @@ const BeneficiariesForm: React.FC<BeneficiariesFormProps> = ({
                   <Input
                     type="number"
                     value={beneficiary.price || ''}
-                    onChange={(e) => updateBeneficiary(index, 'price', parseFloat(e.target.value) || 0)}
+                    onChange={(e) => handleUpdateBeneficiary(index, 'price', parseFloat(e.target.value) || 0)}
                     min="0"
                     step="0.01"
                     placeholder="0.00"
                   />
                 </div>
               </div>
-              <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                onClick={() => removeBeneficiary(index)}
-                className="ml-2 text-red-600 hover:text-red-700"
-              >
-                <Trash2 className="w-4 h-4" />
-              </Button>
+              {beneficiary.id && (
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={() => handleRemoveBeneficiary(beneficiary.id!)}
+                  className="ml-2 text-red-600 hover:text-red-700"
+                >
+                  <Trash2 className="w-4 h-4" />
+                </Button>
+              )}
             </div>
             
             <div className="grid grid-cols-1 md:grid-cols-5 gap-3">
@@ -159,7 +164,7 @@ const BeneficiariesForm: React.FC<BeneficiariesFormProps> = ({
                 <Label className="text-sm font-medium">DNI</Label>
                 <Input
                   value={beneficiary.dni || ''}
-                  onChange={(e) => updateBeneficiary(index, 'dni', e.target.value)}
+                  onChange={(e) => handleUpdateBeneficiary(index, 'dni', e.target.value)}
                   placeholder="Documento de identidad"
                 />
               </div>
@@ -168,14 +173,14 @@ const BeneficiariesForm: React.FC<BeneficiariesFormProps> = ({
                 <Input
                   type="date"
                   value={beneficiary.birth_date || ''}
-                  onChange={(e) => updateBeneficiary(index, 'birth_date', e.target.value)}
+                  onChange={(e) => handleUpdateBeneficiary(index, 'birth_date', e.target.value)}
                 />
               </div>
               <div>
                 <Label className="text-sm font-medium">Teléfono</Label>
                 <Input
                   value={beneficiary.phone || ''}
-                  onChange={(e) => updateBeneficiary(index, 'phone', e.target.value)}
+                  onChange={(e) => handleUpdateBeneficiary(index, 'phone', e.target.value)}
                   placeholder="Número de teléfono"
                 />
               </div>
@@ -184,7 +189,7 @@ const BeneficiariesForm: React.FC<BeneficiariesFormProps> = ({
                 <Input
                   type="number"
                   value={beneficiary.weight || ''}
-                  onChange={(e) => updateBeneficiary(index, 'weight', parseFloat(e.target.value) || 0)}
+                  onChange={(e) => handleUpdateBeneficiary(index, 'weight', parseFloat(e.target.value) || 0)}
                   placeholder="0"
                   min="0"
                   step="0.1"
@@ -195,7 +200,7 @@ const BeneficiariesForm: React.FC<BeneficiariesFormProps> = ({
                 <Input
                   type="number"
                   value={beneficiary.height || ''}
-                  onChange={(e) => updateBeneficiary(index, 'height', parseFloat(e.target.value) || 0)}
+                  onChange={(e) => handleUpdateBeneficiary(index, 'height', parseFloat(e.target.value) || 0)}
                   placeholder="0"
                   min="0"
                   step="0.1"
@@ -298,7 +303,7 @@ const BeneficiariesForm: React.FC<BeneficiariesFormProps> = ({
             </div>
 
             <div className="flex gap-2">
-              <Button type="button" onClick={addBeneficiary} size="sm">
+              <Button type="button" onClick={handleAddBeneficiary} size="sm">
                 Agregar Beneficiario
               </Button>
               <Button 
