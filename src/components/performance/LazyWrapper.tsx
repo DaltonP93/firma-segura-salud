@@ -1,6 +1,6 @@
 
 import React, { Suspense, memo } from 'react';
-import { LoadingSpinner } from '@/components/layout/LoadingSpinner';
+import LoadingSpinner from '@/components/layout/LoadingSpinner';
 
 interface LazyWrapperProps {
   children: React.ReactNode;
