@@ -405,6 +405,7 @@ export type Database = {
           signature_request_id: string | null
           signature_url: string | null
           signed_at: string | null
+          signed_pdf_url: string | null
           status: string | null
           template_id: string | null
           template_type: string | null
@@ -429,6 +430,7 @@ export type Database = {
           signature_request_id?: string | null
           signature_url?: string | null
           signed_at?: string | null
+          signed_pdf_url?: string | null
           status?: string | null
           template_id?: string | null
           template_type?: string | null
@@ -453,6 +455,7 @@ export type Database = {
           signature_request_id?: string | null
           signature_url?: string | null
           signed_at?: string | null
+          signed_pdf_url?: string | null
           status?: string | null
           template_id?: string | null
           template_type?: string | null
@@ -850,6 +853,7 @@ export type Database = {
           request_number: string
           source: string | null
           status: string
+          template_id: string | null
           updated_at: string
         }
         Insert: {
@@ -877,6 +881,7 @@ export type Database = {
           request_number?: string
           source?: string | null
           status?: string
+          template_id?: string | null
           updated_at?: string
         }
         Update: {
@@ -904,6 +909,7 @@ export type Database = {
           request_number?: string
           source?: string | null
           status?: string
+          template_id?: string | null
           updated_at?: string
         }
         Relationships: [
@@ -919,6 +925,13 @@ export type Database = {
             columns: ["insurance_plan_id"]
             isOneToOne: false
             referencedRelation: "insurance_plans"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "sales_requests_template_id_fkey"
+            columns: ["template_id"]
+            isOneToOne: false
+            referencedRelation: "document_templates"
             referencedColumns: ["id"]
           },
         ]

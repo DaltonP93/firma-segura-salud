@@ -1,4 +1,3 @@
-
 import { supabase } from '@/integrations/supabase/client';
 import type { SalesRequest, Beneficiary } from '@/components/sales/SalesRequestForm';
 import type { SalesRequestWithDetails } from '@/components/sales/SalesRequestsList';
@@ -16,6 +15,7 @@ export const salesService = {
         client_address: requestData.client_address,
         policy_type: requestData.policy_type,
         insurance_plan_id: requestData.insurance_plan_id,
+        template_id: requestData.template_id,
         client_occupation: requestData.client_occupation,
         client_income: requestData.client_income,
         client_marital_status: requestData.client_marital_status,
@@ -69,7 +69,8 @@ export const salesService = {
       .from('sales_requests')
       .select(`
         *,
-        beneficiaries (id)
+        beneficiaries (id),
+        document_templates (name)
       `)
       .order('created_at', { ascending: false });
 
@@ -92,10 +93,12 @@ export const salesService = {
       monthly_premium: request.monthly_premium,
       status: request.status as SalesRequest['status'],
       notes: request.notes,
+      template_id: request.template_id,
       created_at: request.created_at,
       updated_at: request.updated_at,
       completed_at: request.completed_at,
-      beneficiaries_count: request.beneficiaries?.length || 0
+      beneficiaries_count: request.beneficiaries?.length || 0,
+      template_name: request.document_templates?.name
     }));
   },
 
@@ -233,5 +236,50 @@ export const salesService = {
     }
 
     return true;
+  },
+
+  async generateHealthDeclarationPDF(salesRequestId: string) {
+    // This will be implemented to generate PDF from health declaration
+    const { data: healthDeclaration, error } = await supabase
+      .from('health_declarations')
+      .select(`
+        *,
+        sales_requests (
+          client_name,
+          client_email,
+          client_dni,
+          client_birth_date
+        )
+      `)
+      .eq('sales_request_id', salesRequestId)
+      .single();
+
+    if (error) {
+      console.error('Error fetching health declaration:', error);
+      throw error;
+    }
+
+    return healthDeclaration;
+  },
+
+  async createSignatureRequest(salesRequestId: string, templateId: string) {
+    // Create a signature request for the sales request
+    const { data, error } = await supabase
+      .from('signature_requests')
+      .insert({
+        title: `Firma de Solicitud de Seguro`,
+        message: `Por favor firme la solicitud de seguro`,
+        status: 'draft',
+        created_by: (await supabase.auth.getUser()).data.user?.id
+      })
+      .select()
+      .single();
+
+    if (error) {
+      console.error('Error creating signature request:', error);
+      throw error;
+    }
+
+    return data;
   }
 };

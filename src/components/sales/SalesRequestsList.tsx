@@ -1,33 +1,44 @@
 
 import React, { useState } from 'react';
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { 
-  FileText, 
-  Search, 
-  Filter, 
   Eye, 
   Edit, 
-  CheckCircle, 
-  Clock, 
-  AlertCircle,
-  User,
-  Phone,
-  Mail,
-  CreditCard,
-  Trash2
+  Trash2, 
+  FileText, 
+  Send, 
+  Users, 
+  Calendar,
+  Download,
+  Share2,
+  MessageSquare
 } from 'lucide-react';
-import type { SalesRequest } from './SalesRequestForm';
+import { useToast } from '@/hooks/use-toast';
 
-export interface SalesRequestWithDetails extends SalesRequest {
+export interface SalesRequestWithDetails {
   id: string;
   request_number: string;
+  client_name: string;
+  client_email: string;
+  client_phone?: string;
+  client_dni?: string;
+  client_birth_date?: string;
+  client_address?: string;
+  policy_type: string;
+  coverage_amount?: number;
+  monthly_premium?: number;
+  status: 'draft' | 'pending_health_declaration' | 'pending_signature' | 'completed' | 'rejected' | 'cancelled';
+  notes?: string;
+  template_id?: string;
+  template_name?: string;
   created_at: string;
   updated_at: string;
-  beneficiaries_count?: number;
+  completed_at?: string;
+  beneficiaries_count: number;
 }
 
 interface SalesRequestsListProps {
@@ -37,272 +48,260 @@ interface SalesRequestsListProps {
   onProcessHealthDeclaration: (request: SalesRequestWithDetails) => void;
   onSendForSignature: (request: SalesRequestWithDetails) => void;
   onDeleteRequest: (request: SalesRequestWithDetails) => void;
-  loading?: boolean;
+  loading: boolean;
 }
 
-const statusConfig = {
-  draft: {
-    label: 'Borrador',
-    color: 'bg-gray-100 text-gray-800',
-    icon: Edit
-  },
-  pending_health_declaration: {
-    label: 'Pendiente Declaración',
-    color: 'bg-yellow-100 text-yellow-800',
-    icon: AlertCircle
-  },
-  pending_signature: {
-    label: 'Pendiente Firma',
-    color: 'bg-blue-100 text-blue-800',
-    icon: Clock
-  },
-  completed: {
-    label: 'Completado',
-    color: 'bg-green-100 text-green-800',
-    icon: CheckCircle
-  },
-  rejected: {
-    label: 'Rechazado',
-    color: 'bg-red-100 text-red-800',
-    icon: AlertCircle
-  }
-};
-
-const SalesRequestsList: React.FC<SalesRequestsListProps> = ({
+const SalesRequestsList = ({
   requests,
   onViewRequest,
   onEditRequest,
   onProcessHealthDeclaration,
   onSendForSignature,
   onDeleteRequest,
-  loading = false
-}) => {
+  loading
+}: SalesRequestsListProps) => {
+  const { toast } = useToast();
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('all');
-  const [policyTypeFilter, setPolicyTypeFilter] = useState<string>('all');
+
+  const getStatusBadgeVariant = (status: string) => {
+    switch (status) {
+      case 'completed': return 'default';
+      case 'pending_signature': return 'secondary';
+      case 'pending_health_declaration': return 'outline';
+      case 'rejected': return 'destructive';
+      case 'cancelled': return 'destructive';
+      default: return 'outline';
+    }
+  };
+
+  const getStatusText = (status: string) => {
+    switch (status) {
+      case 'draft': return 'Borrador';
+      case 'pending_health_declaration': return 'Pendiente Declaración';
+      case 'pending_signature': return 'Pendiente Firma';
+      case 'completed': return 'Completado';
+      case 'rejected': return 'Rechazado';
+      case 'cancelled': return 'Cancelado';
+      default: return status;
+    }
+  };
+
+  const handleDownloadSignedPDF = async (request: SalesRequestWithDetails) => {
+    // This will be implemented to download the signed PDF
+    try {
+      // Placeholder for signed PDF download functionality
+      toast({
+        title: "Descarga en desarrollo",
+        description: "La funcionalidad de descarga del PDF firmado estará disponible pronto",
+      });
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Error al descargar el documento firmado",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleShareWhatsApp = async (request: SalesRequestWithDetails) => {
+    try {
+      const message = `Hola ${request.client_name}, su solicitud de seguro ${request.request_number} está lista. Estado: ${getStatusText(request.status)}`;
+      const whatsappUrl = `https://wa.me/${request.client_phone?.replace(/\D/g, '')}?text=${encodeURIComponent(message)}`;
+      window.open(whatsappUrl, '_blank');
+      
+      toast({
+        title: "WhatsApp Abierto",
+        description: "Se ha abierto WhatsApp con el mensaje predefinido",
+      });
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Error al abrir WhatsApp",
+        variant: "destructive",
+      });
+    }
+  };
 
   const filteredRequests = requests.filter(request => {
     const matchesSearch = 
       request.client_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      request.client_email.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      request.request_number.toLowerCase().includes(searchTerm.toLowerCase());
+      request.request_number.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      request.client_email.toLowerCase().includes(searchTerm.toLowerCase());
     
     const matchesStatus = statusFilter === 'all' || request.status === statusFilter;
-    const matchesPolicyType = policyTypeFilter === 'all' || request.policy_type === policyTypeFilter;
     
-    return matchesSearch && matchesStatus && matchesPolicyType;
+    return matchesSearch && matchesStatus;
   });
-
-  const uniquePolicyTypes = Array.from(new Set(requests.map(r => r.policy_type)));
-
-  const formatCurrency = (amount?: number) => {
-    return amount ? new Intl.NumberFormat('es-ES', {
-      style: 'currency',
-      currency: 'EUR'
-    }).format(amount) : 'N/A';
-  };
-
-  const formatDate = (date: string) => {
-    return new Date(date).toLocaleDateString('es-ES', {
-      year: 'numeric',
-      month: 'short',
-      day: 'numeric'
-    });
-  };
 
   if (loading) {
     return (
-      <div className="flex justify-center items-center py-12">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
-        <span className="ml-4 text-gray-600">Cargando solicitudes...</span>
-      </div>
+      <Card>
+        <CardContent className="flex items-center justify-center py-8">
+          <div className="text-gray-500">Cargando solicitudes...</div>
+        </CardContent>
+      </Card>
     );
   }
 
   return (
-    <div className="space-y-6">
-      {/* Filtros */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <FileText className="w-5 h-5" />
-            Solicitudes de Venta ({requests.length})
-          </CardTitle>
-          <CardDescription>
-            Gestione las solicitudes de venta y su procesamiento
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="flex flex-col sm:flex-row gap-4">
-            <div className="flex-1">
-              <div className="relative">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
-                <Input
-                  placeholder="Buscar por nombre, email o número de solicitud..."
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  className="pl-10"
-                />
-              </div>
-            </div>
-            
-            <Select value={statusFilter} onValueChange={setStatusFilter}>
-              <SelectTrigger className="w-full sm:w-48">
-                <SelectValue placeholder="Filtrar por estado" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">Todos los estados</SelectItem>
-                {Object.entries(statusConfig).map(([key, config]) => (
-                  <SelectItem key={key} value={key}>
-                    {config.label}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-
-            <Select value={policyTypeFilter} onValueChange={setPolicyTypeFilter}>
-              <SelectTrigger className="w-full sm:w-48">
-                <SelectValue placeholder="Filtrar por póliza" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">Todos los tipos</SelectItem>
-                {uniquePolicyTypes.map((type) => (
-                  <SelectItem key={type} value={type}>
-                    {type}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+    <Card>
+      <CardHeader>
+        <CardTitle className="flex items-center gap-2">
+          <FileText className="w-5 h-5" />
+          Solicitudes de Venta ({requests.length})
+        </CardTitle>
+        
+        {/* Filters */}
+        <div className="flex flex-col sm:flex-row gap-4">
+          <Input
+            placeholder="Buscar por nombre, número o email..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="sm:max-w-xs"
+          />
+          <Select value={statusFilter} onValueChange={setStatusFilter}>
+            <SelectTrigger className="sm:max-w-xs">
+              <SelectValue placeholder="Filtrar por estado" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">Todos los estados</SelectItem>
+              <SelectItem value="draft">Borrador</SelectItem>
+              <SelectItem value="pending_health_declaration">Pendiente Declaración</SelectItem>
+              <SelectItem value="pending_signature">Pendiente Firma</SelectItem>
+              <SelectItem value="completed">Completado</SelectItem>
+              <SelectItem value="rejected">Rechazado</SelectItem>
+              <SelectItem value="cancelled">Cancelado</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+      </CardHeader>
+      
+      <CardContent>
+        {filteredRequests.length === 0 ? (
+          <div className="text-center py-8 text-gray-500">
+            {searchTerm || statusFilter !== 'all' 
+              ? 'No se encontraron solicitudes con los filtros aplicados'
+              : 'No hay solicitudes de venta todavía'
+            }
           </div>
-        </CardContent>
-      </Card>
-
-      {/* Lista de Solicitudes */}
-      {filteredRequests.length === 0 ? (
-        <Card>
-          <CardContent className="text-center py-12">
-            <FileText className="mx-auto h-12 w-12 text-gray-400 mb-4" />
-            <h3 className="text-lg font-medium text-gray-900 mb-2">
-              {requests.length === 0 ? 'No hay solicitudes' : 'No se encontraron solicitudes'}
-            </h3>
-            <p className="text-gray-500">
-              {requests.length === 0 
-                ? 'Cree su primera solicitud de venta'
-                : 'Intente ajustar los filtros de búsqueda'
-              }
-            </p>
-          </CardContent>
-        </Card>
-      ) : (
-        <div className="space-y-4">
-          {filteredRequests.map((request) => {
-            const StatusIcon = statusConfig[request.status || 'draft'].icon;
-            
-            return (
-              <Card key={request.id} className="hover:shadow-md transition-shadow">
-                <CardContent className="p-6">
-                  <div className="flex flex-col lg:flex-row justify-between items-start gap-4">
-                    <div className="flex-1">
-                      <div className="flex items-center gap-3 mb-3">
-                        <h3 className="text-lg font-semibold text-gray-900">
-                          {request.client_name}
-                        </h3>
-                        <Badge className={statusConfig[request.status || 'draft'].color}>
-                          <StatusIcon className="w-3 h-3 mr-1" />
-                          {statusConfig[request.status || 'draft'].label}
-                        </Badge>
-                        <Badge variant="outline">
-                          {request.request_number}
+        ) : (
+          <div className="space-y-4">
+            {filteredRequests.map((request) => (
+              <Card key={request.id} className="border border-gray-200">
+                <CardContent className="p-4">
+                  <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+                    <div className="flex-1 space-y-2">
+                      <div className="flex items-center gap-3">
+                        <h3 className="font-semibold text-lg">{request.client_name}</h3>
+                        <Badge variant={getStatusBadgeVariant(request.status)}>
+                          {getStatusText(request.status)}
                         </Badge>
                       </div>
                       
-                      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 text-sm text-gray-600">
-                        <div className="flex items-center gap-2">
-                          <Mail className="w-4 h-4" />
-                          {request.client_email}
-                        </div>
-                        {request.client_phone && (
-                          <div className="flex items-center gap-2">
-                            <Phone className="w-4 h-4" />
-                            {request.client_phone}
-                          </div>
-                        )}
-                        <div className="flex items-center gap-2">
-                          <User className="w-4 h-4" />
-                          {request.beneficiaries_count || 0} beneficiarios
+                      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-2 text-sm text-gray-600">
+                        <div>📋 {request.request_number}</div>
+                        <div>📧 {request.client_email}</div>
+                        <div>🏥 {request.policy_type}</div>
+                        <div className="flex items-center gap-1">
+                          <Users className="w-4 h-4" />
+                          {request.beneficiaries_count} beneficiario(s)
                         </div>
                       </div>
 
-                      <div className="mt-3 flex flex-wrap gap-4 text-sm">
-                        <span>
-                          <strong>Creado:</strong> {formatDate(request.created_at)}
-                        </span>
+                      {request.template_name && (
+                        <div className="text-sm text-blue-600">
+                          📄 Plantilla: {request.template_name}
+                        </div>
+                      )}
+                      
+                      <div className="flex items-center gap-1 text-xs text-gray-500">
+                        <Calendar className="w-3 h-3" />
+                        Creado: {new Date(request.created_at).toLocaleDateString()}
                       </div>
                     </div>
-
-                    <div className="flex flex-col gap-2 w-full lg:w-auto">
+                    
+                    <div className="flex flex-wrap gap-2">
                       <Button
                         variant="outline"
                         size="sm"
                         onClick={() => onViewRequest(request)}
-                        className="flex items-center gap-2"
                       >
-                        <Eye className="w-4 h-4" />
-                        Ver Detalles
+                        <Eye className="w-4 h-4 mr-1" />
+                        Ver
                       </Button>
                       
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => onEditRequest(request)}
+                      >
+                        <Edit className="w-4 h-4 mr-1" />
+                        Editar
+                      </Button>
+
                       {request.status === 'draft' && (
+                        <Button
+                          variant="default"
+                          size="sm"
+                          onClick={() => onProcessHealthDeclaration(request)}
+                        >
+                          <FileText className="w-4 h-4 mr-1" />
+                          Declaración
+                        </Button>
+                      )}
+
+                      {request.status === 'pending_signature' && (
+                        <Button
+                          variant="default"
+                          size="sm"
+                          onClick={() => onSendForSignature(request)}
+                        >
+                          <Send className="w-4 h-4 mr-1" />
+                          Enviar Firma
+                        </Button>
+                      )}
+
+                      {request.status === 'completed' && (
                         <Button
                           variant="outline"
                           size="sm"
-                          onClick={() => onEditRequest(request)}
-                          className="flex items-center gap-2"
+                          onClick={() => handleDownloadSignedPDF(request)}
                         >
-                          <Edit className="w-4 h-4" />
-                          Editar
+                          <Download className="w-4 h-4 mr-1" />
+                          Descargar PDF
                         </Button>
                       )}
-                      
-                      {request.status === 'pending_health_declaration' && (
+
+                      {request.client_phone && (
                         <Button
+                          variant="outline"
                           size="sm"
-                          onClick={() => onProcessHealthDeclaration(request)}
-                          className="flex items-center gap-2"
+                          onClick={() => handleShareWhatsApp(request)}
                         >
-                          <CheckCircle className="w-4 h-4" />
-                          Declaración Salud
-                        </Button>
-                      )}
-                      
-                      {request.status === 'pending_signature' && (
-                        <Button
-                          size="sm"
-                          onClick={() => onSendForSignature(request)}
-                          className="flex items-center gap-2"
-                        >
-                          <CheckCircle className="w-4 h-4" />
-                          Enviar para Firma
+                          <MessageSquare className="w-4 h-4 mr-1" />
+                          WhatsApp
                         </Button>
                       )}
                       
                       <Button
-                        variant="destructive"
+                        variant="outline"
                         size="sm"
                         onClick={() => onDeleteRequest(request)}
-                        className="flex items-center gap-2"
+                        className="text-red-600 hover:text-red-700"
                       >
-                        <Trash2 className="w-4 h-4" />
+                        <Trash2 className="w-4 h-4 mr-1" />
                         Eliminar
                       </Button>
                     </div>
                   </div>
                 </CardContent>
               </Card>
-            );
-          })}
-        </div>
-      )}
-    </div>
+            ))}
+          </div>
+        )}
+      </CardContent>
+    </Card>
   );
 };
 
