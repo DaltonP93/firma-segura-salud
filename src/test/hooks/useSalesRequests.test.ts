@@ -5,6 +5,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { useSalesRequests } from '@/components/sales/hooks/useSalesRequests';
 import { salesService } from '@/services/salesService';
 import { mockSalesRequest, mockSalesRequestForm, mockBeneficiaries, mockUser } from '../utils/mockData';
+import React from 'react';
 
 // Mock the dependencies
 vi.mock('@/services/salesService');
