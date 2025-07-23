@@ -6,6 +6,7 @@ interface OptimizedListProps<T> {
   items: T[];
   height: number;
   itemHeight: number;
+  width?: number | string;
   renderItem: ({ index, style }: { index: number; style: React.CSSProperties }) => React.ReactNode;
   className?: string;
 }
@@ -14,6 +15,7 @@ const OptimizedList = <T,>({
   items,
   height,
   itemHeight,
+  width = "100%",
   renderItem,
   className,
 }: OptimizedListProps<T>) => {
@@ -29,6 +31,7 @@ const OptimizedList = <T,>({
     <div className={className}>
       <List
         height={height}
+        width={width}
         itemCount={items.length}
         itemSize={itemHeight}
         itemData={items}
