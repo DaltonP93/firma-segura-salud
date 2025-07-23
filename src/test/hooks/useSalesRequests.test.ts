@@ -89,7 +89,7 @@ describe('useSalesRequests', () => {
       { ...mockSalesRequest, id: '3', status: 'completed' },
     ];
     
-    vi.mocked(salesService.fetchSalesRequests).mockResolvedValue(requests as any);
+    vi.mocked(salesService.fetchSalesRequests).mockResolvedValue(requests);
 
     const { result } = renderHook(() => useSalesRequests(), {
       wrapper: createWrapper(),
