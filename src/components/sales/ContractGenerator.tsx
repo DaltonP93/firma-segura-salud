@@ -203,6 +203,9 @@ Para firmar tu contrato, ingresa al sistema con tu número de solicitud: ${sales
     });
   };
 
+  // Map cancelled status to rejected for components that don't support it
+  const normalizedStatus = salesRequest.status === 'cancelled' ? 'rejected' : salesRequest.status;
+
   return (
     <div className="space-y-6">
       {/* Template Selection */}
@@ -236,10 +239,10 @@ Para firmar tu contrato, ingresa al sistema con tu número de solicitud: ${sales
       </Card>
 
       {/* Status Card */}
-      <ContractStatusCard status={salesRequest.status} />
+      <ContractStatusCard status={normalizedStatus} />
 
       {/* Contract Generation */}
-      {salesRequest.status === 'pending_signature' && (
+      {normalizedStatus === 'pending_signature' && (
         <ContractGenerationCard
           contractContent={contractContent}
           contractGenerated={contractGenerated}
