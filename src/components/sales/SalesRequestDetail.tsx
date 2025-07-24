@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -24,22 +25,23 @@ interface DetailedSalesRequest {
   agent_notes?: string;
   priority_level?: string;
   source?: string;
-  status: 'draft' | 'pending_health_declaration' | 'pending_signature' | 'completed' | 'rejected' | 'cancelled';
+  status: 'draft' | 'pending_health_declaration' | 'pending_signature' | 'completed' | 'rejected';
   notes?: string;
   created_at: string;
   updated_at: string;
   completed_at?: string;
   beneficiaries?: any[];
+  beneficiaries_count?: number;
 }
 
 interface SalesRequestDetailProps {
   request: DetailedSalesRequest | null;
   onEdit: (request: DetailedSalesRequest) => void;
   onDelete: (request: DetailedSalesRequest) => void;
-  onClose: () => void;
+  onBack: () => void;
 }
 
-const SalesRequestDetail: React.FC<SalesRequestDetailProps> = ({ request, onEdit, onDelete, onClose }) => {
+const SalesRequestDetail: React.FC<SalesRequestDetailProps> = ({ request, onEdit, onDelete, onBack }) => {
   if (!request) {
     return <div className="text-center py-4">No se ha seleccionado ninguna solicitud.</div>;
   }
@@ -50,7 +52,6 @@ const SalesRequestDetail: React.FC<SalesRequestDetailProps> = ({ request, onEdit
       case 'pending_health_declaration': return 'secondary';
       case 'pending_signature': return 'secondary';
       case 'rejected': return 'destructive';
-      case 'cancelled': return 'destructive';
       default: return 'outline';
     }
   };
@@ -62,7 +63,6 @@ const SalesRequestDetail: React.FC<SalesRequestDetailProps> = ({ request, onEdit
       case 'pending_signature': return 'Pendiente Firma';
       case 'completed': return 'Completado';
       case 'rejected': return 'Rechazado';
-      case 'cancelled': return 'Cancelado';
       default: return status;
     }
   };
@@ -73,7 +73,7 @@ const SalesRequestDetail: React.FC<SalesRequestDetailProps> = ({ request, onEdit
         <CardTitle className="flex justify-between items-center">
           <span>Detalles de la Solicitud</span>
           <div className="flex gap-2">
-            <Button variant="outline" size="sm" onClick={onClose}>
+            <Button variant="outline" size="sm" onClick={onBack}>
               Cerrar
             </Button>
           </div>
@@ -129,7 +129,8 @@ const SalesRequestDetail: React.FC<SalesRequestDetailProps> = ({ request, onEdit
             <Button variant="outline" size="sm" onClick={() => onEdit({
                 ...request,
                 insurance_plan_id: request.insurance_plan_id || '',
-                status: request.status
+                status: request.status,
+                beneficiaries_count: request.beneficiaries_count || 0
               })}>
               <Edit className="w-4 h-4 mr-2" />
               Editar
