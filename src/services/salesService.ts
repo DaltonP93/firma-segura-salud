@@ -263,23 +263,41 @@ export const salesService = {
   },
 
   async createSignatureRequest(salesRequestId: string, templateId: string) {
-    // Create a signature request for the sales request
-    const { data, error } = await supabase
-      .from('signature_requests')
-      .insert({
-        title: `Firma de Solicitud de Seguro`,
-        message: `Por favor firme la solicitud de seguro`,
-        status: 'draft',
-        created_by: (await supabase.auth.getUser()).data.user?.id
-      })
-      .select()
-      .single();
+    try {
+      // First create a document (required for signature requests)
+      const { data: document, error: docError } = await supabase
+        .from('documents')
+        .insert({
+          document_number: `DOC-${Date.now()}`,
+          client_name: 'Documento de Solicitud de Seguro',
+          client_email: 'example@email.com',
+          status: 'draft',
+          created_by: (await supabase.auth.getUser()).data.user?.id
+        })
+        .select()
+        .single();
 
-    if (error) {
+      if (docError) throw docError;
+
+      // Then create the signature request
+      const { data, error } = await supabase
+        .from('signature_requests')
+        .insert({
+          document_id: document.id,
+          title: `Firma de Solicitud de Seguro`,
+          message: `Por favor firme la solicitud de seguro`,
+          status: 'draft',
+          created_by: (await supabase.auth.getUser()).data.user?.id
+        })
+        .select()
+        .single();
+
+      if (error) throw error;
+
+      return data;
+    } catch (error) {
       console.error('Error creating signature request:', error);
       throw error;
     }
-
-    return data;
   }
 };

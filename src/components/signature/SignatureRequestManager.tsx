@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -56,7 +55,13 @@ const SignatureRequestManager = () => {
       if (error) throw error;
 
       const requestsWithCounts = (data || []).map(request => ({
-        ...request,
+        id: request.id,
+        title: request.title,
+        message: request.message || '',
+        status: request.status as 'draft' | 'sent' | 'partially_signed' | 'completed' | 'expired' | 'cancelled',
+        created_at: request.created_at,
+        expires_at: request.expires_at,
+        completed_at: request.completed_at,
         total_signers: request.signers?.length || 0,
         completed_signers: 0 // This would be calculated from signers with status 'signed'
       }));
@@ -86,9 +91,27 @@ const SignatureRequestManager = () => {
 
     try {
       setLoading(true);
+      
+      // First create a document (required for signature requests)
+      const { data: document, error: docError } = await supabase
+        .from('documents')
+        .insert({
+          document_number: `DOC-${Date.now()}`,
+          client_name: 'Documento de Firma',
+          client_email: 'example@email.com',
+          status: 'draft',
+          created_by: (await supabase.auth.getUser()).data.user?.id
+        })
+        .select()
+        .single();
+
+      if (docError) throw docError;
+
+      // Then create the signature request
       const { data, error } = await supabase
         .from('signature_requests')
         .insert({
+          document_id: document.id,
           title: newRequest.title,
           message: newRequest.message,
           expires_at: newRequest.expires_at || null,

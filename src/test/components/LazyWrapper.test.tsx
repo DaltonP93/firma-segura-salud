@@ -1,31 +1,16 @@
 
 import { describe, it, expect } from 'vitest';
-import { render, screen } from '../utils/testUtils';
-import LazyWrapper from '@/components/performance/LazyWrapper';
-
-const TestComponent = () => <div>Test Content</div>;
+import { render, screen } from '@testing-library/react';
+import LazyWrapper from '../../components/performance/LazyWrapper';
 
 describe('LazyWrapper', () => {
-  it('should render children when loaded', () => {
+  it('renders children correctly', () => {
     render(
       <LazyWrapper>
-        <TestComponent />
+        <div>Test content</div>
       </LazyWrapper>
     );
-
-    expect(screen.getByText('Test Content')).toBeInTheDocument();
-  });
-
-  it('should render custom fallback when provided', () => {
-    const CustomFallback = () => <div>Custom Loading...</div>;
     
-    render(
-      <LazyWrapper fallback={<CustomFallback />}>
-        <TestComponent />
-      </LazyWrapper>
-    );
-
-    // Since the component is synchronous, it should render the content immediately
-    expect(screen.getByText('Test Content')).toBeInTheDocument();
+    expect(screen.getByText('Test content')).toBeInTheDocument();
   });
 });

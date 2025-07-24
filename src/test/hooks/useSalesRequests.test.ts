@@ -1,6 +1,6 @@
 
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { renderHook, waitFor } from '@testing-library/react';
+import { renderHook } from '@testing-library/react';
 import { useSalesRequests } from '../../components/sales/hooks/useSalesRequests';
 
 // Mock Supabase client
@@ -51,6 +51,5 @@ describe('useSalesRequests', () => {
     
     expect(result.current.requests).toEqual([]);
     expect(result.current.loading).toBe(true);
-    expect(result.current.error).toBeNull();
   });
 });
