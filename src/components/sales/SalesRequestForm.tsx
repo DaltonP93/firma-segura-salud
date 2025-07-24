@@ -38,6 +38,8 @@ export interface SalesRequest {
 }
 
 export interface Beneficiary {
+  id?: string;
+  sales_request_id?: string;
   description: string;
   relationship: string;
   dni?: string;
@@ -104,20 +106,20 @@ const SalesRequestForm: React.FC<SalesRequestFormProps> = ({
         client_dni: initialData.client_dni || '',
         client_birth_date: initialData.client_birth_date || '',
         client_address: initialData.client_address || '',
-        client_occupation: initialData.client_occupation || '',
-        client_income: initialData.client_income || 0,
-        client_marital_status: initialData.client_marital_status || '',
+        client_occupation: (initialData as any).client_occupation || '',
+        client_income: (initialData as any).client_income || 0,
+        client_marital_status: (initialData as any).client_marital_status || '',
         policy_type: initialData.policy_type,
-        insurance_plan_id: initialData.insurance_plan_id || '',
+        insurance_plan_id: (initialData as any).insurance_plan_id || '',
         template_id: initialData.template_id || '',
         coverage_amount: initialData.coverage_amount || 0,
         monthly_premium: initialData.monthly_premium || 0,
-        medical_exams_required: initialData.medical_exams_required || false,
-        agent_notes: initialData.agent_notes || '',
-        priority_level: initialData.priority_level || 'normal',
-        source: initialData.source || 'direct',
+        medical_exams_required: (initialData as any).medical_exams_required || false,
+        agent_notes: (initialData as any).agent_notes || '',
+        priority_level: (initialData as any).priority_level || 'normal',
+        source: (initialData as any).source || 'direct',
         notes: initialData.notes || '',
-        status: initialData.status,
+        status: initialData.status === 'cancelled' ? 'rejected' : initialData.status,
       });
     }
   }, [initialData]);
@@ -310,17 +312,10 @@ const SalesRequestForm: React.FC<SalesRequestFormProps> = ({
       </Card>
 
       {/* Beneficiaries */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Beneficiarios</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <BeneficiariesForm
-            beneficiaries={beneficiaries}
-            onChange={setBeneficiaries}
-          />
-        </CardContent>
-      </Card>
+      <BeneficiariesForm
+        beneficiaries={beneficiaries}
+        onBeneficiariesChange={setBeneficiaries}
+      />
 
       {/* Additional Information */}
       <Card>

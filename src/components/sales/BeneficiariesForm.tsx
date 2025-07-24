@@ -7,13 +7,25 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { Trash2, UserPlus, Users } from 'lucide-react';
-import type { Beneficiary } from './SalesRequestForm';
+
+export interface Beneficiary {
+  id?: string;
+  sales_request_id?: string;
+  description: string;
+  relationship: string;
+  dni?: string;
+  birth_date?: string;
+  phone?: string;
+  email?: string;
+  price?: number;
+  is_primary?: boolean;
+  weight?: number;
+  height?: number;
+}
 
 interface BeneficiariesFormProps {
   beneficiaries: Beneficiary[];
-  addBeneficiary: (beneficiary: Beneficiary) => void;
-  removeBeneficiary: (id: string) => void;
-  updateBeneficiary: (id: string, beneficiary: Beneficiary) => void;
+  onBeneficiariesChange: (beneficiaries: Beneficiary[]) => void;
 }
 
 const relationshipTypes = [
@@ -32,9 +44,7 @@ const relationshipTypes = [
 
 const BeneficiariesForm: React.FC<BeneficiariesFormProps> = ({
   beneficiaries,
-  addBeneficiary,
-  removeBeneficiary,
-  updateBeneficiary
+  onBeneficiariesChange
 }) => {
   const [newBeneficiary, setNewBeneficiary] = useState<Beneficiary>({
     description: '',
@@ -62,7 +72,7 @@ const BeneficiariesForm: React.FC<BeneficiariesFormProps> = ({
       is_primary: beneficiaries.length === 0
     };
 
-    addBeneficiary(beneficiary);
+    onBeneficiariesChange([...beneficiaries, beneficiary]);
     
     setNewBeneficiary({
       description: '',
@@ -80,14 +90,16 @@ const BeneficiariesForm: React.FC<BeneficiariesFormProps> = ({
   };
 
   const handleRemoveBeneficiary = (id: string) => {
-    removeBeneficiary(id);
+    onBeneficiariesChange(beneficiaries.filter(b => b.id !== id));
   };
 
   const handleUpdateBeneficiary = (index: number, field: keyof Beneficiary, value: string | number | boolean) => {
     const beneficiary = beneficiaries[index];
     if (beneficiary?.id) {
       const updated = { ...beneficiary, [field]: value };
-      updateBeneficiary(beneficiary.id, updated);
+      onBeneficiariesChange(
+        beneficiaries.map(b => b.id === beneficiary.id ? updated : b)
+      );
     }
   };
 
