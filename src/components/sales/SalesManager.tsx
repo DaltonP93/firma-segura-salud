@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { Tabs, TabsContent } from "@/components/ui/tabs";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -166,10 +167,7 @@ const SalesManager = () => {
         <TabsContent value="view" className="mt-6">
           {viewingRequest && (
             <SalesRequestDetail
-              request={{
-                ...viewingRequest,
-                beneficiaries_count: viewingRequest.beneficiaries_count || 0
-              }}
+              request={viewingRequest}
               onBack={resetViewingState}
               onEdit={(request) => {
                 handleEditRequest(request);
