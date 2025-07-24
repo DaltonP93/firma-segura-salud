@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -172,20 +173,6 @@ const SalesRequestForm = ({ onSubmit, onCancel, initialData, isEditing = false }
     }
   };
 
-  const addBeneficiary = (newBeneficiary: Beneficiary) => {
-    setBeneficiaries([...beneficiaries, newBeneficiary]);
-  };
-
-  const removeBeneficiary = (id: string) => {
-    setBeneficiaries(beneficiaries.filter((b) => b.id !== id));
-  };
-
-  const updateBeneficiary = (id: string, updatedBeneficiary: Beneficiary) => {
-    setBeneficiaries(
-      beneficiaries.map((b) => (b.id === id ? updatedBeneficiary : b))
-    );
-  };
-
   return (
     <Card className="max-w-6xl mx-auto">
       <CardHeader>
@@ -233,9 +220,7 @@ const SalesRequestForm = ({ onSubmit, onCancel, initialData, isEditing = false }
           {/* Beneficiaries Form */}
           <BeneficiariesForm 
             beneficiaries={beneficiaries}
-            addBeneficiary={addBeneficiary}
-            removeBeneficiary={removeBeneficiary}
-            updateBeneficiary={updateBeneficiary}
+            onBeneficiariesChange={setBeneficiaries}
           />
 
           <div className="space-y-4">

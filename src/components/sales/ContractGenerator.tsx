@@ -1,11 +1,10 @@
+
 import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useToast } from '@/hooks/use-toast';
 import ContractStatusCard from './components/ContractStatusCard';
 import ContractGenerationCard from './components/ContractGenerationCard';
 import type { SalesRequestWithDetails } from './SalesRequestsList';
-
-type SalesRequestStatus = 'draft' | 'pending_health_declaration' | 'pending_signature' | 'completed' | 'rejected' | 'cancelled';
 
 interface ContractGeneratorProps {
   salesRequest: SalesRequestWithDetails;

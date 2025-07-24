@@ -1,177 +1,273 @@
-
-import React from 'react';
+import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Trash2, Plus, Users } from 'lucide-react';
+import { Separator } from "@/components/ui/separator";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Trash2, Plus } from 'lucide-react';
-import type { Beneficiary } from '../SalesRequestForm';
+
+export interface Beneficiary {
+  id?: string;
+  sales_request_id?: string;
+  description: string;
+  relationship: string;
+  dni?: string;
+  birth_date?: string;
+  phone?: string;
+  email?: string;
+  price?: number;
+  is_primary?: boolean;
+  weight?: number;
+  height?: number;
+}
 
 interface BeneficiariesFormProps {
   beneficiaries: Beneficiary[];
   onBeneficiariesChange: (beneficiaries: Beneficiary[]) => void;
 }
 
-const BeneficiariesForm = ({ beneficiaries, onBeneficiariesChange }: BeneficiariesFormProps) => {
+const BeneficiariesForm: React.FC<BeneficiariesFormProps> = ({
+  beneficiaries,
+  onBeneficiariesChange
+}) => {
+  const [newBeneficiary, setNewBeneficiary] = useState<Beneficiary>({
+    description: '',
+    relationship: '',
+    dni: '',
+    birth_date: '',
+    phone: '',
+    email: '',
+    price: undefined,
+    is_primary: false,
+    weight: undefined,
+    height: undefined
+  });
+
   const addBeneficiary = () => {
-    const newBeneficiary: Beneficiary = {
+    if (!newBeneficiary.description || !newBeneficiary.relationship) {
+      return;
+    }
+
+    const beneficiary: Beneficiary = {
+      ...newBeneficiary,
+      id: Date.now().toString() // Temporary ID
+    };
+
+    onBeneficiariesChange([...beneficiaries, beneficiary]);
+    
+    // Reset form
+    setNewBeneficiary({
       description: '',
       relationship: '',
       dni: '',
       birth_date: '',
       phone: '',
       email: '',
-      price: 0,
+      price: undefined,
       is_primary: false,
-      weight: 0,
-      height: 0
-    };
-    onBeneficiariesChange([...beneficiaries, newBeneficiary]);
+      weight: undefined,
+      height: undefined
+    });
   };
 
-  const removeBeneficiary = (index: number) => {
-    const updated = beneficiaries.filter((_, i) => i !== index);
-    onBeneficiariesChange(updated);
+  const removeBeneficiary = (id: string) => {
+    onBeneficiariesChange(beneficiaries.filter(b => b.id !== id));
   };
 
-  const updateBeneficiary = (index: number, field: keyof Beneficiary, value: any) => {
-    const updated = beneficiaries.map((beneficiary, i) => 
-      i === index ? { ...beneficiary, [field]: value } : beneficiary
+  const updateBeneficiary = (id: string, updatedBeneficiary: Beneficiary) => {
+    onBeneficiariesChange(
+      beneficiaries.map(b => b.id === id ? { ...updatedBeneficiary, id } : b)
     );
-    onBeneficiariesChange(updated);
   };
+
+  const relationshipOptions = [
+    { value: 'spouse', label: 'Cónyuge' },
+    { value: 'child', label: 'Hijo/a' },
+    { value: 'parent', label: 'Padre/Madre' },
+    { value: 'sibling', label: 'Hermano/a' },
+    { value: 'other', label: 'Otro' }
+  ];
 
   return (
     <Card>
       <CardHeader>
-        <div className="flex justify-between items-center">
-          <CardTitle>Beneficiarios</CardTitle>
-          <Button type="button" onClick={addBeneficiary} size="sm">
+        <CardTitle className="flex items-center gap-2">
+          <Users className="w-5 h-5" />
+          Beneficiarios
+        </CardTitle>
+      </CardHeader>
+      <CardContent className="space-y-6">
+        {/* Existing Beneficiaries */}
+        {beneficiaries.length > 0 && (
+          <div className="space-y-4">
+            <h4 className="font-medium text-gray-700">Beneficiarios Registrados</h4>
+            {beneficiaries.map((beneficiary) => (
+              <Card key={beneficiary.id} className="border-gray-200">
+                <CardContent className="p-4">
+                  <div className="flex justify-between items-start mb-3">
+                    <div className="flex-1">
+                      <h5 className="font-medium">{beneficiary.description}</h5>
+                      <p className="text-sm text-gray-600">{beneficiary.relationship}</p>
+                    </div>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => removeBeneficiary(beneficiary.id!)}
+                      className="text-red-500 hover:text-red-700"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </Button>
+                  </div>
+                  
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-sm">
+                    {beneficiary.dni && (
+                      <div>
+                        <span className="font-medium">DNI:</span> {beneficiary.dni}
+                      </div>
+                    )}
+                    {beneficiary.birth_date && (
+                      <div>
+                        <span className="font-medium">Fecha de Nacimiento:</span> {beneficiary.birth_date}
+                      </div>
+                    )}
+                    {beneficiary.phone && (
+                      <div>
+                        <span className="font-medium">Teléfono:</span> {beneficiary.phone}
+                      </div>
+                    )}
+                    {beneficiary.email && (
+                      <div>
+                        <span className="font-medium">Email:</span> {beneficiary.email}
+                      </div>
+                    )}
+                    {beneficiary.price && (
+                      <div>
+                        <span className="font-medium">Precio:</span> ${beneficiary.price}
+                      </div>
+                    )}
+                    {beneficiary.is_primary && (
+                      <div>
+                        <span className="font-medium text-green-600">Beneficiario Principal</span>
+                      </div>
+                    )}
+                  </div>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        )}
+
+        <Separator />
+
+        {/* Add New Beneficiary Form */}
+        <div className="space-y-4">
+          <h4 className="font-medium text-gray-700">Agregar Beneficiario</h4>
+          
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label htmlFor="beneficiary-name">Nombre Completo *</Label>
+              <Input
+                id="beneficiary-name"
+                placeholder="Nombre del beneficiario"
+                value={newBeneficiary.description}
+                onChange={(e) => setNewBeneficiary(prev => ({ ...prev, description: e.target.value }))}
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="beneficiary-relationship">Relación *</Label>
+              <Select
+                value={newBeneficiary.relationship}
+                onValueChange={(value) => setNewBeneficiary(prev => ({ ...prev, relationship: value }))}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Seleccionar relación" />
+                </SelectTrigger>
+                <SelectContent>
+                  {relationshipOptions.map(option => (
+                    <SelectItem key={option.value} value={option.value}>
+                      {option.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="beneficiary-dni">DNI/Cédula</Label>
+              <Input
+                id="beneficiary-dni"
+                placeholder="Número de identificación"
+                value={newBeneficiary.dni}
+                onChange={(e) => setNewBeneficiary(prev => ({ ...prev, dni: e.target.value }))}
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="beneficiary-birth-date">Fecha de Nacimiento</Label>
+              <Input
+                id="beneficiary-birth-date"
+                type="date"
+                value={newBeneficiary.birth_date}
+                onChange={(e) => setNewBeneficiary(prev => ({ ...prev, birth_date: e.target.value }))}
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="beneficiary-phone">Teléfono</Label>
+              <Input
+                id="beneficiary-phone"
+                placeholder="Número de teléfono"
+                value={newBeneficiary.phone}
+                onChange={(e) => setNewBeneficiary(prev => ({ ...prev, phone: e.target.value }))}
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="beneficiary-email">Email</Label>
+              <Input
+                id="beneficiary-email"
+                type="email"
+                placeholder="Correo electrónico"
+                value={newBeneficiary.email}
+                onChange={(e) => setNewBeneficiary(prev => ({ ...prev, email: e.target.value }))}
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="beneficiary-price">Precio/Monto</Label>
+              <Input
+                id="beneficiary-price"
+                type="number"
+                placeholder="0.00"
+                value={newBeneficiary.price || ''}
+                onChange={(e) => setNewBeneficiary(prev => ({ ...prev, price: parseFloat(e.target.value) || undefined }))}
+              />
+            </div>
+
+            <div className="space-y-2">
+              <div className="flex items-center space-x-2">
+                <Checkbox
+                  id="beneficiary-primary"
+                  checked={newBeneficiary.is_primary || false}
+                  onCheckedChange={(checked) => setNewBeneficiary(prev => ({ ...prev, is_primary: checked as boolean }))}
+                />
+                <Label htmlFor="beneficiary-primary">Beneficiario Principal</Label>
+              </div>
+            </div>
+          </div>
+
+          <Button 
+            onClick={addBeneficiary}
+            disabled={!newBeneficiary.description || !newBeneficiary.relationship}
+            className="w-full"
+          >
             <Plus className="w-4 h-4 mr-2" />
             Agregar Beneficiario
           </Button>
         </div>
-      </CardHeader>
-      <CardContent className="space-y-4">
-        {beneficiaries.map((beneficiary, index) => (
-          <Card key={index} className="border-2">
-            <CardHeader>
-              <div className="flex justify-between items-center">
-                <h4 className="font-semibold">Beneficiario {index + 1}</h4>
-                <Button
-                  type="button"
-                  variant="destructive"
-                  size="sm"
-                  onClick={() => removeBeneficiary(index)}
-                >
-                  <Trash2 className="w-4 h-4" />
-                </Button>
-              </div>
-            </CardHeader>
-            <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <Label htmlFor={`beneficiary-${index}-description`}>Nombre Completo *</Label>
-                <Input
-                  id={`beneficiary-${index}-description`}
-                  value={beneficiary.description}
-                  onChange={(e) => updateBeneficiary(index, 'description', e.target.value)}
-                  placeholder="Nombre completo del beneficiario"
-                  required
-                />
-              </div>
-
-              <div>
-                <Label htmlFor={`beneficiary-${index}-relationship`}>Relación *</Label>
-                <Select
-                  value={beneficiary.relationship}
-                  onValueChange={(value) => updateBeneficiary(index, 'relationship', value)}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Seleccionar relación" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="spouse">Cónyuge</SelectItem>
-                    <SelectItem value="child">Hijo/a</SelectItem>
-                    <SelectItem value="parent">Padre/Madre</SelectItem>
-                    <SelectItem value="sibling">Hermano/a</SelectItem>
-                    <SelectItem value="other">Otro</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-
-              <div>
-                <Label htmlFor={`beneficiary-${index}-dni`}>DNI</Label>
-                <Input
-                  id={`beneficiary-${index}-dni`}
-                  value={beneficiary.dni}
-                  onChange={(e) => updateBeneficiary(index, 'dni', e.target.value)}
-                  placeholder="Número de DNI"
-                />
-              </div>
-
-              <div>
-                <Label htmlFor={`beneficiary-${index}-birth_date`}>Fecha de Nacimiento</Label>
-                <Input
-                  id={`beneficiary-${index}-birth_date`}
-                  type="date"
-                  value={beneficiary.birth_date}
-                  onChange={(e) => updateBeneficiary(index, 'birth_date', e.target.value)}
-                />
-              </div>
-
-              <div>
-                <Label htmlFor={`beneficiary-${index}-phone`}>Teléfono</Label>
-                <Input
-                  id={`beneficiary-${index}-phone`}
-                  value={beneficiary.phone}
-                  onChange={(e) => updateBeneficiary(index, 'phone', e.target.value)}
-                  placeholder="Número de teléfono"
-                />
-              </div>
-
-              <div>
-                <Label htmlFor={`beneficiary-${index}-email`}>Email</Label>
-                <Input
-                  id={`beneficiary-${index}-email`}
-                  type="email"
-                  value={beneficiary.email}
-                  onChange={(e) => updateBeneficiary(index, 'email', e.target.value)}
-                  placeholder="correo@ejemplo.com"
-                />
-              </div>
-
-              <div>
-                <Label htmlFor={`beneficiary-${index}-price`}>Monto de Cobertura</Label>
-                <Input
-                  id={`beneficiary-${index}-price`}
-                  type="number"
-                  value={beneficiary.price}
-                  onChange={(e) => updateBeneficiary(index, 'price', parseFloat(e.target.value) || 0)}
-                  placeholder="0.00"
-                  min="0"
-                  step="0.01"
-                />
-              </div>
-
-              <div className="flex items-center space-x-2">
-                <Checkbox
-                  id={`beneficiary-${index}-primary`}
-                  checked={beneficiary.is_primary}
-                  onCheckedChange={(checked) => updateBeneficiary(index, 'is_primary', checked)}
-                />
-                <Label htmlFor={`beneficiary-${index}-primary`}>Beneficiario Principal</Label>
-              </div>
-            </CardContent>
-          </Card>
-        ))}
-
-        {beneficiaries.length === 0 && (
-          <div className="text-center py-8 text-gray-500">
-            No hay beneficiarios agregados. Haga clic en "Agregar Beneficiario" para comenzar.
-          </div>
-        )}
       </CardContent>
     </Card>
   );

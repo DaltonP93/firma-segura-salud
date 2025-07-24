@@ -167,7 +167,7 @@ const SalesManager = () => {
         <TabsContent value="view" className="mt-6">
           {viewingRequest && (
             <SalesRequestDetail
-              requestId={viewingRequest.id}
+              request={viewingRequest}
               onBack={resetViewingState}
               onEdit={(request) => {
                 handleEditRequest(request);
