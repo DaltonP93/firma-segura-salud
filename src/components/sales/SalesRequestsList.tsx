@@ -28,6 +28,8 @@ export interface SalesRequestWithDetails {
   client_dni?: string;
   client_birth_date?: string;
   client_address?: string;
+  client_occupation?: string;
+  client_marital_status?: string;
   policy_type: string;
   coverage_amount?: number;
   monthly_premium?: number;

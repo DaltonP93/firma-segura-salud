@@ -13,6 +13,7 @@ import AdminPanel from "@/components/admin/AdminPanel";
 import PersonalizationPanel from "@/components/personalization/PersonalizationPanel";
 import SignatureManager from "@/components/signature/SignatureManager";
 import SigningInterface from "@/components/signature/SigningInterface";
+import TemplateDesignerPage from "@/pages/TemplateDesignerPage";
 
 const AppRoutes = () => {
   return (
@@ -104,6 +105,16 @@ const AppRoutes = () => {
                 <PersonalizationPanel />
               </div>
             </AppLayout>
+          </ProtectedRoute>
+        } 
+      />
+
+      {/* Template Designer */}
+      <Route 
+        path="/template-designer/:templateId" 
+        element={
+          <ProtectedRoute>
+            <TemplateDesignerPage />
           </ProtectedRoute>
         } 
       />

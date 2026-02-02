@@ -11,7 +11,7 @@ import SalesStatsCards from './components/SalesStatsCards';
 import SalesTabsNavigation from './components/SalesTabsNavigation';
 import SalesRequestForm, { SalesRequest, Beneficiary } from './SalesRequestForm';
 import SalesRequestsList from './SalesRequestsList';
-import SalesRequestDetail from './SalesRequestDetail';
+import SalesRequestDetailIndex from './SalesRequestDetail';
 import HealthDeclarationForm from './HealthDeclarationForm';
 import SalesSignatureIntegration from './SalesSignatureIntegration';
 
@@ -166,7 +166,7 @@ const SalesManager = () => {
 
         <TabsContent value="view" className="mt-6">
           {viewingRequest && (
-            <SalesRequestDetail
+            <SalesRequestDetailIndex
               request={viewingRequest}
               onBack={resetViewingState}
               onEdit={(request) => {

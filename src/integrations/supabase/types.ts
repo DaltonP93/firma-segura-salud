@@ -260,13 +260,18 @@ export type Database = {
           document_number: string | null
           document_url: string | null
           expires_at: string | null
+          field_values: Json | null
+          generated_at: string | null
           id: string
           metadata: Json | null
           opened_at: string | null
           pdf_template_id: string | null
           policy_type: string | null
+          ready_for_sign: boolean | null
+          sale_id: string | null
           sales_request_id: string | null
           sent_at: string | null
+          sha256_hex: string | null
           shareable_link: string | null
           signature_url: string | null
           signed_at: string | null
@@ -274,6 +279,7 @@ export type Database = {
           status: Database["public"]["Enums"]["document_status"] | null
           template_id: string | null
           template_type: Database["public"]["Enums"]["template_type"] | null
+          template_version_id: string | null
           updated_at: string
         }
         Insert: {
@@ -287,13 +293,18 @@ export type Database = {
           document_number?: string | null
           document_url?: string | null
           expires_at?: string | null
+          field_values?: Json | null
+          generated_at?: string | null
           id?: string
           metadata?: Json | null
           opened_at?: string | null
           pdf_template_id?: string | null
           policy_type?: string | null
+          ready_for_sign?: boolean | null
+          sale_id?: string | null
           sales_request_id?: string | null
           sent_at?: string | null
+          sha256_hex?: string | null
           shareable_link?: string | null
           signature_url?: string | null
           signed_at?: string | null
@@ -301,6 +312,7 @@ export type Database = {
           status?: Database["public"]["Enums"]["document_status"] | null
           template_id?: string | null
           template_type?: Database["public"]["Enums"]["template_type"] | null
+          template_version_id?: string | null
           updated_at?: string
         }
         Update: {
@@ -314,13 +326,18 @@ export type Database = {
           document_number?: string | null
           document_url?: string | null
           expires_at?: string | null
+          field_values?: Json | null
+          generated_at?: string | null
           id?: string
           metadata?: Json | null
           opened_at?: string | null
           pdf_template_id?: string | null
           policy_type?: string | null
+          ready_for_sign?: boolean | null
+          sale_id?: string | null
           sales_request_id?: string | null
           sent_at?: string | null
+          sha256_hex?: string | null
           shareable_link?: string | null
           signature_url?: string | null
           signed_at?: string | null
@@ -328,6 +345,7 @@ export type Database = {
           status?: Database["public"]["Enums"]["document_status"] | null
           template_id?: string | null
           template_type?: Database["public"]["Enums"]["template_type"] | null
+          template_version_id?: string | null
           updated_at?: string
         }
         Relationships: [
@@ -336,6 +354,13 @@ export type Database = {
             columns: ["pdf_template_id"]
             isOneToOne: false
             referencedRelation: "pdf_templates"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "documents_sale_id_fkey"
+            columns: ["sale_id"]
+            isOneToOne: false
+            referencedRelation: "sales_requests"
             referencedColumns: ["id"]
           },
           {
@@ -350,6 +375,13 @@ export type Database = {
             columns: ["template_id"]
             isOneToOne: false
             referencedRelation: "document_templates"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "documents_template_version_id_fkey"
+            columns: ["template_version_id"]
+            isOneToOne: false
+            referencedRelation: "template_versions"
             referencedColumns: ["id"]
           },
         ]
@@ -613,6 +645,7 @@ export type Database = {
         Row: {
           created_at: string
           created_by: string | null
+          engine: string | null
           fields: Json | null
           file_name: string | null
           file_size: number | null
@@ -626,6 +659,7 @@ export type Database = {
         Insert: {
           created_at?: string
           created_by?: string | null
+          engine?: string | null
           fields?: Json | null
           file_name?: string | null
           file_size?: number | null
@@ -639,6 +673,7 @@ export type Database = {
         Update: {
           created_at?: string
           created_by?: string | null
+          engine?: string | null
           fields?: Json | null
           file_name?: string | null
           file_size?: number | null
@@ -797,6 +832,62 @@ export type Database = {
             columns: ["template_id"]
             isOneToOne: false
             referencedRelation: "document_templates"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      signature_areas: {
+        Row: {
+          created_at: string | null
+          height: number
+          id: string
+          is_required: boolean | null
+          kind: string
+          label: string | null
+          page: number | null
+          role: string
+          sort_order: number | null
+          template_version_id: string
+          width: number
+          x: number
+          y: number
+        }
+        Insert: {
+          created_at?: string | null
+          height: number
+          id?: string
+          is_required?: boolean | null
+          kind: string
+          label?: string | null
+          page?: number | null
+          role: string
+          sort_order?: number | null
+          template_version_id: string
+          width: number
+          x: number
+          y: number
+        }
+        Update: {
+          created_at?: string | null
+          height?: number
+          id?: string
+          is_required?: boolean | null
+          kind?: string
+          label?: string | null
+          page?: number | null
+          role?: string
+          sort_order?: number | null
+          template_version_id?: string
+          width?: number
+          x?: number
+          y?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "signature_areas_template_version_id_fkey"
+            columns: ["template_version_id"]
+            isOneToOne: false
+            referencedRelation: "template_versions"
             referencedColumns: ["id"]
           },
         ]
@@ -1032,6 +1123,121 @@ export type Database = {
           value?: Json | null
         }
         Relationships: []
+      }
+      template_fields_config: {
+        Row: {
+          binding: string | null
+          created_at: string | null
+          default_value: string | null
+          field_key: string
+          field_type: string
+          font_size: number | null
+          height: number
+          id: string
+          is_required: boolean | null
+          label: string
+          options: Json | null
+          page: number | null
+          placeholder: string | null
+          sort_order: number | null
+          template_version_id: string
+          validation: Json | null
+          width: number
+          x: number
+          y: number
+        }
+        Insert: {
+          binding?: string | null
+          created_at?: string | null
+          default_value?: string | null
+          field_key: string
+          field_type: string
+          font_size?: number | null
+          height: number
+          id?: string
+          is_required?: boolean | null
+          label: string
+          options?: Json | null
+          page?: number | null
+          placeholder?: string | null
+          sort_order?: number | null
+          template_version_id: string
+          validation?: Json | null
+          width: number
+          x: number
+          y: number
+        }
+        Update: {
+          binding?: string | null
+          created_at?: string | null
+          default_value?: string | null
+          field_key?: string
+          field_type?: string
+          font_size?: number | null
+          height?: number
+          id?: string
+          is_required?: boolean | null
+          label?: string
+          options?: Json | null
+          page?: number | null
+          placeholder?: string | null
+          sort_order?: number | null
+          template_version_id?: string
+          validation?: Json | null
+          width?: number
+          x?: number
+          y?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "template_fields_config_template_version_id_fkey"
+            columns: ["template_version_id"]
+            isOneToOne: false
+            referencedRelation: "template_versions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      template_versions: {
+        Row: {
+          created_at: string | null
+          created_by: string | null
+          engine_opts: Json | null
+          id: string
+          is_active: boolean | null
+          storage_key: string | null
+          template_id: string
+          version: number
+        }
+        Insert: {
+          created_at?: string | null
+          created_by?: string | null
+          engine_opts?: Json | null
+          id?: string
+          is_active?: boolean | null
+          storage_key?: string | null
+          template_id: string
+          version?: number
+        }
+        Update: {
+          created_at?: string | null
+          created_by?: string | null
+          engine_opts?: Json | null
+          id?: string
+          is_active?: boolean | null
+          storage_key?: string | null
+          template_id?: string
+          version?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "template_versions_template_id_fkey"
+            columns: ["template_id"]
+            isOneToOne: false
+            referencedRelation: "pdf_templates"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       user_roles: {
         Row: {
