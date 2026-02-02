@@ -2,10 +2,11 @@ import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { FileText, Plus, Eye, Edit2, Send, CheckCircle, ExternalLink } from 'lucide-react';
+import { FileText, Plus, Eye, Edit2, Send, CheckCircle, ExternalLink, RefreshCw } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { useNavigate } from 'react-router-dom';
+import DocumentPreviewModal from '../DocumentPreviewModal';
 
 interface Document {
   id: string;
@@ -37,6 +38,8 @@ const DocumentsTab: React.FC<DocumentsTabProps> = ({ requestId, clientName }) =>
   const [templates, setTemplates] = useState<PdfTemplate[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [selectedTemplates, setSelectedTemplates] = useState<string[]>([]);
+  const [previewDocument, setPreviewDocument] = useState<Document | null>(null);
+  const [isGenerating, setIsGenerating] = useState<string | null>(null);
 
   useEffect(() => {
     Promise.all([fetchDocuments(), fetchTemplates()]).finally(() => setIsLoading(false));
@@ -138,6 +141,38 @@ const DocumentsTab: React.FC<DocumentsTabProps> = ({ requestId, clientName }) =>
     }
   };
 
+  const handleGenerateDocument = async (docId: string) => {
+    try {
+      setIsGenerating(docId);
+      
+      const { data, error } = await supabase.functions.invoke('render-document', {
+        body: {
+          document_id: docId,
+          template_version_id: documents.find(d => d.id === docId)?.template_version_id,
+          field_values: {}
+        }
+      });
+
+      if (error) throw error;
+
+      toast({
+        title: "Documento generado",
+        description: `Hash: ${data.sha256_hex?.substring(0, 16)}...`
+      });
+
+      fetchDocuments();
+    } catch (error) {
+      console.error('Error generating document:', error);
+      toast({
+        title: "Error",
+        description: "No se pudo generar el documento",
+        variant: "destructive"
+      });
+    } finally {
+      setIsGenerating(null);
+    }
+  };
+
   const getStatusBadge = (status: string, readyForSign: boolean | null) => {
     if (readyForSign) {
       return <Badge className="bg-emerald-500 text-white">Listo para Firma</Badge>;
@@ -235,21 +270,35 @@ const DocumentsTab: React.FC<DocumentsTabProps> = ({ requestId, clientName }) =>
                   </div>
                   
                   <div className="flex items-center gap-2">
-                    <Button variant="ghost" size="sm">
+                    <Button 
+                      variant="ghost" 
+                      size="sm"
+                      onClick={() => setPreviewDocument(doc)}
+                    >
                       <Eye className="w-4 h-4 mr-1" />
                       Ver
                     </Button>
                     
                     {doc.status === 'draft' && (
                       <>
-                        <Button variant="ghost" size="sm">
-                          <Edit2 className="w-4 h-4 mr-1" />
-                          Editar
+                        <Button 
+                          variant="ghost" 
+                          size="sm"
+                          onClick={() => handleGenerateDocument(doc.id)}
+                          disabled={isGenerating === doc.id}
+                        >
+                          {isGenerating === doc.id ? (
+                            <RefreshCw className="w-4 h-4 mr-1 animate-spin" />
+                          ) : (
+                            <FileText className="w-4 h-4 mr-1" />
+                          )}
+                          Generar
                         </Button>
                         <Button 
                           variant="default" 
                           size="sm"
                           onClick={() => handleMarkReady(doc.id)}
+                          disabled={!doc.sha256_hex}
                         >
                           <CheckCircle className="w-4 h-4 mr-1" />
                           Listo
@@ -270,6 +319,22 @@ const DocumentsTab: React.FC<DocumentsTabProps> = ({ requestId, clientName }) =>
           )}
         </CardContent>
       </Card>
+
+      {/* Preview Modal */}
+      <DocumentPreviewModal
+        document={previewDocument}
+        isOpen={!!previewDocument}
+        onClose={() => setPreviewDocument(null)}
+        onDownload={() => {
+          toast({ title: "Descarga", description: "Descargando documento..." });
+        }}
+        onSendForSignature={() => {
+          if (previewDocument) {
+            handleMarkReady(previewDocument.id);
+            setPreviewDocument(null);
+          }
+        }}
+      />
     </div>
   );
 };

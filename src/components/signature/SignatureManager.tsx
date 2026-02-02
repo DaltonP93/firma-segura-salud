@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Plus, FileText, Users, BarChart3, Send, Eye, CheckCircle } from 'lucide-react';
+import { Plus, FileText, Users, BarChart3, Send, Eye, CheckCircle, Bell, Award } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { useToast } from '@/hooks/use-toast';
 import { SignatureService } from '@/services/signatureService';
@@ -10,6 +10,8 @@ import { documentsService } from '@/services/documentsService';
 import SignatureRequestForm from './SignatureRequestForm';
 import SignatureRequestsList from './SignatureRequestsList';
 import SignatureViewer from './SignatureViewer';
+import SignatureReminders from './SignatureReminders';
+import SignatureMetricsDashboard from './SignatureMetricsDashboard';
 import { Switch } from "@/components/ui/switch";
 
 interface Document {
@@ -304,11 +306,19 @@ const SignatureManager = () => {
 
       {/* Main Content */}
       <Tabs value={activeTab} onValueChange={setActiveTab}>
-        <TabsList className="grid w-full grid-cols-3">
+        <TabsList className="grid w-full grid-cols-5">
           <TabsTrigger value="list">Lista de Documentos</TabsTrigger>
           <TabsTrigger value="create">Crear Solicitud</TabsTrigger>
+          <TabsTrigger value="reminders" className="gap-1">
+            <Bell className="w-3 h-3" />
+            Recordatorios
+          </TabsTrigger>
+          <TabsTrigger value="metrics" className="gap-1">
+            <BarChart3 className="w-3 h-3" />
+            Métricas
+          </TabsTrigger>
           <TabsTrigger value="viewer" disabled={!viewingDocument}>
-            Visor de Documentos
+            Visor
           </TabsTrigger>
         </TabsList>
 
@@ -328,6 +338,14 @@ const SignatureManager = () => {
             onSubmit={handleCreateSignatureRequest}
             onCancel={() => setActiveTab('list')}
           />
+        </TabsContent>
+
+        <TabsContent value="reminders" className="mt-6">
+          <SignatureReminders />
+        </TabsContent>
+
+        <TabsContent value="metrics" className="mt-6">
+          <SignatureMetricsDashboard />
         </TabsContent>
 
         <TabsContent value="viewer" className="mt-6">
