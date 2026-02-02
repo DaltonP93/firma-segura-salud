@@ -1,10 +1,8 @@
-
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
 import { Plus, Edit, Save, X, Building } from 'lucide-react';
@@ -14,10 +12,10 @@ import { supabase } from '@/integrations/supabase/client';
 interface CompanyType {
   id: string;
   name: string;
-  description: string;
+  code: string | null;
+  description: string | null;
   is_active: boolean;
   created_at: string;
-  updated_at: string;
 }
 
 const CompanyTypesManager = () => {
@@ -29,6 +27,7 @@ const CompanyTypesManager = () => {
 
   const [formData, setFormData] = useState({
     name: '',
+    code: '',
     description: '',
     is_active: true,
   });
@@ -61,12 +60,13 @@ const CompanyTypesManager = () => {
   const handleSave = async () => {
     try {
       if (editingId) {
-        // Update existing
         const { error } = await supabase
           .from('company_types')
           .update({
-            ...formData,
-            updated_at: new Date().toISOString(),
+            name: formData.name,
+            code: formData.code || null,
+            description: formData.description || null,
+            is_active: formData.is_active,
           })
           .eq('id', editingId);
 
@@ -76,10 +76,14 @@ const CompanyTypesManager = () => {
           description: "Tipo de empresa actualizado correctamente",
         });
       } else {
-        // Create new
         const { error } = await supabase
           .from('company_types')
-          .insert([formData]);
+          .insert([{
+            name: formData.name,
+            code: formData.code || null,
+            description: formData.description || null,
+            is_active: formData.is_active,
+          }]);
 
         if (error) throw error;
         toast({
@@ -104,7 +108,8 @@ const CompanyTypesManager = () => {
     setEditingId(companyType.id);
     setFormData({
       name: companyType.name,
-      description: companyType.description,
+      code: companyType.code || '',
+      description: companyType.description || '',
       is_active: companyType.is_active,
     });
     setIsCreating(false);
@@ -114,6 +119,7 @@ const CompanyTypesManager = () => {
     setEditingId(null);
     setFormData({
       name: '',
+      code: '',
       description: '',
       is_active: true,
     });
@@ -125,6 +131,7 @@ const CompanyTypesManager = () => {
     setIsCreating(false);
     setFormData({
       name: '',
+      code: '',
       description: '',
       is_active: true,
     });
@@ -134,10 +141,7 @@ const CompanyTypesManager = () => {
     try {
       const { error } = await supabase
         .from('company_types')
-        .update({ 
-          is_active: !companyType.is_active,
-          updated_at: new Date().toISOString(),
-        })
+        .update({ is_active: !companyType.is_active })
         .eq('id', companyType.id);
 
       if (error) throw error;
@@ -165,7 +169,7 @@ const CompanyTypesManager = () => {
       <div className="flex items-center justify-between">
         <div>
           <h2 className="text-2xl font-bold">Tipos de Empresa</h2>
-          <p className="text-gray-600">Gestiona las categorías de empresa disponibles</p>
+          <p className="text-muted-foreground">Gestiona las categorías de empresa disponibles</p>
         </div>
         <Button onClick={handleNew}>
           <Plus className="w-4 h-4 mr-2" />
@@ -186,25 +190,35 @@ const CompanyTypesManager = () => {
           <CardContent className="space-y-4">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
-                <Label htmlFor="name">Identificador</Label>
+                <Label htmlFor="name">Nombre</Label>
                 <Input
                   id="name"
                   value={formData.name}
                   onChange={(e) => setFormData({...formData, name: e.target.value})}
-                  placeholder="ej: insurance, legal, consulting"
+                  placeholder="ej: Compañía de Seguros"
                 />
-                <p className="text-sm text-gray-500">Identificador único (solo letras minúsculas y guiones)</p>
               </div>
 
               <div>
-                <Label htmlFor="description">Descripción</Label>
+                <Label htmlFor="code">Código</Label>
                 <Input
-                  id="description"
-                  value={formData.description}
-                  onChange={(e) => setFormData({...formData, description: e.target.value})}
-                  placeholder="ej: Compañías de Seguros"
+                  id="code"
+                  value={formData.code}
+                  onChange={(e) => setFormData({...formData, code: e.target.value})}
+                  placeholder="ej: INSURANCE"
                 />
+                <p className="text-sm text-muted-foreground mt-1">Identificador único (opcional)</p>
               </div>
+            </div>
+
+            <div>
+              <Label htmlFor="description">Descripción</Label>
+              <Input
+                id="description"
+                value={formData.description}
+                onChange={(e) => setFormData({...formData, description: e.target.value})}
+                placeholder="Descripción del tipo de empresa"
+              />
             </div>
 
             <div className="flex items-center space-x-2">
@@ -232,28 +246,30 @@ const CompanyTypesManager = () => {
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {companyTypes.map((companyType) => (
-          <Card key={companyType.id} className={`relative ${companyType.is_active ? 'border-green-200 bg-green-50' : 'border-gray-200'}`}>
+          <Card key={companyType.id} className={`relative ${companyType.is_active ? 'border-green-200 bg-green-50' : 'border-border'}`}>
             <CardHeader>
               <div className="flex items-center justify-between">
                 <div className="flex items-center space-x-2">
-                  <Building className="w-5 h-5 text-gray-500" />
-                  <CardTitle className="text-lg">{companyType.description}</CardTitle>
+                  <Building className="w-5 h-5 text-muted-foreground" />
+                  <CardTitle className="text-lg">{companyType.name}</CardTitle>
                 </div>
                 <Badge variant={companyType.is_active ? 'default' : 'secondary'}>
                   {companyType.is_active ? 'Activo' : 'Inactivo'}
                 </Badge>
               </div>
-              <CardDescription>
-                ID: {companyType.name}
-              </CardDescription>
+              {companyType.code && (
+                <CardDescription>
+                  Código: {companyType.code}
+                </CardDescription>
+              )}
             </CardHeader>
             <CardContent>
+              {companyType.description && (
+                <p className="text-sm text-muted-foreground mb-4">{companyType.description}</p>
+              )}
               <div className="space-y-2 mb-4">
-                <p className="text-sm text-gray-500">
+                <p className="text-sm text-muted-foreground">
                   Creado: {new Date(companyType.created_at).toLocaleDateString()}
-                </p>
-                <p className="text-sm text-gray-500">
-                  Actualizado: {new Date(companyType.updated_at).toLocaleDateString()}
                 </p>
               </div>
               <div className="flex space-x-2">

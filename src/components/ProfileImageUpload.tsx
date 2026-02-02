@@ -61,7 +61,7 @@ const ProfileImageUpload = ({
       // Update profile in database
       const { error: updateError } = await supabase
         .from('profiles')
-        .update({ profile_image_url: publicUrl })
+        .update({ avatar_url: publicUrl })
         .eq('id', userId);
 
       if (updateError) throw updateError;
