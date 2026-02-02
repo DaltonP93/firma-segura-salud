@@ -67,11 +67,15 @@ export const useAuth = () => {
 
   const signInWithUsername = async (username: string, password: string) => {
     try {
-      // First get the user's email from their username
-      const { data: userProfile, error: profileError } = await supabase
-        .rpc('get_user_by_username_or_email', { identifier: username });
+      // First try to find the user by username in the profiles table
+      const { data: profileData, error: profileError } = await supabase
+        .from('profiles')
+        .select('email')
+        .or(`username.eq.${username},email.eq.${username}`)
+        .limit(1)
+        .single();
       
-      if (profileError || !userProfile || userProfile.length === 0) {
+      if (profileError || !profileData?.email) {
         return {
           data: null,
           error: { message: 'Usuario no encontrado' }
@@ -80,7 +84,7 @@ export const useAuth = () => {
 
       // Then sign in with the email
       const { data, error } = await supabase.auth.signInWithPassword({
-        email: userProfile[0].email,
+        email: profileData.email,
         password,
       });
       

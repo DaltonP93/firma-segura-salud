@@ -37,7 +37,6 @@ interface AppHeaderProps {
 }
 
 interface AppCustomization {
-  id: string;
   theme_name: string;
   logo_url: string | null;
   app_title: string;
@@ -46,7 +45,6 @@ interface AppCustomization {
   secondary_color: string;
   accent_color: string;
   font_family: string;
-  is_active: boolean;
 }
 
 // Enhanced mock notifications with more detailed data
@@ -101,6 +99,17 @@ const mockNotifications: Notification[] = [
   }
 ];
 
+const defaultCustomization: AppCustomization = {
+  theme_name: 'default',
+  logo_url: null,
+  app_title: 'Sistema de Gestión Documental',
+  app_subtitle: '',
+  primary_color: '#3b82f6',
+  secondary_color: '#64748b',
+  accent_color: '#10b981',
+  font_family: 'Inter'
+};
+
 const AppHeader = ({ title, subtitle }: AppHeaderProps) => {
   const { user, signOut } = useAuth();
   const { profile, isAdmin } = useUserProfile();
@@ -110,20 +119,30 @@ const AppHeader = ({ title, subtitle }: AppHeaderProps) => {
   const [isNotificationsOpen, setIsNotificationsOpen] = useState(false);
   const [selectedNotification, setSelectedNotification] = useState<Notification | null>(null);
   const [isDetailsOpen, setIsDetailsOpen] = useState(false);
-  const [activeCustomization, setActiveCustomization] = useState<AppCustomization | null>(null);
+  const [activeCustomization, setActiveCustomization] = useState<AppCustomization>(defaultCustomization);
 
-  // Load active customization
+  // Load active customization from system_config
   useEffect(() => {
     const fetchActiveCustomization = async () => {
       try {
-        const { data: customization } = await supabase
-          .from('app_customization')
-          .select('*')
-          .eq('is_active', true)
+        const { data: configData } = await supabase
+          .from('system_config')
+          .select('value')
+          .eq('key', 'app_customization')
           .single();
 
-        if (customization) {
-          setActiveCustomization(customization);
+        if (configData?.value && typeof configData.value === 'object') {
+          const customValue = configData.value as Record<string, unknown>;
+          setActiveCustomization({
+            theme_name: (customValue.theme_name as string) || defaultCustomization.theme_name,
+            logo_url: (customValue.logo_url as string | null) || null,
+            app_title: (customValue.app_title as string) || defaultCustomization.app_title,
+            app_subtitle: (customValue.app_subtitle as string) || '',
+            primary_color: (customValue.primary_color as string) || defaultCustomization.primary_color,
+            secondary_color: (customValue.secondary_color as string) || defaultCustomization.secondary_color,
+            accent_color: (customValue.accent_color as string) || defaultCustomization.accent_color,
+            font_family: (customValue.font_family as string) || defaultCustomization.font_family,
+          });
         }
       } catch (error) {
         console.error('Error fetching active customization:', error);
@@ -206,8 +225,8 @@ const AppHeader = ({ title, subtitle }: AppHeaderProps) => {
   };
 
   // Get the title and subtitle from customization or props
-  const displayTitle = activeCustomization?.app_title || title || 'Sistema de Gestión Documental';
-  const displaySubtitle = activeCustomization?.app_subtitle || subtitle;
+  const displayTitle = activeCustomization.app_title || title || 'Sistema de Gestión Documental';
+  const displaySubtitle = activeCustomization.app_subtitle || subtitle;
 
   return (
     <header className="bg-white shadow-sm border-b sticky top-0 z-50">
@@ -215,7 +234,7 @@ const AppHeader = ({ title, subtitle }: AppHeaderProps) => {
         <div className="flex justify-between items-center py-4">
           <div className="flex items-center">
             {/* Display custom logo if available, otherwise show default icon */}
-            {activeCustomization?.logo_url ? (
+            {activeCustomization.logo_url ? (
               <div className="w-10 h-10 rounded-full flex items-center justify-center mr-3 overflow-hidden">
                 <img 
                   src={activeCustomization.logo_url} 
@@ -290,7 +309,7 @@ const AppHeader = ({ title, subtitle }: AppHeaderProps) => {
                 <Button variant="ghost" className="relative h-10 w-10 rounded-full">
                   <Avatar className="h-10 w-10">
                     <AvatarImage 
-                      src={profile?.profile_image_url || ''} 
+                      src={profile?.avatar_url || ''} 
                       alt={profile?.full_name || user?.email || 'Usuario'} 
                     />
                     <AvatarFallback>{getUserInitials()}</AvatarFallback>

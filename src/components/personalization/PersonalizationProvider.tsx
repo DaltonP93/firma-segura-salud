@@ -18,7 +18,6 @@ interface PersonalizationSettings {
 }
 
 interface AppCustomization {
-  id: string;
   theme_name: string;
   primary_color: string;
   secondary_color: string;
@@ -28,7 +27,6 @@ interface AppCustomization {
   app_subtitle: string;
   welcome_message: string | null;
   background_image_url: string | null;
-  is_active: boolean;
 }
 
 interface PersonalizationContextType {
@@ -86,14 +84,26 @@ export const PersonalizationProvider = ({ children }: PersonalizationProviderPro
         setSettings({ ...defaultSettings, ...JSON.parse(savedSettings) });
       }
 
-      // Load active app customization from database
-      const { data: customization } = await supabase
-        .from('app_customization')
-        .select('*')
-        .eq('is_active', true)
+      // Load active app customization from system_config
+      const { data: configData } = await supabase
+        .from('system_config')
+        .select('value')
+        .eq('key', 'app_customization')
         .single();
 
-      if (customization) {
+      if (configData?.value && typeof configData.value === 'object') {
+        const customValue = configData.value as Record<string, unknown>;
+        const customization: AppCustomization = {
+          theme_name: (customValue.theme_name as string) || 'default',
+          primary_color: (customValue.primary_color as string) || defaultSettings.primaryColor,
+          secondary_color: (customValue.secondary_color as string) || defaultSettings.secondaryColor,
+          accent_color: (customValue.accent_color as string) || defaultSettings.accentColor,
+          font_family: (customValue.font_family as string) || defaultSettings.fontFamily,
+          app_title: (customValue.app_title as string) || '',
+          app_subtitle: (customValue.app_subtitle as string) || '',
+          welcome_message: (customValue.welcome_message as string | null) || null,
+          background_image_url: (customValue.background_image_url as string | null) || null,
+        };
         applyCustomization(customization);
       }
     } catch (error) {

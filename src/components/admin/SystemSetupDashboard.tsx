@@ -37,28 +37,44 @@ const SystemSetupDashboard = () => {
   const checkSystemStatus = async () => {
     try {
       // Check master data
-      const [healthQuestionsRes, insurancePlansRes, companyTypesRes, customizationRes] = await Promise.all([
+      const [healthQuestionsRes, insurancePlansRes, companyTypesRes] = await Promise.all([
         supabase.from('health_questions').select('id').limit(1),
         supabase.from('insurance_plans').select('id').limit(1),
-        supabase.from('company_types').select('id').limit(1),
-        supabase.from('app_customization').select('id').limit(1)
+        supabase.from('company_types').select('id').limit(1)
       ]);
 
-      // Check API configurations
-      const { data: apiConfigs } = await supabase
-        .from('api_configurations')
-        .select('service_name, api_key, is_active');
+      // Check app customization in system_config
+      const { data: customizationRes } = await supabase
+        .from('system_config')
+        .select('id')
+        .eq('key', 'app_customization')
+        .limit(1);
 
-      const emailConfig = apiConfigs?.find(c => c.service_name === 'resend');
-      const whatsappConfig = apiConfigs?.find(c => c.service_name === 'whatsapp_business');
+      // Check API configurations in system_config
+      const { data: apiConfigs } = await supabase
+        .from('system_config')
+        .select('key, value, is_public')
+        .in('key', ['resend_api', 'whatsapp_api']);
+
+      const emailConfig = apiConfigs?.find(c => c.key === 'resend_api');
+      const whatsappConfig = apiConfigs?.find(c => c.key === 'whatsapp_api');
+
+      // Check if API configs have values
+      const emailConfigured = emailConfig?.value && 
+        typeof emailConfig.value === 'object' && 
+        (emailConfig.value as { api_key?: string }).api_key;
+      
+      const whatsappConfigured = whatsappConfig?.value && 
+        typeof whatsappConfig.value === 'object' && 
+        (whatsappConfig.value as { api_key?: string }).api_key;
 
       setSystemStatus({
         healthQuestions: (healthQuestionsRes.data?.length || 0) > 0,
         insurancePlans: (insurancePlansRes.data?.length || 0) > 0,
         companyTypes: (companyTypesRes.data?.length || 0) > 0,
-        customization: (customizationRes.data?.length || 0) > 0,
-        emailConfig: emailConfig?.api_key && emailConfig.is_active,
-        whatsappConfig: whatsappConfig?.api_key && whatsappConfig.is_active,
+        customization: (customizationRes?.length || 0) > 0,
+        emailConfig: !!emailConfigured,
+        whatsappConfig: !!whatsappConfigured,
       });
     } catch (error) {
       console.error('Error checking system status:', error);
@@ -68,10 +84,7 @@ const SystemSetupDashboard = () => {
   };
 
   const getCompletionPercentage = () => {
-    const statuses = Object.values(systemStatus);
-    const completed = statuses.filter(Boolean).length;
     // Email is required, WhatsApp is optional, so we calculate based on 5 required items
-    const required = 5; // healthQuestions, insurancePlans, companyTypes, customization, emailConfig
     const requiredCompleted = [
       systemStatus.healthQuestions,
       systemStatus.insurancePlans,
@@ -80,7 +93,7 @@ const SystemSetupDashboard = () => {
       systemStatus.emailConfig
     ].filter(Boolean).length;
     
-    return (requiredCompleted / required) * 100;
+    return (requiredCompleted / 5) * 100;
   };
 
   const isSystemReady = () => {

@@ -14,7 +14,8 @@ interface Profile {
   phone: string | null;
   company: string | null;
   role: string;
-  profile_image_url: string | null;
+  avatar_url: string | null; // Changed from profile_image_url to match database
+  is_active?: boolean | null;
   created_at: string;
   updated_at: string;
 }
@@ -45,7 +46,7 @@ const UserCard: React.FC<UserCardProps> = ({ user, onEdit, onDelete }) => {
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-4">
             <Avatar className="w-12 h-12">
-              <AvatarImage src={user.profile_image_url || undefined} />
+              <AvatarImage src={user.avatar_url || undefined} />
               <AvatarFallback>
                 {user.full_name?.split(' ').map(n => n[0]).join('') || 'U'}
               </AvatarFallback>

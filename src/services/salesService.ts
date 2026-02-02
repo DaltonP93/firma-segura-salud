@@ -8,22 +8,22 @@ export const salesService = {
       .from('sales_requests')
       .insert({
         client_name: requestData.client_name,
-        client_email: requestData.client_email,
-        client_phone: requestData.client_phone,
-        client_dni: requestData.client_dni,
-        client_birth_date: requestData.client_birth_date,
-        client_address: requestData.client_address,
-        policy_type: requestData.policy_type,
-        insurance_plan_id: requestData.insurance_plan_id,
-        template_id: requestData.template_id,
-        client_occupation: requestData.client_occupation,
-        client_income: requestData.client_income,
-        client_marital_status: requestData.client_marital_status,
-        medical_exams_required: requestData.medical_exams_required,
-        agent_notes: requestData.agent_notes,
-        priority_level: requestData.priority_level,
-        source: requestData.source,
-        notes: requestData.notes,
+        client_email: requestData.client_email || null,
+        client_phone: requestData.client_phone || null,
+        client_dni: requestData.client_dni || null,
+        client_birth_date: requestData.client_birth_date || null,
+        client_address: requestData.client_address || null,
+        policy_type: requestData.policy_type || null,
+        insurance_plan_id: requestData.insurance_plan_id || null,
+        template_id: requestData.template_id || null,
+        client_occupation: requestData.client_occupation || null,
+        client_income: requestData.client_income || null,
+        client_marital_status: requestData.client_marital_status || null,
+        medical_exams_required: requestData.medical_exams_required || false,
+        agent_notes: requestData.agent_notes || null,
+        priority_level: (requestData.priority_level as 'low' | 'medium' | 'high' | 'urgent') || 'medium',
+        source: requestData.source || null,
+        notes: requestData.notes || null,
         created_by: userId,
         status: 'draft'
       })
@@ -103,12 +103,28 @@ export const salesService = {
   },
 
   async updateSalesRequest(requestId: string, updates: Partial<SalesRequest>) {
+    // Build update object with proper typing
+    const updateData: Record<string, unknown> = {
+      updated_at: new Date().toISOString()
+    };
+    
+    // Copy over allowed fields, handling priority_level specially
+    if (updates.client_name !== undefined) updateData.client_name = updates.client_name;
+    if (updates.client_email !== undefined) updateData.client_email = updates.client_email;
+    if (updates.client_phone !== undefined) updateData.client_phone = updates.client_phone;
+    if (updates.client_dni !== undefined) updateData.client_dni = updates.client_dni;
+    if (updates.client_birth_date !== undefined) updateData.client_birth_date = updates.client_birth_date;
+    if (updates.client_address !== undefined) updateData.client_address = updates.client_address;
+    if (updates.policy_type !== undefined) updateData.policy_type = updates.policy_type;
+    if (updates.notes !== undefined) updateData.notes = updates.notes;
+    if (updates.status !== undefined) updateData.status = updates.status;
+    if (updates.priority_level !== undefined) {
+      updateData.priority_level = updates.priority_level as 'low' | 'medium' | 'high' | 'urgent';
+    }
+
     const { data, error } = await supabase
       .from('sales_requests')
-      .update({
-        ...updates,
-        updated_at: new Date().toISOString()
-      })
+      .update(updateData)
       .eq('id', requestId)
       .select()
       .single();
