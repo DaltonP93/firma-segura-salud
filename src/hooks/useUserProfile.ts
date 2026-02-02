@@ -32,7 +32,7 @@ export const useUserProfile = () => {
       
       const { data, error } = await supabase
         .from('profiles')
-        .select('id, role, full_name, email, username, phone, company, profile_image_url, created_at, updated_at')
+        .select('id, role, full_name, email, username, phone, company, avatar_url, created_at, updated_at')
         .eq('id', user.id)
         .single();
       

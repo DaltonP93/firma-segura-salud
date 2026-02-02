@@ -1,29 +1,27 @@
-
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { Plus, Edit, Trash2, Move, Heart } from 'lucide-react';
+import { Plus, Edit, Trash2, Heart } from 'lucide-react';
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 
 interface HealthQuestion {
   id: string;
-  question_text: string;
+  question: string;
   question_type: string;
   is_required: boolean;
   is_active: boolean;
   sort_order: number;
-  show_description_when?: string;
-  options?: any;
+  category: string | null;
+  help_text: string | null;
+  options: any;
   created_at: string;
-  updated_at: string;
 }
 
 const HealthQuestionsManager = () => {
@@ -33,14 +31,14 @@ const HealthQuestionsManager = () => {
   const [editingQuestion, setEditingQuestion] = useState<HealthQuestion | null>(null);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
 
-  // Form state
   const [formData, setFormData] = useState({
-    question_text: '',
-    question_type: 'yes_no',
+    question: '',
+    question_type: 'boolean',
     is_required: true,
     is_active: true,
-    show_description_when: '',
-    options: null
+    category: '',
+    help_text: '',
+    options: null as any
   });
 
   useEffect(() => {
@@ -70,11 +68,12 @@ const HealthQuestionsManager = () => {
 
   const resetForm = () => {
     setFormData({
-      question_text: '',
-      question_type: 'yes_no',
+      question: '',
+      question_type: 'boolean',
       is_required: true,
       is_active: true,
-      show_description_when: '',
+      category: '',
+      help_text: '',
       options: null
     });
     setEditingQuestion(null);
@@ -85,7 +84,13 @@ const HealthQuestionsManager = () => {
     
     try {
       const questionData = {
-        ...formData,
+        question: formData.question,
+        question_type: formData.question_type,
+        is_required: formData.is_required,
+        is_active: formData.is_active,
+        category: formData.category || null,
+        help_text: formData.help_text || null,
+        options: formData.options,
         sort_order: editingQuestion ? editingQuestion.sort_order : questions.length + 1
       };
 
@@ -130,11 +135,12 @@ const HealthQuestionsManager = () => {
   const handleEdit = (question: HealthQuestion) => {
     setEditingQuestion(question);
     setFormData({
-      question_text: question.question_text,
+      question: question.question,
       question_type: question.question_type,
       is_required: question.is_required,
       is_active: question.is_active,
-      show_description_when: question.show_description_when || '',
+      category: question.category || '',
+      help_text: question.help_text || '',
       options: question.options
     });
     setIsDialogOpen(true);
@@ -192,12 +198,10 @@ const HealthQuestionsManager = () => {
 
   const getQuestionTypeLabel = (type: string) => {
     const types: { [key: string]: string } = {
-      'yes_no': 'Sí/No',
-      'yes_no_description': 'Sí/No con Descripción',
+      'boolean': 'Sí/No',
       'text': 'Texto',
       'number': 'Número',
       'select': 'Selección',
-      'multiple_select': 'Selección Múltiple'
     };
     return types[type] || type;
   };
@@ -242,53 +246,64 @@ const HealthQuestionsManager = () => {
                 </DialogHeader>
                 <form onSubmit={handleSubmit} className="space-y-4">
                   <div className="space-y-2">
-                    <Label htmlFor="question_text">Texto de la Pregunta</Label>
+                    <Label htmlFor="question">Texto de la Pregunta</Label>
                     <Textarea
-                      id="question_text"
-                      value={formData.question_text}
-                      onChange={(e) => setFormData({ ...formData, question_text: e.target.value })}
+                      id="question"
+                      value={formData.question}
+                      onChange={(e) => setFormData({ ...formData, question: e.target.value })}
                       placeholder="Ingresa el texto de la pregunta..."
                       required
                     />
                   </div>
 
-                  <div className="space-y-2">
-                    <Label htmlFor="question_type">Tipo de Pregunta</Label>
-                    <Select
-                      value={formData.question_type}
-                      onValueChange={(value) => setFormData({ ...formData, question_type: value })}
-                    >
-                      <SelectTrigger>
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="yes_no">Sí/No</SelectItem>
-                        <SelectItem value="yes_no_description">Sí/No con Descripción</SelectItem>
-                        <SelectItem value="text">Texto</SelectItem>
-                        <SelectItem value="number">Número</SelectItem>
-                        <SelectItem value="select">Selección</SelectItem>
-                        <SelectItem value="multiple_select">Selección Múltiple</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-
-                  {(formData.question_type === 'yes_no_description') && (
+                  <div className="grid grid-cols-2 gap-4">
                     <div className="space-y-2">
-                      <Label htmlFor="show_description_when">Mostrar descripción cuando</Label>
+                      <Label htmlFor="question_type">Tipo de Pregunta</Label>
                       <Select
-                        value={formData.show_description_when}
-                        onValueChange={(value) => setFormData({ ...formData, show_description_when: value })}
+                        value={formData.question_type}
+                        onValueChange={(value) => setFormData({ ...formData, question_type: value })}
+                      >
+                        <SelectTrigger>
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="boolean">Sí/No</SelectItem>
+                          <SelectItem value="text">Texto</SelectItem>
+                          <SelectItem value="number">Número</SelectItem>
+                          <SelectItem value="select">Selección</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label htmlFor="category">Categoría</Label>
+                      <Select
+                        value={formData.category}
+                        onValueChange={(value) => setFormData({ ...formData, category: value })}
                       >
                         <SelectTrigger>
                           <SelectValue placeholder="Selecciona..." />
                         </SelectTrigger>
                         <SelectContent>
-                          <SelectItem value="yes">Sí</SelectItem>
-                          <SelectItem value="no">No</SelectItem>
+                          <SelectItem value="general">General</SelectItem>
+                          <SelectItem value="historial">Historial Médico</SelectItem>
+                          <SelectItem value="medicamentos">Medicamentos</SelectItem>
+                          <SelectItem value="alergias">Alergias</SelectItem>
+                          <SelectItem value="habitos">Hábitos</SelectItem>
                         </SelectContent>
                       </Select>
                     </div>
-                  )}
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="help_text">Texto de Ayuda (opcional)</Label>
+                    <Textarea
+                      id="help_text"
+                      value={formData.help_text}
+                      onChange={(e) => setFormData({ ...formData, help_text: e.target.value })}
+                      placeholder="Información adicional para el usuario..."
+                    />
+                  </div>
 
                   <div className="flex items-center space-x-4">
                     <div className="flex items-center space-x-2">
@@ -326,7 +341,7 @@ const HealthQuestionsManager = () => {
         <CardContent>
           <div className="space-y-4">
             {questions.length === 0 ? (
-              <div className="text-center py-8 text-gray-500">
+              <div className="text-center py-8 text-muted-foreground">
                 No hay preguntas de salud configuradas
               </div>
             ) : (
@@ -334,7 +349,7 @@ const HealthQuestionsManager = () => {
                 <div key={question.id} className="flex items-center justify-between p-4 border rounded-lg">
                   <div className="flex-1">
                     <div className="flex items-center gap-2 mb-2">
-                      <h3 className="font-medium">{question.question_text}</h3>
+                      <h3 className="font-medium">{question.question}</h3>
                       <Badge variant={question.is_active ? "default" : "secondary"}>
                         {question.is_active ? "Activa" : "Inactiva"}
                       </Badge>
@@ -342,8 +357,9 @@ const HealthQuestionsManager = () => {
                         <Badge variant="outline">Obligatoria</Badge>
                       )}
                     </div>
-                    <div className="text-sm text-gray-600">
+                    <div className="text-sm text-muted-foreground">
                       Tipo: {getQuestionTypeLabel(question.question_type)} | Orden: {question.sort_order}
+                      {question.category && ` | Categoría: ${question.category}`}
                     </div>
                   </div>
                   <div className="flex items-center space-x-2">

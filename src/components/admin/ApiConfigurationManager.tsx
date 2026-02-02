@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -8,20 +7,16 @@ import { Switch } from "@/components/ui/switch";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { Separator } from "@/components/ui/separator";
-import { Mail, MessageCircle, Key, Settings, Save, AlertCircle, CheckCircle } from 'lucide-react';
+import { Mail, MessageCircle, Key, Settings, Save, AlertCircle, CheckCircle, Info } from 'lucide-react';
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 
 interface ApiConfig {
-  id: string;
   service_name: string;
   service_type: string;
-  api_key: string | null;
+  api_key: string;
   additional_config: any;
   is_active: boolean;
-  created_at: string;
-  updated_at: string;
 }
 
 const ApiConfigurationManager = () => {
@@ -30,51 +25,79 @@ const ApiConfigurationManager = () => {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState<string | null>(null);
 
+  // Local state for form values
+  const [emailConfig, setEmailConfig] = useState<ApiConfig>({
+    service_name: 'resend',
+    service_type: 'email',
+    api_key: '',
+    additional_config: { from_email: '', from_name: '' },
+    is_active: false
+  });
+
+  const [whatsappConfig, setWhatsappConfig] = useState<ApiConfig>({
+    service_name: 'whatsapp_business',
+    service_type: 'whatsapp',
+    api_key: '',
+    additional_config: { phone_number_id: '', template_namespace: '' },
+    is_active: false
+  });
+
   useEffect(() => {
     fetchConfigurations();
   }, []);
 
   const fetchConfigurations = async () => {
     try {
+      // Use system_config table to store API configurations
       const { data, error } = await supabase
-        .from('api_configurations')
+        .from('system_config')
         .select('*')
-        .order('service_name');
+        .in('key', ['api_config_resend', 'api_config_whatsapp']);
 
       if (error) throw error;
-      setConfigs(data || []);
+      
+      data?.forEach((config) => {
+        if (config.key === 'api_config_resend' && config.value) {
+          setEmailConfig(config.value as unknown as ApiConfig);
+        }
+        if (config.key === 'api_config_whatsapp' && config.value) {
+          setWhatsappConfig(config.value as unknown as ApiConfig);
+        }
+      });
     } catch (error) {
       console.error('Error fetching API configurations:', error);
-      toast({
-        title: "Error",
-        description: "No se pudieron cargar las configuraciones de API",
-        variant: "destructive",
-      });
+      // Don't show error toast as configs might not exist yet
     } finally {
       setLoading(false);
     }
   };
 
-  const updateConfiguration = async (configId: string, updates: Partial<ApiConfig>) => {
-    setSaving(configId);
+  const saveConfiguration = async (configKey: string, config: ApiConfig) => {
+    setSaving(configKey);
     try {
       const { error } = await supabase
-        .from('api_configurations')
-        .update(updates)
-        .eq('id', configId);
+        .from('system_config')
+        .upsert({
+          key: configKey,
+          value: config as any,
+          category: 'api',
+          is_public: false,
+          updated_at: new Date().toISOString()
+        }, {
+          onConflict: 'key'
+        });
 
       if (error) throw error;
 
-      await fetchConfigurations();
       toast({
-        title: "Configuración Actualizada",
+        title: "Configuración Guardada",
         description: "Los cambios se han guardado correctamente",
       });
     } catch (error) {
-      console.error('Error updating configuration:', error);
+      console.error('Error saving configuration:', error);
       toast({
         title: "Error",
-        description: "No se pudo actualizar la configuración",
+        description: "No se pudo guardar la configuración",
         variant: "destructive",
       });
     } finally {
@@ -82,38 +105,21 @@ const ApiConfigurationManager = () => {
     }
   };
 
-  const EmailConfigForm = ({ config }: { config: ApiConfig }) => {
-    const [apiKey, setApiKey] = useState(config.api_key || '');
-    const [fromEmail, setFromEmail] = useState(config.additional_config?.from_email || '');
-    const [fromName, setFromName] = useState(config.additional_config?.from_name || '');
-    const [isActive, setIsActive] = useState(config.is_active);
-
-    const handleSave = () => {
-      updateConfiguration(config.id, {
-        api_key: apiKey,
-        additional_config: {
-          ...config.additional_config,
-          from_email: fromEmail,
-          from_name: fromName,
-        },
-        is_active: isActive,
-      });
-    };
-
+  const EmailConfigForm = () => {
     return (
       <div className="space-y-4">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <Mail className="w-5 h-5 text-blue-600" />
+            <Mail className="w-5 h-5 text-primary" />
             <h3 className="text-lg font-semibold">Configuración de Email (Resend)</h3>
           </div>
-          <Badge variant={isActive ? "default" : "secondary"}>
-            {isActive ? "Activo" : "Inactivo"}
+          <Badge variant={emailConfig.is_active ? "default" : "secondary"}>
+            {emailConfig.is_active ? "Activo" : "Inactivo"}
           </Badge>
         </div>
 
         <Alert>
-          <AlertCircle className="h-4 w-4" />
+          <Info className="h-4 w-4" />
           <AlertDescription>
             Para configurar el servicio de email, necesitas una cuenta en Resend.com y generar una API key.
             También debes verificar tu dominio en Resend antes de enviar emails.
@@ -126,8 +132,8 @@ const ApiConfigurationManager = () => {
             <Input
               id="resend-api-key"
               type="password"
-              value={apiKey}
-              onChange={(e) => setApiKey(e.target.value)}
+              value={emailConfig.api_key}
+              onChange={(e) => setEmailConfig({...emailConfig, api_key: e.target.value})}
               placeholder="re_..."
             />
           </div>
@@ -137,8 +143,11 @@ const ApiConfigurationManager = () => {
             <Input
               id="from-email"
               type="email"
-              value={fromEmail}
-              onChange={(e) => setFromEmail(e.target.value)}
+              value={emailConfig.additional_config?.from_email || ''}
+              onChange={(e) => setEmailConfig({
+                ...emailConfig, 
+                additional_config: {...emailConfig.additional_config, from_email: e.target.value}
+              })}
               placeholder="noreply@tudominio.com"
             />
           </div>
@@ -147,8 +156,11 @@ const ApiConfigurationManager = () => {
             <Label htmlFor="from-name">Nombre del Remitente</Label>
             <Input
               id="from-name"
-              value={fromName}
-              onChange={(e) => setFromName(e.target.value)}
+              value={emailConfig.additional_config?.from_name || ''}
+              onChange={(e) => setEmailConfig({
+                ...emailConfig, 
+                additional_config: {...emailConfig.additional_config, from_name: e.target.value}
+              })}
               placeholder="Sistema de Firmas"
             />
           </div>
@@ -156,14 +168,14 @@ const ApiConfigurationManager = () => {
           <div className="flex items-center space-x-2">
             <Switch
               id="email-active"
-              checked={isActive}
-              onCheckedChange={setIsActive}
+              checked={emailConfig.is_active}
+              onCheckedChange={(checked) => setEmailConfig({...emailConfig, is_active: checked})}
             />
             <Label htmlFor="email-active">Activar servicio de email</Label>
           </div>
 
-          <Button onClick={handleSave} disabled={saving === config.id}>
-            {saving === config.id ? (
+          <Button onClick={() => saveConfiguration('api_config_resend', emailConfig)} disabled={saving === 'api_config_resend'}>
+            {saving === 'api_config_resend' ? (
               <>Guardando...</>
             ) : (
               <>
@@ -177,24 +189,7 @@ const ApiConfigurationManager = () => {
     );
   };
 
-  const WhatsAppConfigForm = ({ config }: { config: ApiConfig }) => {
-    const [apiKey, setApiKey] = useState(config.api_key || '');
-    const [phoneNumberId, setPhoneNumberId] = useState(config.additional_config?.phone_number_id || '');
-    const [templateNamespace, setTemplateNamespace] = useState(config.additional_config?.template_namespace || '');
-    const [isActive, setIsActive] = useState(config.is_active);
-
-    const handleSave = () => {
-      updateConfiguration(config.id, {
-        api_key: apiKey,
-        additional_config: {
-          ...config.additional_config,
-          phone_number_id: phoneNumberId,
-          template_namespace: templateNamespace,
-        },
-        is_active: isActive,
-      });
-    };
-
+  const WhatsAppConfigForm = () => {
     return (
       <div className="space-y-4">
         <div className="flex items-center justify-between">
@@ -202,13 +197,13 @@ const ApiConfigurationManager = () => {
             <MessageCircle className="w-5 h-5 text-green-600" />
             <h3 className="text-lg font-semibold">Configuración de WhatsApp Business</h3>
           </div>
-          <Badge variant={isActive ? "default" : "secondary"}>
-            {isActive ? "Activo" : "Inactivo"}
+          <Badge variant={whatsappConfig.is_active ? "default" : "secondary"}>
+            {whatsappConfig.is_active ? "Activo" : "Inactivo"}
           </Badge>
         </div>
 
         <Alert>
-          <AlertCircle className="h-4 w-4" />
+          <Info className="h-4 w-4" />
           <AlertDescription>
             Para configurar WhatsApp Business API, necesitas una cuenta de WhatsApp Business,
             configurar tu aplicación en Meta Developers y obtener los tokens necesarios.
@@ -221,8 +216,8 @@ const ApiConfigurationManager = () => {
             <Input
               id="whatsapp-api-key"
               type="password"
-              value={apiKey}
-              onChange={(e) => setApiKey(e.target.value)}
+              value={whatsappConfig.api_key}
+              onChange={(e) => setWhatsappConfig({...whatsappConfig, api_key: e.target.value})}
               placeholder="EAAxxxxxx..."
             />
           </div>
@@ -231,8 +226,11 @@ const ApiConfigurationManager = () => {
             <Label htmlFor="phone-number-id">Phone Number ID</Label>
             <Input
               id="phone-number-id"
-              value={phoneNumberId}
-              onChange={(e) => setPhoneNumberId(e.target.value)}
+              value={whatsappConfig.additional_config?.phone_number_id || ''}
+              onChange={(e) => setWhatsappConfig({
+                ...whatsappConfig, 
+                additional_config: {...whatsappConfig.additional_config, phone_number_id: e.target.value}
+              })}
               placeholder="123456789..."
             />
           </div>
@@ -241,8 +239,11 @@ const ApiConfigurationManager = () => {
             <Label htmlFor="template-namespace">Template Namespace</Label>
             <Input
               id="template-namespace"
-              value={templateNamespace}
-              onChange={(e) => setTemplateNamespace(e.target.value)}
+              value={whatsappConfig.additional_config?.template_namespace || ''}
+              onChange={(e) => setWhatsappConfig({
+                ...whatsappConfig, 
+                additional_config: {...whatsappConfig.additional_config, template_namespace: e.target.value}
+              })}
               placeholder="tu_namespace"
             />
           </div>
@@ -250,14 +251,14 @@ const ApiConfigurationManager = () => {
           <div className="flex items-center space-x-2">
             <Switch
               id="whatsapp-active"
-              checked={isActive}
-              onCheckedChange={setIsActive}
+              checked={whatsappConfig.is_active}
+              onCheckedChange={(checked) => setWhatsappConfig({...whatsappConfig, is_active: checked})}
             />
             <Label htmlFor="whatsapp-active">Activar servicio de WhatsApp</Label>
           </div>
 
-          <Button onClick={handleSave} disabled={saving === config.id}>
-            {saving === config.id ? (
+          <Button onClick={() => saveConfiguration('api_config_whatsapp', whatsappConfig)} disabled={saving === 'api_config_whatsapp'}>
+            {saving === 'api_config_whatsapp' ? (
               <>Guardando...</>
             ) : (
               <>
@@ -279,9 +280,6 @@ const ApiConfigurationManager = () => {
     );
   }
 
-  const emailConfig = configs.find(c => c.service_name === 'resend');
-  const whatsappConfig = configs.find(c => c.service_name === 'whatsapp_business');
-
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
@@ -290,7 +288,7 @@ const ApiConfigurationManager = () => {
             <Key className="w-6 h-6" />
             Configuración de APIs
           </h2>
-          <p className="text-gray-600">
+          <p className="text-muted-foreground">
             Configura los servicios externos para notificaciones y comunicaciones
           </p>
         </div>
@@ -317,13 +315,7 @@ const ApiConfigurationManager = () => {
               </CardDescription>
             </CardHeader>
             <CardContent>
-              {emailConfig ? (
-                <EmailConfigForm config={emailConfig} />
-              ) : (
-                <div className="text-center py-8">
-                  <p className="text-gray-500">No se encontró configuración de email</p>
-                </div>
-              )}
+              <EmailConfigForm />
             </CardContent>
           </Card>
         </TabsContent>
@@ -337,13 +329,7 @@ const ApiConfigurationManager = () => {
               </CardDescription>
             </CardHeader>
             <CardContent>
-              {whatsappConfig ? (
-                <WhatsAppConfigForm config={whatsappConfig} />
-              ) : (
-                <div className="text-center py-8">
-                  <p className="text-gray-500">No se encontró configuración de WhatsApp</p>
-                </div>
-              )}
+              <WhatsAppConfigForm />
             </CardContent>
           </Card>
         </TabsContent>
@@ -358,33 +344,44 @@ const ApiConfigurationManager = () => {
         </CardHeader>
         <CardContent>
           <div className="grid gap-4 md:grid-cols-2">
-            {configs.map((config) => (
-              <div key={config.id} className="flex items-center justify-between p-4 border rounded-lg">
-                <div className="flex items-center gap-3">
-                  {config.service_type === 'email' ? (
-                    <Mail className="w-5 h-5 text-blue-600" />
-                  ) : (
-                    <MessageCircle className="w-5 h-5 text-green-600" />
-                  )}
-                  <div>
-                    <p className="font-medium capitalize">{config.service_name}</p>
-                    <p className="text-sm text-gray-500">
-                      {config.service_type === 'email' ? 'Servicio de Email' : 'Servicio de WhatsApp'}
-                    </p>
-                  </div>
-                </div>
-                <div className="flex items-center gap-2">
-                  {config.api_key ? (
-                    <CheckCircle className="w-4 h-4 text-green-500" />
-                  ) : (
-                    <AlertCircle className="w-4 h-4 text-yellow-500" />
-                  )}
-                  <Badge variant={config.is_active && config.api_key ? "default" : "secondary"}>
-                    {config.is_active && config.api_key ? "Configurado" : "Pendiente"}
-                  </Badge>
+            <div className="flex items-center justify-between p-4 border rounded-lg">
+              <div className="flex items-center gap-3">
+                <Mail className="w-5 h-5 text-primary" />
+                <div>
+                  <p className="font-medium">Resend</p>
+                  <p className="text-sm text-muted-foreground">Servicio de Email</p>
                 </div>
               </div>
-            ))}
+              <div className="flex items-center gap-2">
+                {emailConfig.api_key ? (
+                  <CheckCircle className="w-4 h-4 text-green-500" />
+                ) : (
+                  <AlertCircle className="w-4 h-4 text-yellow-500" />
+                )}
+                <Badge variant={emailConfig.is_active && emailConfig.api_key ? "default" : "secondary"}>
+                  {emailConfig.is_active && emailConfig.api_key ? "Configurado" : "Pendiente"}
+                </Badge>
+              </div>
+            </div>
+            <div className="flex items-center justify-between p-4 border rounded-lg">
+              <div className="flex items-center gap-3">
+                <MessageCircle className="w-5 h-5 text-green-600" />
+                <div>
+                  <p className="font-medium">WhatsApp Business</p>
+                  <p className="text-sm text-muted-foreground">Servicio de WhatsApp</p>
+                </div>
+              </div>
+              <div className="flex items-center gap-2">
+                {whatsappConfig.api_key ? (
+                  <CheckCircle className="w-4 h-4 text-green-500" />
+                ) : (
+                  <AlertCircle className="w-4 h-4 text-yellow-500" />
+                )}
+                <Badge variant={whatsappConfig.is_active && whatsappConfig.api_key ? "default" : "secondary"}>
+                  {whatsappConfig.is_active && whatsappConfig.api_key ? "Configurado" : "Pendiente"}
+                </Badge>
+              </div>
+            </div>
           </div>
         </CardContent>
       </Card>
