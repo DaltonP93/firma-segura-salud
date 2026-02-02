@@ -21,7 +21,7 @@ const Profile = () => {
     username: '',
     phone: '',
     company: '',
-    profile_image_url: '',
+    avatar_url: '',
   });
 
   useEffect(() => {
@@ -31,7 +31,7 @@ const Profile = () => {
         username: profile.username || '',
         phone: profile.phone || '',
         company: profile.company || '',
-        profile_image_url: profile.profile_image_url || '',
+        avatar_url: profile.avatar_url || '',
       });
     }
   }, [profile]);
@@ -70,7 +70,7 @@ const Profile = () => {
   };
 
   const handleImageUpdate = (imageUrl: string) => {
-    setFormData(prev => ({ ...prev, profile_image_url: imageUrl }));
+    setFormData(prev => ({ ...prev, avatar_url: imageUrl }));
   };
 
   const getRoleBadgeColor = (role: string) => {
@@ -118,7 +118,7 @@ const Profile = () => {
             {profile && (
               <ProfileImageUpload
                 userId={profile.id}
-                currentImageUrl={formData.profile_image_url}
+                currentImageUrl={formData.avatar_url}
                 fullName={formData.full_name}
                 onImageUpdate={handleImageUpdate}
               />
@@ -248,7 +248,7 @@ const Profile = () => {
                       username: profile.username || '',
                       phone: profile.phone || '',
                       company: profile.company || '',
-                      profile_image_url: profile.profile_image_url || '',
+                      avatar_url: profile.avatar_url || '',
                     });
                   }
                 }}

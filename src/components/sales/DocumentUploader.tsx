@@ -46,18 +46,34 @@ const DocumentUploader: React.FC<DocumentUploaderProps> = ({
 
   const fetchDocuments = async () => {
     try {
+      // Use the documents table with sales_request_id filter instead of non-existent sales_documents
       const { data, error } = await supabase
-        .from('sales_documents')
-        .select('*')
+        .from('documents')
+        .select('id, document_url, created_at, metadata')
         .eq('sales_request_id', salesRequest.id)
-        .order('uploaded_at', { ascending: false });
+        .order('created_at', { ascending: false });
 
       if (error) {
         console.error('Error fetching documents:', error);
+        setLoading(false);
         return;
       }
 
-      setDocuments(data || []);
+      // Transform the data to match UploadedDocument interface
+      const transformedDocs: UploadedDocument[] = (data || []).map(doc => {
+        const metadata = doc.metadata as Record<string, unknown> || {};
+        return {
+          id: doc.id,
+          file_name: (metadata.file_name as string) || 'Documento',
+          file_size: (metadata.file_size as number) || 0,
+          document_type: (metadata.document_type as string) || 'document',
+          file_url: doc.document_url || '',
+          uploaded_at: doc.created_at,
+          mime_type: (metadata.mime_type as string) || 'application/pdf'
+        };
+      });
+
+      setDocuments(transformedDocs);
     } catch (error) {
       console.error('Error fetching documents:', error);
     } finally {
@@ -110,6 +126,8 @@ const DocumentUploader: React.FC<DocumentUploaderProps> = ({
     setUploading(true);
 
     try {
+      const user = (await supabase.auth.getUser()).data.user;
+      
       for (const file of Array.from(files)) {
         if (!validateFile(file)) continue;
 
@@ -134,17 +152,22 @@ const DocumentUploader: React.FC<DocumentUploaderProps> = ({
           .from('documents')
           .getPublicUrl(fileName);
 
-        // Save document record
+        // Save document record in the documents table
         const { error: dbError } = await supabase
-          .from('sales_documents')
+          .from('documents')
           .insert({
             sales_request_id: salesRequest.id,
-            file_name: file.name,
-            file_size: file.size,
-            file_url: publicUrl,
-            document_type: file.type.startsWith('image/') ? 'image' : 'document',
-            mime_type: file.type,
-            uploaded_by: (await supabase.auth.getUser()).data.user?.id || ''
+            client_name: salesRequest.client_name,
+            document_url: publicUrl,
+            status: 'draft',
+            created_by: user?.id,
+            metadata: {
+              file_name: file.name,
+              file_size: file.size,
+              document_type: file.type.startsWith('image/') ? 'image' : 'document',
+              mime_type: file.type,
+              uploaded_by: user?.id
+            }
           });
 
         if (dbError) {
@@ -197,7 +220,7 @@ const DocumentUploader: React.FC<DocumentUploaderProps> = ({
 
       // Delete from database
       const { error } = await supabase
-        .from('sales_documents')
+        .from('documents')
         .delete()
         .eq('id', document.id);
 

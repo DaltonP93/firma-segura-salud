@@ -14,12 +14,13 @@ import type { SalesRequestWithDetails } from './SalesRequestsList';
 
 interface HealthQuestion {
   id: string;
-  question_text: string;
+  question: string; // Changed from question_text to match database schema
   question_type: string;
   options?: any;
   is_required: boolean;
   sort_order: number;
-  show_description_when?: string;
+  category?: string;
+  help_text?: string;
 }
 
 interface HealthDeclarationFormProps {
@@ -229,7 +230,7 @@ const HealthDeclarationForm: React.FC<HealthDeclarationFormProps> = ({
                   <span className="flex-shrink-0 w-6 h-6 bg-primary text-white rounded-full text-xs flex items-center justify-center">
                     {index + 1}
                   </span>
-                  {question.question_text}
+                  {question.question}
                   {question.is_required && (
                     <span className="text-red-500">*</span>
                   )}
@@ -237,8 +238,13 @@ const HealthDeclarationForm: React.FC<HealthDeclarationFormProps> = ({
                 
                 {renderQuestion(question)}
                 
-                {/* Show description field when needed */}
-                {question.show_description_when && answers[question.id] === question.show_description_when && (
+                {/* Show help text if available */}
+                {question.help_text && (
+                  <p className="text-sm text-gray-500 mt-1">{question.help_text}</p>
+                )}
+
+                {/* Show description field when answer is 'yes' for yes/no questions */}
+                {question.question_type === 'yes_no' && answers[question.id] === 'yes' && (
                   <div className="mt-3">
                     <Label className="text-sm font-medium">
                       Por favor proporcione detalles:

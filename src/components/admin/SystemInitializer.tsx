@@ -59,40 +59,46 @@ const SystemInitializer = () => {
       return;
     }
 
+    // Use correct field name 'question' instead of 'question_text'
     const questions = [
       {
-        question_text: '¿Ha sido hospitalizado en los últimos 5 años?',
+        question: '¿Ha sido hospitalizado en los últimos 5 años?',
         question_type: 'yes_no',
         is_required: true,
-        sort_order: 1
+        sort_order: 1,
+        category: 'historial_medico'
       },
       {
-        question_text: '¿Padece alguna enfermedad crónica (diabetes, hipertensión, etc.)?',
-        question_type: 'yes_no_description',
+        question: '¿Padece alguna enfermedad crónica (diabetes, hipertensión, etc.)?',
+        question_type: 'yes_no',
         is_required: true,
         sort_order: 2,
-        show_description_when: 'yes'
+        category: 'enfermedades',
+        help_text: 'Especifique en caso afirmativo'
       },
       {
-        question_text: '¿Toma medicamentos de forma regular?',
-        question_type: 'yes_no_description',
+        question: '¿Toma medicamentos de forma regular?',
+        question_type: 'yes_no',
         is_required: true,
         sort_order: 3,
-        show_description_when: 'yes'
+        category: 'medicamentos',
+        help_text: 'Liste los medicamentos en caso afirmativo'
       },
       {
-        question_text: '¿Ha sido diagnosticado con cáncer, enfermedades cardíacas o neurológicas?',
-        question_type: 'yes_no_description',
+        question: '¿Ha sido diagnosticado con cáncer, enfermedades cardíacas o neurológicas?',
+        question_type: 'yes_no',
         is_required: true,
         sort_order: 4,
-        show_description_when: 'yes'
+        category: 'enfermedades_graves',
+        help_text: 'Especifique diagnóstico y tratamiento'
       },
       {
-        question_text: '¿Practica deportes de riesgo o actividades peligrosas?',
-        question_type: 'yes_no_description',
+        question: '¿Practica deportes de riesgo o actividades peligrosas?',
+        question_type: 'yes_no',
         is_required: false,
         sort_order: 5,
-        show_description_when: 'yes'
+        category: 'actividades',
+        help_text: 'Especifique las actividades'
       }
     ];
 
@@ -118,29 +124,25 @@ const SystemInitializer = () => {
     const plans = [
       {
         name: 'Seguro Básico',
-        policy_type: 'vida',
         description: 'Cobertura básica de vida con capital asegurado accesible',
-        min_coverage_amount: 10000,
-        max_coverage_amount: 100000,
-        min_premium: 25,
-        max_premium: 200,
-        age_restrictions: { min_age: 18, max_age: 65 },
+        coverage_amount: 50000,
+        monthly_premium: 50,
+        annual_premium: 540,
         coverage_details: {
           muerte_natural: '100% del capital asegurado',
           muerte_accidental: '200% del capital asegurado',
           invalidez_total: '100% del capital asegurado'
         },
-        requirements: ['Declaración de salud', 'Identificación oficial']
+        benefits: ['Cobertura por muerte natural', 'Cobertura por muerte accidental', 'Invalidez total'],
+        requirements: ['Declaración de salud', 'Identificación oficial'],
+        sort_order: 1
       },
       {
         name: 'Seguro Premium',
-        policy_type: 'vida',
         description: 'Cobertura completa con beneficios adicionales',
-        min_coverage_amount: 50000,
-        max_coverage_amount: 500000,
-        min_premium: 100,
-        max_premium: 800,
-        age_restrictions: { min_age: 18, max_age: 70 },
+        coverage_amount: 200000,
+        monthly_premium: 150,
+        annual_premium: 1620,
         coverage_details: {
           muerte_natural: '100% del capital asegurado',
           muerte_accidental: '300% del capital asegurado',
@@ -148,24 +150,25 @@ const SystemInitializer = () => {
           invalidez_parcial: 'Según tabla de valuación',
           gastos_funerarios: '5% del capital asegurado'
         },
-        requirements: ['Declaración de salud', 'Examen médico', 'Identificación oficial']
+        benefits: ['Cobertura ampliada', 'Gastos funerarios', 'Invalidez parcial'],
+        requirements: ['Declaración de salud', 'Examen médico', 'Identificación oficial'],
+        sort_order: 2
       },
       {
         name: 'Seguro Familiar',
-        policy_type: 'vida',
         description: 'Protección para toda la familia con cobertura múltiple',
-        min_coverage_amount: 25000,
-        max_coverage_amount: 250000,
-        min_premium: 60,
-        max_premium: 400,
-        age_restrictions: { min_age: 25, max_age: 60 },
+        coverage_amount: 100000,
+        monthly_premium: 100,
+        annual_premium: 1080,
         coverage_details: {
           titular: '100% del capital asegurado',
           conyuge: '50% del capital asegurado',
           hijos: '25% del capital asegurado por hijo',
           gastos_educacion: '10% del capital para educación de hijos'
         },
-        requirements: ['Declaración de salud familiar', 'Acta de matrimonio', 'Actas de nacimiento']
+        benefits: ['Cobertura familiar', 'Gastos educativos', 'Beneficios adicionales'],
+        requirements: ['Declaración de salud familiar', 'Acta de matrimonio', 'Actas de nacimiento'],
+        sort_order: 3
       }
     ];
 
@@ -190,28 +193,33 @@ const SystemInitializer = () => {
 
     const companyTypes = [
       {
-        name: 'insurance',
-        description: 'Compañías de Seguros',
+        name: 'Compañías de Seguros',
+        code: 'insurance',
+        description: 'Empresas aseguradoras',
         is_active: true
       },
       {
-        name: 'financial',
-        description: 'Servicios Financieros',
+        name: 'Servicios Financieros',
+        code: 'financial',
+        description: 'Instituciones financieras',
         is_active: true
       },
       {
-        name: 'legal',
-        description: 'Despachos Legales',
+        name: 'Despachos Legales',
+        code: 'legal',
+        description: 'Firmas de abogados',
         is_active: true
       },
       {
-        name: 'consulting',
-        description: 'Consultoría',
+        name: 'Consultoría',
+        code: 'consulting',
+        description: 'Empresas de consultoría',
         is_active: true
       },
       {
-        name: 'real_estate',
-        description: 'Bienes Raíces',
+        name: 'Bienes Raíces',
+        code: 'real_estate',
+        description: 'Inmobiliarias',
         is_active: true
       }
     ];
@@ -224,10 +232,11 @@ const SystemInitializer = () => {
   };
 
   const createDefaultCustomization = async () => {
-    // First check if customization already exists
+    // Use system_config table instead of non-existent app_customization table
     const { data: existingCustomization } = await supabase
-      .from('app_customization')
+      .from('system_config')
       .select('id')
+      .eq('key', 'app_customization')
       .limit(1);
 
     if (existingCustomization && existingCustomization.length > 0) {
@@ -236,19 +245,26 @@ const SystemInitializer = () => {
     }
 
     const customization = {
-      theme_name: 'default',
-      app_title: 'Sistema de Gestión Documental Digital',
-      app_subtitle: 'Crea plantillas, genera documentos PDF interactivos y gestiona firmas digitales',
-      primary_color: '#3b82f6',
-      secondary_color: '#64748b',
-      accent_color: '#10b981',
-      welcome_message: 'Bienvenido al sistema de gestión documental. Aquí puedes crear documentos, gestionar firmas y administrar tu negocio de manera eficiente.',
-      footer_text: 'Sistema de Gestión Documental © 2025. Todos los derechos reservados.',
-      is_active: true
+      key: 'app_customization',
+      value: {
+        theme_name: 'default',
+        app_title: 'Sistema de Gestión Documental Digital',
+        app_subtitle: 'Crea plantillas, genera documentos PDF interactivos y gestiona firmas digitales',
+        primary_color: '#3b82f6',
+        secondary_color: '#64748b',
+        accent_color: '#10b981',
+        welcome_message: 'Bienvenido al sistema de gestión documental.',
+        footer_text: 'Sistema de Gestión Documental © 2025',
+        logo_url: null,
+        font_family: 'Inter'
+      },
+      category: 'appearance',
+      description: 'Configuración de personalización de la aplicación',
+      is_public: true
     };
 
     const { error } = await supabase
-      .from('app_customization')
+      .from('system_config')
       .insert([customization]);
 
     if (error) throw error;
@@ -321,7 +337,6 @@ const SystemInitializer = () => {
   };
 
   const completedSteps = steps.filter(step => step.completed).length;
-  const hasErrors = steps.some(step => step.error);
 
   return (
     <div className="space-y-6">
