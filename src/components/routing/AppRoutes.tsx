@@ -4,6 +4,8 @@ import ProtectedRoute from "@/components/auth/ProtectedRoute";
 import PublicRoute from "@/components/auth/PublicRoute";
 import AppLayout from "@/components/layout/AppLayout";
 import Login from "@/pages/Login";
+import Register from "@/pages/Register";
+import ResetPassword from "@/pages/ResetPassword";
 import Dashboard from "@/pages/Dashboard";
 import Profile from "@/pages/Profile";
 import Sales from "@/pages/Sales";
@@ -24,6 +26,24 @@ const AppRoutes = () => {
         element={
           <PublicRoute>
             <Login />
+          </PublicRoute>
+        } 
+      />
+      
+      <Route 
+        path="/register" 
+        element={
+          <PublicRoute>
+            <Register />
+          </PublicRoute>
+        } 
+      />
+      
+      <Route 
+        path="/reset-password" 
+        element={
+          <PublicRoute>
+            <ResetPassword />
           </PublicRoute>
         } 
       />
