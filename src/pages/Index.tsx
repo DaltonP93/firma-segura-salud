@@ -1,9 +1,10 @@
+
 import React, { useState } from 'react';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
-import { FileText, Users, Send, CheckCircle, Layers, Plus, LogOut, User, Menu, ShoppingCart } from 'lucide-react';
+import { FileText, Users, CheckCircle, Layers, Plus, Menu, ShoppingCart } from 'lucide-react';
 import ContractForm from '@/components/ContractForm';
 import ContractTracker from '@/components/ContractTracker';
 import ContractsList from '@/components/ContractsList';
@@ -12,9 +13,6 @@ import DocumentManager from '@/components/DocumentManager';
 import PDFTemplateBuilder, { PDFTemplate } from '@/components/PDFTemplateBuilder';
 import PDFDocumentGenerator from '@/components/PDFDocumentGenerator';
 import SalesManager from '@/components/sales/SalesManager';
-import AuthWrapper from '@/components/AuthWrapper';
-import AuthModal from '@/components/AuthModal';
-import { useAuth } from '@/hooks/useAuth';
 import { useSupabaseData } from '@/hooks/useSupabaseData';
 import { useToast } from '@/hooks/use-toast';
 
@@ -56,11 +54,8 @@ export interface TemplateField {
 }
 
 const Index = () => {
-  const { user, signOut } = useAuth();
   const { toast } = useToast();
-  // Default to 'contracts' tab instead of 'dashboard' for document creation focus
   const [activeTab, setActiveTab] = useState('contracts');
-  const [showAuthModal, setShowAuthModal] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   
   const {
@@ -75,22 +70,6 @@ const Index = () => {
     updatePDFTemplate,
     deletePDFTemplate,
   } = useSupabaseData();
-
-  const handleSignOut = async () => {
-    const { error } = await signOut();
-    if (error) {
-      toast({
-        title: "Error",
-        description: "Error al cerrar sesión",
-        variant: "destructive",
-      });
-    } else {
-      toast({
-        title: "Sesión cerrada",
-        description: "Has cerrado sesión exitosamente",
-      });
-    }
-  };
 
   const handleNewContract = async (contractData: Omit<Contract, 'id' | 'status' | 'createdAt'>) => {
     try {
@@ -199,262 +178,219 @@ const Index = () => {
     { value: 'dashboard', label: 'Dashboard', icon: CheckCircle },
   ];
 
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center py-12">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
+        <span className="ml-4 text-muted-foreground">Cargando datos...</span>
+      </div>
+    );
+  }
+
   return (
-    <AuthWrapper onShowAuth={() => setShowAuthModal(true)}>
-      <div className="min-h-screen bg-gradient-to-br from-blue-50 to-cyan-50">
-        <div className="container mx-auto px-4 py-4 sm:py-8">
-          {/* Header */}
-          <div className="mb-6 sm:mb-8">
-            <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start gap-4">
-              <div className="flex-1">
-                <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-gray-900 mb-2">
-                  Sistema de Gestión Documental Digital
-                </h1>
-                <p className="text-sm sm:text-base lg:text-lg text-gray-600">
-                  Crea plantillas, genera documentos PDF interactivos y gestiona firmas digitales
-                </p>
-              </div>
-              
-              {user && (
-                <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2 sm:gap-4">
-                  <div className="flex items-center gap-2 text-xs sm:text-sm text-gray-600">
-                    <User className="w-4 h-4" />
-                    <span className="truncate max-w-32 sm:max-w-none">{user.email}</span>
-                  </div>
-                  <Button 
-                    variant="outline" 
-                    onClick={handleSignOut}
-                    size="sm"
-                    className="w-full sm:w-auto"
-                  >
-                    <LogOut className="w-4 h-4 mr-2" />
-                    Cerrar Sesión
-                  </Button>
-                </div>
-              )}
-            </div>
-          </div>
-
-          {loading ? (
-            <div className="flex items-center justify-center py-12">
-              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
-              <span className="ml-4 text-gray-600">Cargando datos...</span>
-            </div>
-          ) : (
-            <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4 sm:space-y-6">
-              {/* Mobile Tab Selector */}
-              <div className="sm:hidden">
-                <Button
-                  variant="outline"
-                  onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-                  className="w-full justify-between"
+    <div className="container mx-auto px-4 py-6">
+      <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
+        {/* Mobile Tab Selector */}
+        <div className="sm:hidden">
+          <Button
+            variant="outline"
+            onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+            className="w-full justify-between"
+          >
+            <span className="flex items-center gap-2">
+              {React.createElement(tabItems.find(item => item.value === activeTab)?.icon || FileText, { className: "w-4 h-4" })}
+              {tabItems.find(item => item.value === activeTab)?.label}
+            </span>
+            <Menu className="w-4 h-4" />
+          </Button>
+          
+          {mobileMenuOpen && (
+            <div className="mt-2 bg-card border rounded-lg shadow-lg">
+              {tabItems.map((item) => (
+                <button
+                  key={item.value}
+                  onClick={() => {
+                    setActiveTab(item.value);
+                    setMobileMenuOpen(false);
+                  }}
+                  className={`w-full flex items-center gap-3 px-4 py-3 text-left hover:bg-muted first:rounded-t-lg last:rounded-b-lg ${
+                    activeTab === item.value ? 'bg-primary/10 text-primary font-medium' : ''
+                  }`}
                 >
-                  <span className="flex items-center gap-2">
-                    {React.createElement(tabItems.find(item => item.value === activeTab)?.icon || FileText, { className: "w-4 h-4" })}
-                    {tabItems.find(item => item.value === activeTab)?.label}
-                  </span>
-                  <Menu className="w-4 h-4" />
-                </Button>
-                
-                {mobileMenuOpen && (
-                  <div className="mt-2 bg-white border rounded-lg shadow-lg">
-                    {tabItems.map((item) => (
-                      <button
-                        key={item.value}
-                        onClick={() => {
-                          setActiveTab(item.value);
-                          setMobileMenuOpen(false);
-                        }}
-                        className={`w-full flex items-center gap-3 px-4 py-3 text-left hover:bg-gray-50 first:rounded-t-lg last:rounded-b-lg ${
-                          activeTab === item.value ? 'bg-blue-50 text-blue-600 font-medium' : ''
-                        }`}
-                      >
-                        <item.icon className="w-4 h-4" />
-                        {item.label}
-                      </button>
-                    ))}
-                  </div>
-                )}
-              </div>
-
-              {/* Desktop Tabs */}
-              <TabsList className="hidden sm:grid w-full grid-cols-7 lg:w-auto lg:grid-cols-7">
-                {tabItems.map((item) => (
-                  <TabsTrigger key={item.value} value={item.value} className="flex items-center gap-2 text-xs lg:text-sm">
-                    <item.icon className="w-4 h-4" />
-                    <span className="hidden lg:inline">{item.label}</span>
-                    <span className="lg:hidden">{item.label.split(' ')[0]}</span>
-                  </TabsTrigger>
-                ))}
-              </TabsList>
-
-              <TabsContent value="contracts">
-                <ContractForm 
-                  onSubmit={handleNewContract}
-                  templates={templates}
-                />
-              </TabsContent>
-
-              <TabsContent value="documents">
-                <DocumentManager 
-                  contracts={contracts} 
-                  onUpdateStatus={updateDocumentStatus}
-                />
-              </TabsContent>
-
-              <TabsContent value="templates">
-                <TemplateBuilder 
-                  templates={templates}
-                  onCreateTemplate={handleNewTemplate}
-                />
-              </TabsContent>
-
-              <TabsContent value="pdf-templates">
-                <PDFTemplateBuilder 
-                  templates={pdfTemplates}
-                  onCreateTemplate={handleNewPDFTemplate}
-                  onUpdateTemplate={handleUpdatePDFTemplate}
-                  onDeleteTemplate={handleDeletePDFTemplate}
-                />
-              </TabsContent>
-
-              <TabsContent value="pdf-generator">
-                <PDFDocumentGenerator 
-                  templates={pdfTemplates}
-                  onGenerateDocument={handleGeneratePDFDocument}
-                />
-              </TabsContent>
-
-              <TabsContent value="sales">
-                <SalesManager />
-              </TabsContent>
-
-              <TabsContent value="dashboard" className="space-y-4 sm:space-y-6">
-                {/* Stats Cards */}
-                <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3 sm:gap-4 lg:gap-6">
-                  <Card className="bg-white shadow-lg border-0">
-                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                      <CardTitle className="text-xs sm:text-sm font-medium">Total Documentos</CardTitle>
-                      <FileText className="h-4 w-4 text-primary" />
-                    </CardHeader>
-                    <CardContent>
-                      <div className="text-xl sm:text-2xl font-bold text-primary">{stats.total}</div>
-                      <p className="text-xs text-muted-foreground">Documentos creados</p>
-                    </CardContent>
-                  </Card>
-
-                  <Card className="bg-white shadow-lg border-0">
-                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                      <CardTitle className="text-xs sm:text-sm font-medium">Templates</CardTitle>
-                      <Layers className="h-4 w-4 text-purple-500" />
-                    </CardHeader>
-                    <CardContent>
-                      <div className="text-xl sm:text-2xl font-bold text-purple-600">{stats.templates}</div>
-                      <p className="text-xs text-muted-foreground">Plantillas básicas</p>
-                    </CardContent>
-                  </Card>
-
-                  <Card className="bg-white shadow-lg border-0">
-                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                      <CardTitle className="text-xs sm:text-sm font-medium">PDF Templates</CardTitle>
-                      <FileText className="h-4 w-4 text-red-500" />
-                    </CardHeader>
-                    <CardContent>
-                      <div className="text-xl sm:text-2xl font-bold text-red-600">{stats.pdfTemplates}</div>
-                      <p className="text-xs text-muted-foreground">Plantillas PDF</p>
-                    </CardContent>
-                  </Card>
-
-                  <Card className="bg-white shadow-lg border-0">
-                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                      <CardTitle className="text-xs sm:text-sm font-medium">Pendientes</CardTitle>
-                      <Users className="h-4 w-4 text-yellow-500" />
-                    </CardHeader>
-                    <CardContent>
-                      <div className="text-xl sm:text-2xl font-bold text-yellow-600">{stats.pending}</div>
-                      <p className="text-xs text-muted-foreground">Esperando firma</p>
-                    </CardContent>
-                  </Card>
-
-                  <Card className="bg-white shadow-lg border-0 col-span-2 sm:col-span-1">
-                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                      <CardTitle className="text-xs sm:text-sm font-medium">Completados</CardTitle>
-                      <CheckCircle className="h-4 w-4 text-green-500" />
-                    </CardHeader>
-                    <CardContent>
-                      <div className="text-xl sm:text-2xl font-bold text-green-600">{stats.signed}</div>
-                      <p className="text-xs text-muted-foreground">Documentos firmados</p>
-                    </CardContent>
-                  </Card>
-                </div>
-
-                {/* Recent Activity */}
-                <Card className="bg-white shadow-lg border-0">
-                  <CardHeader>
-                    <CardTitle className="text-lg sm:text-xl">Actividad Reciente</CardTitle>
-                    <CardDescription>Últimos documentos y sus estados</CardDescription>
-                  </CardHeader>
-                  <CardContent>
-                    {contracts.length === 0 ? (
-                      <div className="text-center py-6 sm:py-8">
-                        <FileText className="mx-auto h-12 w-12 text-gray-400 mb-4" />
-                        <h3 className="text-base sm:text-lg font-medium text-gray-900 mb-2">No hay documentos aún</h3>
-                        <p className="text-sm sm:text-base text-gray-500 mb-4">Comienza creando plantillas y generando documentos</p>
-                        <Button onClick={() => setActiveTab('contracts')} className="bg-primary hover:bg-primary/90">
-                          Crear Primer Documento
-                        </Button>
-                      </div>
-                    ) : (
-                      <div className="space-y-3 sm:space-y-4">
-                        {contracts.slice(-5).reverse().map((contract) => (
-                          <div key={contract.id} className="flex flex-col sm:flex-row sm:items-center justify-between p-3 sm:p-4 border rounded-lg gap-2 sm:gap-4">
-                            <div className="flex-1">
-                              <h4 className="font-medium text-sm sm:text-base">{contract.clientName}</h4>
-                              <p className="text-xs sm:text-sm text-gray-500">
-                                {contract.templateType && (
-                                  <span className="capitalize">{contract.templateType}</span>
-                                )}
-                                {contract.templateType && contract.policyType && ' - '}
-                                {contract.policyType}
-                              </p>
-                            </div>
-                            <Badge 
-                              variant={
-                                contract.status === 'completed' || contract.status === 'signed' ? 'default' :
-                                contract.status === 'sent' || contract.status === 'opened' ? 'secondary' : 'outline'
-                              }
-                              className={`
-                                text-xs whitespace-nowrap
-                                ${contract.status === 'completed' || contract.status === 'signed' 
-                                  ? 'bg-green-100 text-green-800 hover:bg-green-100' :
-                                contract.status === 'sent' || contract.status === 'opened'
-                                  ? 'bg-blue-100 text-blue-800 hover:bg-blue-100' : ''}
-                              `}
-                            >
-                              {contract.status === 'draft' && 'Borrador'}
-                              {contract.status === 'sent' && 'Enviado'}
-                              {contract.status === 'received' && 'Recibido'}
-                              {contract.status === 'opened' && 'Abierto'}
-                              {contract.status === 'signed' && 'Firmado'}
-                              {contract.status === 'completed' && 'Completado'}
-                            </Badge>
-                          </div>
-                        ))}
-                      </div>
-                    )}
-                  </CardContent>
-                </Card>
-              </TabsContent>
-            </Tabs>
+                  <item.icon className="w-4 h-4" />
+                  {item.label}
+                </button>
+              ))}
+            </div>
           )}
         </div>
-        
-        <AuthModal 
-          isOpen={showAuthModal} 
-          onClose={() => setShowAuthModal(false)} 
-        />
-      </div>
-    </AuthWrapper>
+
+        {/* Desktop Tabs */}
+        <TabsList className="hidden sm:grid w-full grid-cols-7 lg:w-auto lg:grid-cols-7">
+          {tabItems.map((item) => (
+            <TabsTrigger key={item.value} value={item.value} className="flex items-center gap-2 text-xs lg:text-sm">
+              <item.icon className="w-4 h-4" />
+              <span className="hidden lg:inline">{item.label}</span>
+              <span className="lg:hidden">{item.label.split(' ')[0]}</span>
+            </TabsTrigger>
+          ))}
+        </TabsList>
+
+        <TabsContent value="contracts">
+          <ContractForm 
+            onSubmit={handleNewContract}
+            templates={templates}
+          />
+        </TabsContent>
+
+        <TabsContent value="documents">
+          <DocumentManager 
+            contracts={contracts} 
+            onUpdateStatus={updateDocumentStatus}
+          />
+        </TabsContent>
+
+        <TabsContent value="templates">
+          <TemplateBuilder 
+            templates={templates}
+            onCreateTemplate={handleNewTemplate}
+          />
+        </TabsContent>
+
+        <TabsContent value="pdf-templates">
+          <PDFTemplateBuilder 
+            templates={pdfTemplates}
+            onCreateTemplate={handleNewPDFTemplate}
+            onUpdateTemplate={handleUpdatePDFTemplate}
+            onDeleteTemplate={handleDeletePDFTemplate}
+          />
+        </TabsContent>
+
+        <TabsContent value="pdf-generator">
+          <PDFDocumentGenerator 
+            templates={pdfTemplates}
+            onGenerateDocument={handleGeneratePDFDocument}
+          />
+        </TabsContent>
+
+        <TabsContent value="sales">
+          <SalesManager />
+        </TabsContent>
+
+        <TabsContent value="dashboard" className="space-y-6">
+          {/* Stats Cards */}
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4">
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-xs sm:text-sm font-medium">Total Documentos</CardTitle>
+                <FileText className="h-4 w-4 text-primary" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-xl sm:text-2xl font-bold text-primary">{stats.total}</div>
+                <p className="text-xs text-muted-foreground">Documentos creados</p>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-xs sm:text-sm font-medium">Templates</CardTitle>
+                <Layers className="h-4 w-4 text-secondary" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-xl sm:text-2xl font-bold text-secondary">{stats.templates}</div>
+                <p className="text-xs text-muted-foreground">Plantillas básicas</p>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-xs sm:text-sm font-medium">PDF Templates</CardTitle>
+                <FileText className="h-4 w-4 text-destructive" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-xl sm:text-2xl font-bold text-destructive">{stats.pdfTemplates}</div>
+                <p className="text-xs text-muted-foreground">Plantillas PDF</p>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-xs sm:text-sm font-medium">Pendientes</CardTitle>
+                <Users className="h-4 w-4 text-warning" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-xl sm:text-2xl font-bold text-warning">{stats.pending}</div>
+                <p className="text-xs text-muted-foreground">Esperando firma</p>
+              </CardContent>
+            </Card>
+
+            <Card className="col-span-2 sm:col-span-1">
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-xs sm:text-sm font-medium">Completados</CardTitle>
+                <CheckCircle className="h-4 w-4 text-success" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-xl sm:text-2xl font-bold text-success">{stats.signed}</div>
+                <p className="text-xs text-muted-foreground">Documentos firmados</p>
+              </CardContent>
+            </Card>
+          </div>
+
+          {/* Recent Activity */}
+          <Card>
+            <CardHeader>
+              <CardTitle>Actividad Reciente</CardTitle>
+              <CardDescription>Últimos documentos y sus estados</CardDescription>
+            </CardHeader>
+            <CardContent>
+              {contracts.length === 0 ? (
+                <div className="text-center py-8">
+                  <FileText className="mx-auto h-12 w-12 text-muted-foreground mb-4" />
+                  <h3 className="text-lg font-medium mb-2">No hay documentos aún</h3>
+                  <p className="text-muted-foreground mb-4">Comienza creando plantillas y generando documentos</p>
+                  <Button onClick={() => setActiveTab('contracts')}>
+                    Crear Primer Documento
+                  </Button>
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  {contracts.slice(-5).reverse().map((contract) => (
+                    <div key={contract.id} className="flex flex-col sm:flex-row sm:items-center justify-between p-4 border rounded-lg gap-2 sm:gap-4">
+                      <div className="flex-1">
+                        <h4 className="font-medium">{contract.clientName}</h4>
+                        <p className="text-sm text-muted-foreground">
+                          {contract.templateType && (
+                            <span className="capitalize">{contract.templateType}</span>
+                          )}
+                          {contract.templateType && contract.policyType && ' - '}
+                          {contract.policyType}
+                        </p>
+                      </div>
+                      <Badge 
+                        variant={
+                          contract.status === 'completed' || contract.status === 'signed' 
+                            ? 'default' 
+                            : contract.status === 'draft' 
+                              ? 'secondary' 
+                              : 'outline'
+                        }
+                      >
+                        {contract.status === 'draft' && 'Borrador'}
+                        {contract.status === 'sent' && 'Enviado'}
+                        {contract.status === 'received' && 'Recibido'}
+                        {contract.status === 'opened' && 'Abierto'}
+                        {contract.status === 'signed' && 'Firmado'}
+                        {contract.status === 'completed' && 'Completado'}
+                      </Badge>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </TabsContent>
+      </Tabs>
+    </div>
   );
 };
 
