@@ -1,51 +1,43 @@
-import React, { useState, useEffect } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
+import React, { useState } from 'react';
+import { Link } from 'react-router-dom';
 import { Card, CardContent } from '@/components/ui/card';
-import { useAuth } from '@/hooks/useAuth';
 import { useToast } from '@/hooks/use-toast';
 import { Shield } from 'lucide-react';
-import { LoginForm } from '@/components/auth/LoginForm';
+import { supabase } from '@/integrations/supabase/client';
+import { PasswordResetForm } from '@/components/auth/PasswordResetForm';
 import { useAuthErrorHandler } from '@/components/auth/AuthErrorHandler';
 
-const Login = () => {
+const ResetPassword = () => {
   const [loading, setLoading] = useState(false);
-  const { signInWithEmail, user } = useAuth();
   const { toast } = useToast();
-  const navigate = useNavigate();
   const {
-    handleSignInError,
+    handlePasswordResetError,
     handleValidationError,
     handleUnexpectedError,
   } = useAuthErrorHandler();
 
-  // Redirect if already logged in
-  useEffect(() => {
-    if (user) {
-      navigate('/dashboard');
-    }
-  }, [user, navigate]);
-
-  const handleSignIn = async (email: string, password: string) => {
-    if (!email || !password) {
-      handleValidationError("Por favor completa todos los campos");
+  const handlePasswordReset = async (resetEmail: string) => {
+    if (!resetEmail) {
+      handleValidationError("Por favor ingresa tu email");
       return;
     }
 
     setLoading(true);
-    console.log('Attempting to sign in:', { email });
+    console.log('Attempting password reset for:', resetEmail);
     
     try {
-      const { error } = await signInWithEmail(email, password);
+      const { error } = await supabase.auth.resetPasswordForEmail(resetEmail, {
+        redirectTo: `${window.location.origin}/reset-password`,
+      });
       
       if (error) {
-        handleSignInError(error);
+        handlePasswordResetError(error);
       } else {
-        console.log('Sign in successful');
+        console.log('Password reset email sent successfully');
         toast({
-          title: "¡Bienvenido!",
-          description: "Has iniciado sesión exitosamente",
+          title: "Email enviado",
+          description: "Revisa tu email para restablecer tu contraseña",
         });
-        navigate('/dashboard');
       }
     } catch (err) {
       console.error('Unexpected error:', err);
@@ -68,28 +60,22 @@ const Login = () => {
           
           {/* Title */}
           <div className="text-center mb-8">
-            <h1 className="text-2xl font-bold text-foreground mb-2">Seguro Digital</h1>
+            <h1 className="text-2xl font-bold text-foreground mb-2">Recuperar Contraseña</h1>
             <p className="text-muted-foreground text-sm">
-              Sistema de Firma Digital - Inicia sesión en tu cuenta
+              Ingresa tu email para recibir un enlace de recuperación
             </p>
           </div>
 
           {/* Form */}
-          <LoginForm onSubmit={handleSignIn} loading={loading} />
+          <PasswordResetForm onSubmit={handlePasswordReset} loading={loading} />
           
           {/* Links */}
-          <div className="flex justify-between items-center mt-4 text-sm">
+          <div className="text-center mt-4 text-sm">
             <Link 
-              to="/register" 
+              to="/login" 
               className="text-primary hover:underline"
             >
-              ¿No tienes cuenta?
-            </Link>
-            <Link 
-              to="/reset-password" 
-              className="text-primary hover:underline"
-            >
-              ¿Olvidaste tu contraseña?
+              Volver a iniciar sesión
             </Link>
           </div>
         </CardContent>
@@ -98,4 +84,4 @@ const Login = () => {
   );
 };
 
-export default Login;
+export default ResetPassword;
