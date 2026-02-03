@@ -23,7 +23,6 @@ import {
   User, 
   Settings, 
   Shield,
-  FileText,
   Bell
 } from 'lucide-react';
 import NotificationList from '@/components/notifications/NotificationList';
@@ -229,48 +228,44 @@ const AppHeader = ({ title, subtitle }: AppHeaderProps) => {
   const displaySubtitle = activeCustomization.app_subtitle || subtitle;
 
   return (
-    <header className="bg-white shadow-sm border-b sticky top-0 z-50">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex justify-between items-center py-4">
-          <div className="flex items-center">
-            {/* Display custom logo if available, otherwise show default icon */}
+    <header className="bg-background border-b sticky top-0 z-50">
+      <div className="px-4 sm:px-6">
+        <div className="flex justify-between items-center h-14">
+          <div className="flex items-center gap-3">
             {activeCustomization.logo_url ? (
-              <div className="w-10 h-10 rounded-full flex items-center justify-center mr-3 overflow-hidden">
+              <div className="w-8 h-8 rounded-lg flex items-center justify-center overflow-hidden">
                 <img 
                   src={activeCustomization.logo_url} 
-                  alt="Company Logo" 
+                  alt="Logo" 
                   className="w-full h-full object-contain"
                 />
               </div>
             ) : (
-              <div className="w-10 h-10 bg-primary/10 rounded-full flex items-center justify-center mr-3">
-                <FileText className="w-6 h-6 text-primary" />
+              <div className="w-8 h-8 bg-primary/10 rounded-lg flex items-center justify-center">
+                <Shield className="w-5 h-5 text-primary" />
               </div>
             )}
             <div>
-              <h1 className="text-xl font-semibold text-gray-900">
+              <h1 className="text-base font-semibold text-foreground">
                 {displayTitle}
               </h1>
-              {displaySubtitle && (
-                <p className="text-sm text-gray-500">{displaySubtitle}</p>
-              )}
             </div>
           </div>
 
-          <div className="flex items-center gap-4">
+          <div className="flex items-center gap-2">
             {/* Notifications */}
             <Popover open={isNotificationsOpen} onOpenChange={setIsNotificationsOpen}>
               <PopoverTrigger asChild>
-                <Button variant="ghost" size="sm" className="relative">
+                <Button variant="ghost" size="icon" className="relative">
                   <Bell className="w-5 h-5" />
                   {unreadCount > 0 && (
-                    <span className="absolute -top-1 -right-1 w-5 h-5 bg-red-500 text-white text-xs rounded-full flex items-center justify-center">
+                    <span className="absolute -top-1 -right-1 w-5 h-5 bg-destructive text-destructive-foreground text-xs rounded-full flex items-center justify-center">
                       {unreadCount}
                     </span>
                   )}
                 </Button>
               </PopoverTrigger>
-              <PopoverContent className="p-0" align="end">
+              <PopoverContent className="p-0 w-80" align="end">
                 <NotificationList
                   notifications={notifications}
                   onNotificationClick={handleNotificationClick}
@@ -289,19 +284,6 @@ const AppHeader = ({ title, subtitle }: AppHeaderProps) => {
               onMarkAsRead={markAsRead}
               onAction={handleNotificationAction}
             />
-
-            {/* Admin Panel Access */}
-            {isAdmin && (
-              <Button 
-                variant="outline" 
-                size="sm"
-                onClick={() => navigate('/admin')}
-                className="flex items-center gap-2"
-              >
-                <Shield className="w-4 h-4" />
-                Admin
-              </Button>
-            )}
 
             {/* User Menu */}
             <DropdownMenu>

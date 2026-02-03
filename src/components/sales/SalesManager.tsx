@@ -1,5 +1,5 @@
 
-import React from 'react';
+import React, { useState } from 'react';
 import { Tabs, TabsContent } from "@/components/ui/tabs";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { useToast } from '@/hooks/use-toast';
@@ -10,10 +10,12 @@ import SalesHeader from './components/SalesHeader';
 import SalesStatsCards from './components/SalesStatsCards';
 import SalesTabsNavigation from './components/SalesTabsNavigation';
 import SalesRequestForm, { SalesRequest, Beneficiary } from './SalesRequestForm';
-import SalesRequestsList from './SalesRequestsList';
+import SalesRequestsTable from './SalesRequestsTable';
 import SalesRequestDetailIndex from './SalesRequestDetail';
 import HealthDeclarationForm from './HealthDeclarationForm';
 import SalesSignatureIntegration from './SalesSignatureIntegration';
+import WhatsAppSendModal from './WhatsAppSendModal';
+import { SalesRequestWithDetails } from './SalesRequestsList';
 
 // Hooks
 import { useSalesRequests } from './hooks/useSalesRequests';
@@ -58,6 +60,14 @@ const SalesManager = () => {
     notifyDocumentSentForSignature,
     notifyStatusChanged,
   } = useSalesNotifications();
+
+  const [whatsAppModalOpen, setWhatsAppModalOpen] = useState(false);
+  const [whatsAppRequest, setWhatsAppRequest] = useState<SalesRequestWithDetails | null>(null);
+
+  const handleWhatsApp = (request: SalesRequestWithDetails) => {
+    setWhatsAppRequest(request);
+    setWhatsAppModalOpen(true);
+  };
 
   const handleCreateRequest = async (requestData: SalesRequest, beneficiaries: Beneficiary[]) => {
     const newRequest = await createRequest(requestData, beneficiaries);
@@ -146,13 +156,14 @@ const SalesManager = () => {
         />
 
         <TabsContent value="list" className="mt-6">
-          <SalesRequestsList
+          <SalesRequestsTable
             requests={requests}
             onViewRequest={handleViewRequest}
             onEditRequest={handleEditRequest}
             onProcessHealthDeclaration={handleProcessHealthDeclaration}
             onSendForSignature={handleSendForSignature}
             onDeleteRequest={deleteRequest}
+            onWhatsApp={handleWhatsApp}
             loading={loading}
           />
         </TabsContent>
@@ -222,6 +233,13 @@ const SalesManager = () => {
           )}
         </DialogContent>
       </Dialog>
+
+      {/* WhatsApp Modal */}
+      <WhatsAppSendModal
+        isOpen={whatsAppModalOpen}
+        onClose={() => setWhatsAppModalOpen(false)}
+        request={whatsAppRequest}
+      />
     </div>
   );
 };

@@ -10,11 +10,16 @@ import { useToast } from '@/hooks/use-toast';
 import { useUserProfile } from '@/hooks/useUserProfile';
 import { supabase } from '@/integrations/supabase/client';
 import ProfileImageUpload from '@/components/ProfileImageUpload';
+import ProfileStats from '@/components/profile/ProfileStats';
+import ActivityHistory from '@/components/profile/ActivityHistory';
+import SecuritySettings from '@/components/profile/SecuritySettings';
 
 const Profile = () => {
   const { toast } = useToast();
   const { profile, isLoading } = useUserProfile();
   const [saving, setSaving] = useState(false);
+  const [stats, setStats] = useState({ sales: 0, documents: 0, signatures: 0 });
+  const [activities, setActivities] = useState<any[]>([]);
 
   const [formData, setFormData] = useState({
     full_name: '',
@@ -33,8 +38,74 @@ const Profile = () => {
         company: profile.company || '',
         avatar_url: profile.avatar_url || '',
       });
+      fetchStats();
+      fetchActivities();
     }
   }, [profile]);
+
+  const fetchStats = async () => {
+    if (!profile) return;
+    
+    try {
+      // Fetch sales count
+      const { count: salesCount } = await supabase
+        .from('sales_requests')
+        .select('*', { count: 'exact', head: true })
+        .eq('created_by', profile.id);
+
+      // Fetch documents count  
+      const { count: documentsCount } = await supabase
+        .from('documents')
+        .select('*', { count: 'exact', head: true })
+        .eq('created_by', profile.id);
+
+      // Fetch signatures count
+      const { count: signaturesCount } = await supabase
+        .from('signature_requests')
+        .select('*', { count: 'exact', head: true })
+        .eq('created_by', profile.id);
+
+      setStats({
+        sales: salesCount || 0,
+        documents: documentsCount || 0,
+        signatures: signaturesCount || 0,
+      });
+    } catch (error) {
+      console.error('Error fetching stats:', error);
+    }
+  };
+
+  const fetchActivities = async () => {
+    if (!profile) return;
+
+    try {
+      // Fetch recent audit logs for this user
+      const { data: logs } = await supabase
+        .from('audit_logs')
+        .select('*')
+        .eq('user_id', profile.id)
+        .order('created_at', { ascending: false })
+        .limit(5);
+
+      if (logs) {
+        setActivities(logs.map(log => ({
+          id: log.id,
+          type: log.entity_type === 'sales_requests' ? 'sale' : 
+                log.entity_type === 'documents' ? 'document' : 
+                log.entity_type === 'signature_requests' ? 'signature' : 'login',
+          description: log.action,
+          timestamp: new Date(log.created_at).toLocaleDateString('es-ES', {
+            day: '2-digit',
+            month: 'short',
+            hour: '2-digit',
+            minute: '2-digit',
+          }),
+        })));
+      }
+    } catch (error) {
+      console.error('Error fetching activities:', error);
+    }
+  };
 
   const handleSave = async () => {
     try {
@@ -73,16 +144,30 @@ const Profile = () => {
     setFormData(prev => ({ ...prev, avatar_url: imageUrl }));
   };
 
-  const getRoleBadgeColor = (role: string) => {
+  const getRoleBadgeVariant = (role: string) => {
     switch (role) {
       case 'super_admin':
-        return 'bg-red-100 text-red-800';
       case 'admin':
-        return 'bg-purple-100 text-purple-800';
-      case 'moderator':
-        return 'bg-blue-100 text-blue-800';
+        return 'default';
+      case 'supervisor':
+        return 'secondary';
       default:
-        return 'bg-gray-100 text-gray-800';
+        return 'outline';
+    }
+  };
+
+  const getRoleLabel = (role: string) => {
+    switch (role) {
+      case 'super_admin':
+        return 'Super Admin';
+      case 'admin':
+        return 'Admin';
+      case 'supervisor':
+        return 'Supervisor';
+      case 'agent':
+        return 'Agente';
+      default:
+        return 'Usuario';
     }
   };
 
@@ -95,210 +180,188 @@ const Profile = () => {
   }
 
   return (
-    <div className="p-6 max-w-4xl mx-auto space-y-6">
+    <div className="container mx-auto px-4 py-6 space-y-6">
       {/* Header */}
-      <div className="mb-8">
-        <h1 className="text-3xl font-bold text-gray-900">Mi Perfil</h1>
-        <p className="text-gray-600 mt-2">
+      <div>
+        <h1 className="text-2xl font-bold">Mi Perfil</h1>
+        <p className="text-muted-foreground">
           Gestiona tu información personal y configuración de cuenta
         </p>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Profile Card */}
-        <Card className="lg:col-span-1">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <User className="w-5 h-5" />
-              Información de Perfil
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-6">
-            {/* Profile Image Upload */}
-            {profile && (
-              <ProfileImageUpload
-                userId={profile.id}
-                currentImageUrl={formData.avatar_url}
-                fullName={formData.full_name}
-                onImageUpdate={handleImageUpdate}
-              />
-            )}
-
-            <Separator />
-
-            {/* Profile Info */}
-            <div className="space-y-3">
-              <div className="flex items-center justify-between">
-                <span className="text-sm font-medium">Estado</span>
-                <Badge variant="default" className="bg-green-100 text-green-800">
-                  Activo
-                </Badge>
-              </div>
-              
-              <div className="flex items-center justify-between">
-                <span className="text-sm font-medium">Rol</span>
-                <Badge className={getRoleBadgeColor(profile?.role || 'user')}>
-                  <Shield className="w-3 h-3 mr-1" />
-                  {profile?.role === 'super_admin' ? 'Super Admin' :
-                   profile?.role === 'admin' ? 'Admin' :
-                   profile?.role === 'moderator' ? 'Moderador' : 'Usuario'}
-                </Badge>
-              </div>
-              
-              {profile?.created_at && (
-                <div className="flex items-center justify-between">
-                  <span className="text-sm font-medium">Miembro desde</span>
-                  <span className="text-sm text-gray-600">
-                    {new Date(profile.created_at).toLocaleDateString('es-ES', {
-                      year: 'numeric',
-                      month: 'long',
-                      day: 'numeric'
-                    })}
-                  </span>
-                </div>
+        {/* Left Column - Profile Card */}
+        <div className="space-y-6">
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <User className="w-5 h-5" />
+                Perfil
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-6">
+              {/* Profile Image Upload */}
+              {profile && (
+                <ProfileImageUpload
+                  userId={profile.id}
+                  currentImageUrl={formData.avatar_url}
+                  fullName={formData.full_name}
+                  onImageUpdate={handleImageUpdate}
+                />
               )}
-            </div>
-          </CardContent>
-        </Card>
 
-        {/* Edit Form */}
-        <Card className="lg:col-span-2">
-          <CardHeader>
-            <CardTitle>Editar Información</CardTitle>
-            <CardDescription>
-              Actualiza tu información personal y de contacto
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-6">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="full_name">Nombre Completo</Label>
-                <Input
-                  id="full_name"
-                  value={formData.full_name}
-                  onChange={(e) => setFormData({...formData, full_name: e.target.value})}
-                  placeholder="Juan Pérez"
-                />
-              </div>
-              
-              <div className="space-y-2">
-                <Label htmlFor="username">Nombre de Usuario</Label>
-                <Input
-                  id="username"
-                  value={formData.username}
-                  onChange={(e) => setFormData({...formData, username: e.target.value})}
-                  placeholder="juan_perez"
-                />
-              </div>
-            </div>
+              <Separator />
 
-            <div className="space-y-2">
-              <Label htmlFor="email">Email</Label>
-              <div className="flex items-center gap-2">
-                <Mail className="w-4 h-4 text-gray-400" />
-                <Input
-                  id="email"
-                  value={profile?.email || ''}
-                  disabled
-                  className="bg-gray-50"
-                />
+              {/* Profile Info */}
+              <div className="space-y-3">
+                <div className="flex items-center justify-between">
+                  <span className="text-sm font-medium">Estado</span>
+                  <Badge variant="default">Activo</Badge>
+                </div>
+                
+                <div className="flex items-center justify-between">
+                  <span className="text-sm font-medium">Rol</span>
+                  <Badge variant={getRoleBadgeVariant(profile?.role || 'user')}>
+                    <Shield className="w-3 h-3 mr-1" />
+                    {getRoleLabel(profile?.role || 'user')}
+                  </Badge>
+                </div>
+                
+                {profile?.created_at && (
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm font-medium">Miembro desde</span>
+                    <span className="text-sm text-muted-foreground">
+                      {new Date(profile.created_at).toLocaleDateString('es-ES', {
+                        year: 'numeric',
+                        month: 'short',
+                      })}
+                    </span>
+                  </div>
+                )}
               </div>
-              <p className="text-xs text-gray-500">
-                El email no se puede cambiar desde aquí
-              </p>
-            </div>
+            </CardContent>
+          </Card>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="phone">Teléfono</Label>
-                <div className="flex items-center gap-2">
-                  <Phone className="w-4 h-4 text-gray-400" />
+          {/* Stats */}
+          <ProfileStats
+            salesCount={stats.sales}
+            documentsCount={stats.documents}
+            signaturesCount={stats.signatures}
+          />
+        </div>
+
+        {/* Right Column - Edit Form & Security */}
+        <div className="lg:col-span-2 space-y-6">
+          {/* Edit Form */}
+          <Card>
+            <CardHeader>
+              <CardTitle>Información Personal</CardTitle>
+              <CardDescription>
+                Actualiza tu información de contacto
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="full_name">Nombre Completo</Label>
                   <Input
-                    id="phone"
-                    value={formData.phone}
-                    onChange={(e) => setFormData({...formData, phone: e.target.value})}
-                    placeholder="+34 123 456 789"
+                    id="full_name"
+                    value={formData.full_name}
+                    onChange={(e) => setFormData({...formData, full_name: e.target.value})}
+                    placeholder="Juan Pérez"
+                  />
+                </div>
+                
+                <div className="space-y-2">
+                  <Label htmlFor="username">Nombre de Usuario</Label>
+                  <Input
+                    id="username"
+                    value={formData.username}
+                    onChange={(e) => setFormData({...formData, username: e.target.value})}
+                    placeholder="juan_perez"
                   />
                 </div>
               </div>
-              
+
               <div className="space-y-2">
-                <Label htmlFor="company">Empresa</Label>
+                <Label htmlFor="email">Email</Label>
                 <div className="flex items-center gap-2">
-                  <Building className="w-4 h-4 text-gray-400" />
+                  <Mail className="w-4 h-4 text-muted-foreground" />
                   <Input
-                    id="company"
-                    value={formData.company}
-                    onChange={(e) => setFormData({...formData, company: e.target.value})}
-                    placeholder="Mi Empresa S.L."
+                    id="email"
+                    value={profile?.email || ''}
+                    disabled
+                    className="bg-muted"
                   />
                 </div>
+                <p className="text-xs text-muted-foreground">
+                  El email no se puede cambiar desde aquí
+                </p>
               </div>
-            </div>
 
-            <Separator />
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="phone">Teléfono</Label>
+                  <div className="flex items-center gap-2">
+                    <Phone className="w-4 h-4 text-muted-foreground" />
+                    <Input
+                      id="phone"
+                      value={formData.phone}
+                      onChange={(e) => setFormData({...formData, phone: e.target.value})}
+                      placeholder="+34 123 456 789"
+                    />
+                  </div>
+                </div>
+                
+                <div className="space-y-2">
+                  <Label htmlFor="company">Empresa</Label>
+                  <div className="flex items-center gap-2">
+                    <Building className="w-4 h-4 text-muted-foreground" />
+                    <Input
+                      id="company"
+                      value={formData.company}
+                      onChange={(e) => setFormData({...formData, company: e.target.value})}
+                      placeholder="Mi Empresa S.L."
+                    />
+                  </div>
+                </div>
+              </div>
 
-            <div className="flex justify-end gap-3">
-              <Button 
-                variant="outline"
-                onClick={() => {
-                  if (profile) {
-                    setFormData({
-                      full_name: profile.full_name || '',
-                      username: profile.username || '',
-                      phone: profile.phone || '',
-                      company: profile.company || '',
-                      avatar_url: profile.avatar_url || '',
-                    });
-                  }
-                }}
-              >
-                Cancelar Cambios
-              </Button>
-              <Button 
-                onClick={handleSave}
-                disabled={saving}
-              >
-                <Save className="w-4 h-4 mr-2" />
-                {saving ? 'Guardando...' : 'Guardar Cambios'}
-              </Button>
-            </div>
-          </CardContent>
-        </Card>
+              <div className="flex justify-end gap-3">
+                <Button 
+                  variant="outline"
+                  onClick={() => {
+                    if (profile) {
+                      setFormData({
+                        full_name: profile.full_name || '',
+                        username: profile.username || '',
+                        phone: profile.phone || '',
+                        company: profile.company || '',
+                        avatar_url: profile.avatar_url || '',
+                      });
+                    }
+                  }}
+                >
+                  Cancelar
+                </Button>
+                <Button 
+                  onClick={handleSave}
+                  disabled={saving}
+                >
+                  <Save className="w-4 h-4 mr-2" />
+                  {saving ? 'Guardando...' : 'Guardar'}
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Security Settings */}
+          {profile && <SecuritySettings userId={profile.id} />}
+
+          {/* Activity History */}
+          <ActivityHistory activities={activities} />
+        </div>
       </div>
-
-      {/* Account Settings */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Configuración de Cuenta</CardTitle>
-          <CardDescription>
-            Configuraciones avanzadas de tu cuenta
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div className="space-y-3">
-              <h4 className="font-medium">Seguridad</h4>
-              <Button variant="outline" className="w-full justify-start">
-                Cambiar Contraseña
-              </Button>
-              <Button variant="outline" className="w-full justify-start">
-                Configurar 2FA
-              </Button>
-            </div>
-            
-            <div className="space-y-3">
-              <h4 className="font-medium">Preferencias</h4>
-              <Button variant="outline" className="w-full justify-start">
-                Notificaciones
-              </Button>
-              <Button variant="outline" className="w-full justify-start">
-                Privacidad
-              </Button>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
     </div>
   );
 };

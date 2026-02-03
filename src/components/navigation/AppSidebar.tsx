@@ -23,7 +23,8 @@ import {
   Plus,
   Eye,
   PenTool,
-  User
+  User,
+  ShoppingCart
 } from 'lucide-react';
 
 const iconMap = {
@@ -35,6 +36,7 @@ const iconMap = {
   'eye': Eye,
   'pen-tool': PenTool,
   'user': User,
+  'shopping-cart': ShoppingCart,
 };
 
 const AppSidebar = () => {
